@@ -16,7 +16,6 @@
 exports.setup = function (svc) {
     var splunkjs = require('../index');
     var tutils = require('./utils');
-    var Async = splunkjs.Async;
     var utils = splunkjs.Utils;
     var assert = require('chai').assert;
 
@@ -24,10 +23,9 @@ exports.setup = function (svc) {
     var isBrowser = typeof window !== "undefined";
 
     var suite = (
-        describe("General Context Test", function (done) {
-            before(function (done) {
+        describe("General Context Test", () => {
+            before(function () {
                 this.service = svc;
-                done();
             });
 
             it("Service exists", function (done) {
@@ -35,17 +33,16 @@ exports.setup = function (svc) {
                 done();
             });
 
-            it("Create test search", function (done) {
+            it("Create test search", async function () {
                 // The search created here is used by several of the following tests, specifically those using get()
-                var searchID = "DELETEME_JSSDK_UNITTEST";
-                this.service.post("search/jobs", { search: "search index=_internal | head 1", exec_mode: "blocking", id: searchID }, function (err, res) {
-                    assert.ok(res.data.sid);
-                    done();
-                });
+                let searchID = "DELETEME_JSSDK_UNITTEST";
+                let res = await this.service.post("search/jobs", { search: "search index=_internal | head 1", exec_mode: "blocking", id: searchID });
+                assert.ok(res.data.sid);
+
             });
 
-            it("Callback#login", function (done) {
-                var newService = new splunkjs.Service(svc.http, {
+            it("Login", async function () {
+                let newService = new splunkjs.Service(svc.http, {
                     scheme: svc.scheme,
                     host: svc.host,
                     port: svc.port,
@@ -53,15 +50,16 @@ exports.setup = function (svc) {
                     password: svc.password,
                     version: svc.version
                 });
-
-                newService.login(function (err, success) {
-                    assert.ok(success);
-                    done();
-                });
+                //ASK assert.ok(await newService.login());
+                try {
+                    await newService.login();
+                } catch (error) {
+                    assert.ok(!error);
+                }
             });
 
-            it("Callback#login fail", function (done) {
-                var newService = new splunkjs.Service(svc.http, {
+            it("Login fail", async function () {
+                let newService = new splunkjs.Service(svc.http, {
                     scheme: svc.scheme,
                     host: svc.host,
                     port: svc.port,
@@ -70,625 +68,573 @@ exports.setup = function (svc) {
                     version: svc.version
                 });
                 if (!isBrowser) {
-                    newService.login(function (err, success) {
-                        assert.ok(err);
-                        assert.ok(!success);
-                        done();
-                    });
+                    let res;
+                    try {
+                        res = await newService.login();
+                    } catch (error) {
+                        assert.ok(error);
+                    }
+                    assert.ok(!res);
                 }
-                else {
-                    done();
+            });
+
+            it("Get", async function () {
+                let res = await this.service.get("search/jobs", { count: 1 });
+                assert.strictEqual(res.data.paging.offset, 0);
+                assert.ok(res.data.entry.length <= res.data.paging.total);
+                assert.strictEqual(res.data.entry.length, 1);
+                assert.ok(res.data.entry[0].content.sid);
+            });
+
+            it("Get error", async function () {
+                let res;
+                try {
+                    res = await this.service.get("search/jobs/1234_nosuchjob", {});
+                } catch (error) {
+                    assert.strictEqual(error.status, 404);
                 }
+                assert.ok(!res);
             });
 
-            it("Callback#get", function (done) {
-                this.service.get("search/jobs", { count: 1 }, function (err, res) {
-                    assert.strictEqual(res.data.paging.offset, 0);
-                    assert.ok(res.data.entry.length <= res.data.paging.total);
-                    assert.strictEqual(res.data.entry.length, 1);
-                    assert.ok(res.data.entry[0].content.sid);
-                    done();
-                });
-            });
-
-            it("Callback#get error", function (done) {
-                this.service.get("search/jobs/1234_nosuchjob", {}, function (res) {
-                    assert.ok(!!res);
-                    assert.strictEqual(res.status, 404);
-                    done();
-                });
-            });
-
-            it("Callback#get autologin - success", function (done) {
-                var service = new splunkjs.Service(
-                    {
-                        scheme: this.service.scheme,
-                        host: this.service.host,
-                        port: this.service.port,
-                        username: this.service.username,
-                        password: this.service.password,
-                        version: svc.version
-                    }
-                );
-
-                service.get("search/jobs", { count: 1 }, function (err, res) {
-                    assert.strictEqual(res.data.paging.offset, 0);
-                    assert.ok(res.data.entry.length <= res.data.paging.total);
-                    assert.strictEqual(res.data.entry.length, 1);
-                    assert.ok(res.data.entry[0].content.sid);
-                    done();
-                });
-            });
-
-            it("Callback#get autologin - error", function (done) {
-                var service = new splunkjs.Service(
-                    {
-                        scheme: this.service.scheme,
-                        host: this.service.host,
-                        port: this.service.port,
-                        username: this.service.username,
-                        password: this.service.password + "ABC",
-                        version: svc.version
-                    }
-                );
-
-                service.get("search/jobs", { count: 1 }, function (err, res) {
-                    assert.ok(err);
-                    assert.strictEqual(err.status, 401);
-                    done();
-                });
-            });
-
-
-            it("Callback#get autologin - disabled", function (done) {
-                var service = new splunkjs.Service(
-                    {
-                        scheme: this.service.scheme,
-                        host: this.service.host,
-                        port: this.service.port,
-                        username: this.service.username,
-                        password: this.service.password,
-                        autologin: false,
-                        version: svc.version
-                    }
-                );
-
-                service.get("search/jobs", { count: 1 }, function (err, res) {
-                    assert.ok(err);
-                    assert.strictEqual(err.status, 401);
-                    done();
-                });
-            });
-
-            it("Callback#get relogin - success", function (done) {
-                var service = new splunkjs.Service(
-                    {
-                        scheme: this.service.scheme,
-                        host: this.service.host,
-                        port: this.service.port,
-                        username: this.service.username,
-                        password: this.service.password,
-                        sessionKey: "ABCDEF-not-real",
-                        version: svc.version
-                    }
-                );
-
-                service.get("search/jobs", { count: 1 }, function (err, res) {
-                    assert.ok(!err);
-                    assert.strictEqual(res.data.paging.offset, 0);
-                    assert.ok(res.data.entry.length <= res.data.paging.total);
-                    assert.strictEqual(res.data.entry.length, 1);
-                    assert.ok(res.data.entry[0].content.sid);
-                    done();
-                });
-            });
-
-            it("Callback#get relogin - error", function (done) {
-                var service = new splunkjs.Service(
-                    {
-                        scheme: this.service.scheme,
-                        host: this.service.host,
-                        port: this.service.port,
-                        username: this.service.username,
-                        password: this.service.password + "ABC",
-                        sessionKey: "ABCDEF-not-real",
-                        version: svc.version
-                    }
-                );
-
-                service.get("search/jobs", { count: 1 }, function (err, res) {
-                    assert.ok(err);
-                    assert.strictEqual(err.status, 401);
-                    done();
-                });
-            });
-
-            it("Callback#post", function (done) {
-                var service = this.service;
-                this.service.post("search/jobs", { search: "search index=_internal | head 1" }, function (err, res) {
-                    var sid = res.data.sid;
-                    assert.ok(sid);
-
-                    var endpoint = "search/jobs/" + sid + "/control";
-                    service.post(endpoint, { action: "cancel" }, function (err, res) {
-                        done();
-                    }
-                    );
+            it("Get autologin - success", async function () {
+                let service = new splunkjs.Service({
+                    scheme: this.service.scheme,
+                    host: this.service.host,
+                    port: this.service.port,
+                    username: this.service.username,
+                    password: this.service.password,
+                    version: svc.version
                 }
                 );
+                let res = await service.get("search/jobs", { count: 1 });
+                assert.strictEqual(res.data.paging.offset, 0);
+                assert.ok(res.data.entry.length <= res.data.paging.total);
+                assert.strictEqual(res.data.entry.length, 1);
+                assert.ok(res.data.entry[0].content.sid);
             });
 
-            it("Callback#post error", function (done) {
-                this.service.post("search/jobs", { search: "index_internal | head 1" }, function (res) {
-                    assert.ok(!!res);
-                    assert.strictEqual(res.status, 400);
-                    done();
+            it("Get autologin - error", async function () {
+                let service = new splunkjs.Service({
+                    scheme: this.service.scheme,
+                    host: this.service.host,
+                    port: this.service.port,
+                    username: this.service.username,
+                    password: this.service.password + "ABC",
+                    version: svc.version
                 });
+                let res;
+                try {
+                    res = await service.get("search/jobs", { count: 1 });
+                } catch (error) {
+                    assert.ok(error);
+                    assert.strictEqual(error.status, 401);
+                }
+                assert.ok(!res);
             });
 
-            it("Callback#post autologin - success", function (done) {
-                var service = new splunkjs.Service(
-                    {
-                        scheme: this.service.scheme,
-                        host: this.service.host,
-                        port: this.service.port,
-                        username: this.service.username,
-                        password: this.service.password,
-                        version: svc.version
-                    }
-                );
+            it("Get autologin - disabled", async function () {
+                let service = new splunkjs.Service({
+                    scheme: this.service.scheme,
+                    host: this.service.host,
+                    port: this.service.port,
+                    username: this.service.username,
+                    password: this.service.password,
+                    autologin: false,
+                    version: svc.version
+                });
+                let res;
+                try {
+                    res = await service.get("search/jobs", { count: 1 });
+                } catch (error) {
+                    assert.ok(error);
+                    assert.strictEqual(error.status, 401);
+                }
+                assert.ok(!res);
+            });
 
-                service.post("search/jobs", { search: "search index=_internal | head 1" }, function (err, res) {
-                    var sid = res.data.sid;
-                    assert.ok(sid);
+            it("Get relogin - success", async function () {
+                let service = new splunkjs.Service({
+                    scheme: this.service.scheme,
+                    host: this.service.host,
+                    port: this.service.port,
+                    username: this.service.username,
+                    password: this.service.password,
+                    sessionKey: "ABCDEF-not-real",
+                    version: svc.version
+                });
 
-                    var endpoint = "search/jobs/" + sid + "/control";
-                    service.post(endpoint, { action: "cancel" }, function (err, res) {
-                        done();
-                    }
-                    );
+                let res = await service.get("search/jobs", { count: 1 });
+
+                assert.strictEqual(res.data.paging.offset, 0);
+                assert.ok(res.data.entry.length <= res.data.paging.total);
+                assert.strictEqual(res.data.entry.length, 1);
+                assert.ok(res.data.entry[0].content.sid);
+            });
+
+            it("Get relogin - error", async function () {
+                let service = new splunkjs.Service({
+                    scheme: this.service.scheme,
+                    host: this.service.host,
+                    port: this.service.port,
+                    username: this.service.username,
+                    password: this.service.password + "ABC",
+                    sessionKey: "ABCDEF-not-real",
+                    version: svc.version
+                });
+                let res;
+                try {
+                    res = await service.get("search/jobs", { count: 1 });
+                } catch (error) {
+                    assert.ok(error);
+                    assert.strictEqual(error.status, 401);
+                }
+                assert.ok(!res);
+            });
+
+            it("Post", async function () {
+                let service = this.service;
+                let res = await this.service.post("search/jobs", { search: "search index=_internal | head 1" });
+                let sid = res.data.sid;
+                assert.ok(sid);
+                let endpoint = "search/jobs/" + sid + "/control";
+                res = await service.post(endpoint, { action: "cancel" });
+                assert.ok(res);
+            });
+
+            it("Post error", async function () {
+                let res;
+                try {
+                    res = await this.service.post("search/jobs", { search: "index_internal | head 1" });
+                } catch (error) {
+                    assert.ok(error);
+                    assert.strictEqual(error.status, 400);
+                }
+                assert.ok(!res);
+            });
+
+            it("Post autologin - success", async function () {
+                let service = new splunkjs.Service({
+                    scheme: this.service.scheme,
+                    host: this.service.host,
+                    port: this.service.port,
+                    username: this.service.username,
+                    password: this.service.password,
+                    version: svc.version
+                });
+
+                let res = await service.post("search/jobs", { search: "search index=_internal | head 1" });
+                let sid = res.data.sid;
+                assert.ok(sid);
+                let endpoint = "search/jobs/" + sid + "/control";
+                res = await service.post(endpoint, { action: "cancel" });
+            });
+
+            it("Post autologin - error", async function () {
+                let service = new splunkjs.Service({
+                    scheme: this.service.scheme,
+                    host: this.service.host,
+                    port: this.service.port,
+                    username: this.service.username,
+                    password: this.service.password + "ABC",
+                    version: svc.version
+                });
+                let res ;
+                try {
+                    res = await service.post("search/jobs", { search: "search index=_internal | head 1" });
+                } catch (error) {
+                    assert.ok(error);
+                    assert.strictEqual(error.status, 401);
+                }
+                assert.ok(!res);
+            });
+
+            it("Post autologin - disabled", async function () {
+                let service = new splunkjs.Service({
+                    scheme: this.service.scheme,
+                    host: this.service.host,
+                    port: this.service.port,
+                    username: this.service.username,
+                    password: this.service.password,
+                    autologin: false,
+                    version: svc.version
+                });
+                let res;
+                try {
+                    res = await service.post("search/jobs", { search: "search index=_internal | head 1" });
+                } catch (error) {
+                    assert.ok(error);
+                    assert.strictEqual(error.status, 401);
+                }
+                assert.ok(!res);
+            });
+
+            it("Post relogin - success", async function () {
+                let service = new splunkjs.Service({
+                    scheme: this.service.scheme,
+                    host: this.service.host,
+                    port: this.service.port,
+                    username: this.service.username,
+                    password: this.service.password,
+                    sessionKey: "ABCDEF-not-real",
+                    version: svc.version
                 }
                 );
+
+                let res = await service.post("search/jobs", { search: "search index=_internal | head 1" });
+                let sid = res.data.sid;
+                assert.ok(sid);
+
+                let endpoint = "search/jobs/" + sid + "/control";
+                service.post(endpoint, { action: "cancel" });
             });
 
-            it("Callback#post autologin - error", function (done) {
-                var service = new splunkjs.Service(
-                    {
-                        scheme: this.service.scheme,
-                        host: this.service.host,
-                        port: this.service.port,
-                        username: this.service.username,
-                        password: this.service.password + "ABC",
-                        version: svc.version
-                    }
-                );
-
-                service.post("search/jobs", { search: "search index=_internal | head 1" }, function (err, res) {
-                    assert.ok(err);
-                    assert.strictEqual(err.status, 401);
-                    done();
+            it("Post relogin - error", async function () {
+                let service = new splunkjs.Service({
+                    scheme: this.service.scheme,
+                    host: this.service.host,
+                    port: this.service.port,
+                    username: this.service.username,
+                    password: this.service.password + "ABC",
+                    sessionKey: "ABCDEF-not-real",
+                    version: svc.version
                 });
-            });
-
-            it("Callback#post autologin - disabled", function (done) {
-                var service = new splunkjs.Service(
-                    {
-                        scheme: this.service.scheme,
-                        host: this.service.host,
-                        port: this.service.port,
-                        username: this.service.username,
-                        password: this.service.password,
-                        autologin: false,
-                        version: svc.version
-                    }
-                );
-
-                service.post("search/jobs", { search: "search index=_internal | head 1" }, function (err, res) {
-                    assert.ok(err);
-                    assert.strictEqual(err.status, 401);
-                    done();
-                });
-            });
-
-            it("Callback#post relogin - success", function (done) {
-                var service = new splunkjs.Service(
-                    {
-                        scheme: this.service.scheme,
-                        host: this.service.host,
-                        port: this.service.port,
-                        username: this.service.username,
-                        password: this.service.password,
-                        sessionKey: "ABCDEF-not-real",
-                        version: svc.version
-                    }
-                );
-
-                service.post("search/jobs", { search: "search index=_internal | head 1" }, function (err, res) {
-                    var sid = res.data.sid;
-                    assert.ok(sid);
-
-                    var endpoint = "search/jobs/" + sid + "/control";
-                    service.post(endpoint, { action: "cancel" }, function (err, res) {
-                        done();
-                    }
-                    );
+                let res
+                try {
+                    res = await service.post("search/jobs", { search: "search index=_internal | head 1" });
+                } catch (error) {
+                    assert.ok(error);
+                    assert.strictEqual(error.status, 401);
                 }
-                );
+                assert.ok(!res);
             });
 
-            it("Callback#post relogin - error", function (done) {
-                var service = new splunkjs.Service(
-                    {
-                        scheme: this.service.scheme,
-                        host: this.service.host,
-                        port: this.service.port,
-                        username: this.service.username,
-                        password: this.service.password + "ABC",
-                        sessionKey: "ABCDEF-not-real",
-                        version: svc.version
-                    }
-                );
+            it("Delete", async function () {
+                let service = this.service;
+                let res = await this.service.post("search/jobs", { search: "search index=_internal | head 1" });
+                let sid = res.data.sid;
+                assert.ok(sid);
 
-                service.post("search/jobs", { search: "search index=_internal | head 1" }, function (err, res) {
-                    assert.ok(err);
-                    assert.strictEqual(err.status, 401);
-                    done();
+                let endpoint = "search/jobs/" + sid;
+                await service.del(endpoint, {});
+            });
+
+            it("Delete error", async function () {
+                let res;
+                try {
+                    res = await this.service.del("search/jobs/1234_nosuchjob", {});
+                } catch (error) {
+                    assert.ok(error);
+                    assert.strictEqual(error.status, 404);
+                }
+                assert.ok(!res);
+            });
+
+            it("Delete autologin - success", async function () {
+                let service = new splunkjs.Service({
+                    scheme: this.service.scheme,
+                    host: this.service.host,
+                    port: this.service.port,
+                    username: this.service.username,
+                    password: this.service.password,
+                    version: svc.version
                 });
+
+                let res = await service.post("search/jobs", { search: "search index=_internal | head 1" });
+                let sid = res.data.sid;
+                assert.ok(sid);
+
+                service.sessionKey = null;
+                let endpoint = "search/jobs/" + sid;
+                await service.del(endpoint, {});
             });
 
-            it("Callback#delete", function (done) {
-                var service = this.service;
-                this.service.post("search/jobs", { search: "search index=_internal | head 1" }, function (err, res) {
-                    var sid = res.data.sid;
-                    assert.ok(sid);
-
-                    var endpoint = "search/jobs/" + sid;
-                    service.del(endpoint, {}, function (err, res) {
-                        done();
-                    });
+            it("Delete autologin - error", async function () {
+                let service = new splunkjs.Service({
+                    scheme: this.service.scheme,
+                    host: this.service.host,
+                    port: this.service.port,
+                    username: this.service.username,
+                    password: this.service.password + "ABC",
+                    version: svc.version
                 });
+                let res;
+                try {
+                    res = await service.del("search/jobs/NO_SUCH_SID", {});
+                } catch (error) {
+                    assert.ok(error);
+                    assert.strictEqual(error.status, 401);
+                }
+                assert.ok(!res);
             });
 
-            it("Callback#delete error", function (done) {
-                this.service.del("search/jobs/1234_nosuchjob", {}, function (res) {
-                    assert.ok(!!res);
-                    assert.strictEqual(res.status, 404);
-                    done();
+            it("Delete autologin - disabled", async function () {
+                let service = new splunkjs.Service({
+                    scheme: this.service.scheme,
+                    host: this.service.host,
+                    port: this.service.port,
+                    username: this.service.username,
+                    password: this.service.password,
+                    autologin: false,
+                    version: svc.version
                 });
+                let res;
+                try {
+                    res = await service.del("search/jobs/NO_SUCH_SID", {});
+                } catch (error) {
+                    assert.ok(error);
+                    assert.strictEqual(error.status, 401);
+                }
+                assert.ok(!res);
             });
 
-            it("Callback#delete autologin - success", function (done) {
-                var service = new splunkjs.Service(
-                    {
-                        scheme: this.service.scheme,
-                        host: this.service.host,
-                        port: this.service.port,
-                        username: this.service.username,
-                        password: this.service.password,
-                        version: svc.version
-                    }
-                );
-
-                service.post("search/jobs", { search: "search index=_internal | head 1" }, function (err, res) {
-                    var sid = res.data.sid;
-                    assert.ok(sid);
-
-                    service.sessionKey = null;
-                    var endpoint = "search/jobs/" + sid;
-                    service.del(endpoint, {}, function (err, res) {
-                        done();
-                    });
+            it("Delete relogin - success", async function () {
+                let service = new splunkjs.Service({
+                    scheme: this.service.scheme,
+                    host: this.service.host,
+                    port: this.service.port,
+                    username: this.service.username,
+                    password: this.service.password,
+                    sessionKey: "ABCDEF-not-real",
+                    version: svc.version
                 });
+
+                let res = await service.post("search/jobs", { search: "search index=_internal | head 1" });
+                var sid = res.data.sid;
+                assert.ok(sid);
+
+                service.sessionKey = "ABCDEF-not-real";
+                let endpoint = "search/jobs/" + sid;
+                await service.del(endpoint, {});
             });
 
-            it("Callback#delete autologin - error", function (done) {
-                var service = new splunkjs.Service(
-                    {
-                        scheme: this.service.scheme,
-                        host: this.service.host,
-                        port: this.service.port,
-                        username: this.service.username,
-                        password: this.service.password + "ABC",
-                        version: svc.version
-                    }
-                );
-
-                service.del("search/jobs/NO_SUCH_SID", {}, function (err, res) {
-                    assert.ok(err);
-                    assert.strictEqual(err.status, 401);
-                    done();
+            it("Delete relogin - error", async function () {
+                let service = new splunkjs.Service({
+                    scheme: this.service.scheme,
+                    host: this.service.host,
+                    port: this.service.port,
+                    username: this.service.username,
+                    password: this.service.password + "ABC",
+                    sessionKey: "ABCDEF-not-real",
+                    version: svc.version
                 });
+                let res;
+                try {
+                    res = await service.del("search/jobs/NO_SUCH_SID", {});
+                } catch (error) {
+                    assert.ok(error);
+                    assert.strictEqual(error.status, 401);
+                }
+                assert.ok(!res);
             });
 
-            it("Callback#delete autologin - disabled", function (done) {
-                var service = new splunkjs.Service(
-                    {
-                        scheme: this.service.scheme,
-                        host: this.service.host,
-                        port: this.service.port,
-                        username: this.service.username,
-                        password: this.service.password,
-                        autologin: false,
-                        version: svc.version
-                    }
-                );
+            it("Request get", async function () {
+                let get = { count: 1 };
+                let post = null;
+                let body = null;
+                let res = await this.service.request("search/jobs", "GET", get, post, body, { "X-TestHeader": 1 });
+                assert.strictEqual(res.data.paging.offset, 0);
+                assert.ok(res.data.entry.length <= res.data.paging.total);
+                assert.strictEqual(res.data.entry.length, 1);
+                assert.ok(res.data.entry[0].content.sid);
 
-                service.del("search/jobs/NO_SUCH_SID", {}, function (err, res) {
-                    assert.ok(err);
-                    assert.strictEqual(err.status, 401);
-                    done();
-                });
+                if (res.response.request) {
+                    assert.strictEqual(res.response.request.headers["X-TestHeader"], 1);
+                }
             });
 
-            it("Callback#delete relogin - success", function (done) {
-                var service = new splunkjs.Service(
-                    {
-                        scheme: this.service.scheme,
-                        host: this.service.host,
-                        port: this.service.port,
-                        username: this.service.username,
-                        password: this.service.password,
-                        sessionKey: "ABCDEF-not-real",
-                        version: svc.version
-                    }
-                );
-
-                service.post("search/jobs", { search: "search index=_internal | head 1" }, function (err, res) {
-                    var sid = res.data.sid;
-                    assert.ok(sid);
-
-                    service.sessionKey = "ABCDEF-not-real";
-                    var endpoint = "search/jobs/" + sid;
-                    service.del(endpoint, {}, function (err, res) {
-                        done();
-                    });
-                });
-            });
-
-            it("Callback#delete relogin - error", function (done) {
-                var service = new splunkjs.Service(
-                    {
-                        scheme: this.service.scheme,
-                        host: this.service.host,
-                        port: this.service.port,
-                        username: this.service.username,
-                        password: this.service.password + "ABC",
-                        sessionKey: "ABCDEF-not-real",
-                        version: svc.version
-                    }
-                );
-
-                service.del("search/jobs/NO_SUCH_SID", {}, function (err, res) {
-                    assert.ok(err);
-                    assert.strictEqual(err.status, 401);
-                    done();
-                });
-            });
-
-            it("Callback#request get", function (done) {
-                var get = { count: 1 };
-                var post = null;
-                var body = null;
-                this.service.request("search/jobs", "GET", get, post, body, { "X-TestHeader": 1 }, function (err, res) {
-                    assert.strictEqual(res.data.paging.offset, 0);
-                    assert.ok(res.data.entry.length <= res.data.paging.total);
-                    assert.strictEqual(res.data.entry.length, 1);
-                    assert.ok(res.data.entry[0].content.sid);
-
-                    if (res.response.request) {
-                        assert.strictEqual(res.response.request.headers["X-TestHeader"], 1);
-                    }
-
-                    done();
-                });
-            });
-
-            it("Callback#request post", function (done) {
-                var body = "search=" + encodeURIComponent("search index=_internal | head 1");
-                var headers = {
+            it("Request post", async function () {
+                let body = "search=" + encodeURIComponent("search index=_internal | head 1");
+                let headers = {
                     "Content-Type": "application/x-www-form-urlencoded"
                 };
-                var service = this.service;
-                this.service.request("search/jobs", "POST", null, null, body, headers, function (err, res) {
-                    var sid = res.data.sid;
-                    assert.ok(sid);
+                let service = this.service;
+                let res = await this.service.request("search/jobs", "POST", null, null, body, headers);
+                assert.ok(res);
+                let sid = res.data.sid;
+                assert.ok(sid);
 
-                    var endpoint = "search/jobs/" + sid + "/control";
-                    service.post(endpoint, { action: "cancel" }, function (err, res) {
-                        done();
-                    });
-                });
+                let endpoint = "search/jobs/" + sid + "/control";
+                await service.post(endpoint, { action: "cancel" });
+
             });
 
-            it("Callback#request error", function (done) {
-                this.service.request("search/jobs/1234_nosuchjob", "GET", null, null, null, { "X-TestHeader": 1 }, function (res) {
-                    assert.ok(!!res);
-
-                    if (res.response.request) {
+            it("Request error", async function () {
+                let res;
+                try {
+                    res = await this.service.request("search/jobs/1234_nosuchjob", "GET", null, null, null, { "X-TestHeader": 1 });
+                } catch (error) {
+                    if (error.response.request) {
                         assert.strictEqual(res.response.request.headers["X-TestHeader"], 1);
                     }
-
-                    assert.strictEqual(res.status, 404);
-                    done();
-                });
+                    assert.strictEqual(error.status, 404);
+                }
+                assert.ok(!res);
             });
 
-            it("Callback#request autologin - success", function (done) {
-                var service = new splunkjs.Service(
-                    {
-                        scheme: this.service.scheme,
-                        host: this.service.host,
-                        port: this.service.port,
-                        username: this.service.username,
-                        password: this.service.password,
-                        version: svc.version
-                    }
+            it("Request autologin - success", async function () {
+                let service = new splunkjs.Service({
+                    scheme: this.service.scheme,
+                    host: this.service.host,
+                    port: this.service.port,
+                    username: this.service.username,
+                    password: this.service.password,
+                    version: svc.version
+                });
+
+                let get = { count: 1 };
+                let post = null;
+                let body = null;
+                let res = await service.request("search/jobs", "GET", get, post, body, { "X-TestHeader": 1 });
+                assert.ok(res);
+                assert.strictEqual(res.data.paging.offset, 0);
+                assert.ok(res.data.entry.length <= res.data.paging.total);
+                assert.strictEqual(res.data.entry.length, 1);
+                assert.ok(res.data.entry[0].content.sid);
+
+                if (res.response.request) {
+                    assert.strictEqual(res.response.request.headers["X-TestHeader"], 1);
+                }
+            });
+
+            it("Request autologin - error", async function () {
+                let service = new splunkjs.Service({
+                    scheme: this.service.scheme,
+                    host: this.service.host,
+                    port: this.service.port,
+                    username: this.service.username,
+                    password: this.service.password + "ABC",
+                    version: svc.version
+                });
+
+                let get = { count: 1 };
+                let post = null;
+                let body = null;
+                let res;
+                try {
+                    res = await service.request("search/jobs", "GET", get, post, body, { "X-TestHeader": 1 });
+                } catch (error) {
+                    assert.ok(error);
+                    assert.strictEqual(error.status, 401);
+                }
+                assert.ok(!res);
+            });
+
+            it("Request autologin - disabled", async function () {
+                let service = new splunkjs.Service({
+                    scheme: this.service.scheme,
+                    host: this.service.host,
+                    port: this.service.port,
+                    username: this.service.username,
+                    password: this.service.password,
+                    autologin: false,
+                    version: svc.version
+                });
+
+                let get = { count: 1 };
+                let post = null;
+                let body = null;
+                let res;
+                try {
+                    res = await service.request("search/jobs", "GET", get, post, body, { "X-TestHeader": 1 });
+                } catch (error) {
+                    assert.ok(error);
+                    assert.strictEqual(error.status, 401);
+                }
+                assert.ok(!res);
+            });
+
+            it("Request relogin - success", async function () {
+                let service = new splunkjs.Service({
+                    scheme: this.service.scheme,
+                    host: this.service.host,
+                    port: this.service.port,
+                    username: this.service.username,
+                    password: this.service.password,
+                    sessionKey: "ABCDEF-not-real",
+                    version: svc.version
+                });
+
+                let get = { count: 1 };
+                let post = null;
+                let body = null;
+                let res = await service.request("search/jobs", "GET", get, post, body, { "X-TestHeader": 1 });
+                assert.ok(res);
+                assert.strictEqual(res.data.paging.offset, 0);
+                assert.ok(res.data.entry.length <= res.data.paging.total);
+                assert.strictEqual(res.data.entry.length, 1);
+                assert.ok(res.data.entry[0].content.sid);
+
+                if (res.response.request) {
+                    assert.strictEqual(res.response.request.headers["X-TestHeader"], 1);
+                }
+            });
+
+            it("Request relogin - error", async function () {
+                let service = new splunkjs.Service({
+                    scheme: this.service.scheme,
+                    host: this.service.host,
+                    port: this.service.port,
+                    username: this.service.username,
+                    password: this.service.password + "ABC",
+                    sessionKey: "ABCDEF-not-real",
+                    version: svc.version
+                }
                 );
 
-                var get = { count: 1 };
-                var post = null;
-                var body = null;
-                service.request("search/jobs", "GET", get, post, body, { "X-TestHeader": 1 }, function (err, res) {
-                    assert.strictEqual(res.data.paging.offset, 0);
-                    assert.ok(res.data.entry.length <= res.data.paging.total);
-                    assert.strictEqual(res.data.entry.length, 1);
-                    assert.ok(res.data.entry[0].content.sid);
-
-                    if (res.response.request) {
-                        assert.strictEqual(res.response.request.headers["X-TestHeader"], 1);
-                    }
-
-                    done();
-                });
+                let get = { count: 1 };
+                let post = null;
+                let body = null;
+                let res;
+                try {
+                    res = await service.request("search/jobs", "GET", get, post, body, { "X-TestHeader": 1 });
+                } catch (error) {
+                    assert.ok(error);
+                    assert.strictEqual(error.status, 401);
+                }
+                assert.ok(!res);
             });
 
-            it("Callback#request autologin - error", function (done) {
-                var service = new splunkjs.Service(
-                    {
-                        scheme: this.service.scheme,
-                        host: this.service.host,
-                        port: this.service.port,
-                        username: this.service.username,
-                        password: this.service.password + "ABC",
-                        version: svc.version
-                    }
-                );
-
-                var get = { count: 1 };
-                var post = null;
-                var body = null;
-                service.request("search/jobs", "GET", get, post, body, { "X-TestHeader": 1 }, function (err, res) {
-                    assert.ok(err);
-                    assert.strictEqual(err.status, 401);
-                    done();
-                });
+            it("Abort", async function () {
+                let res;
+                try {
+                    res = await this.service.get("search/jobs", { count: 1 }, response_timeout = 1);
+                } catch (error) {
+                    assert.ok(error);
+                    assert.strictEqual(error.error, "abort");
+                    assert.strictEqual(error.status, "abort");
+                }
+                assert.ok(!res);
             });
 
-            it("Callback#request autologin - disabled", function (done) {
-                var service = new splunkjs.Service(
-                    {
-                        scheme: this.service.scheme,
-                        host: this.service.host,
-                        port: this.service.port,
-                        username: this.service.username,
-                        password: this.service.password,
-                        autologin: false,
-                        version: svc.version
-                    }
-                );
-
-                var get = { count: 1 };
-                var post = null;
-                var body = null;
-                service.request("search/jobs", "GET", get, post, body, { "X-TestHeader": 1 }, function (err, res) {
-                    assert.ok(err);
-                    assert.strictEqual(err.status, 401);
-                    done();
+            it("Timeout default test", async function () {
+                let service = new splunkjs.Service({
+                    scheme: this.service.scheme,
+                    host: this.service.host,
+                    port: this.service.port,
+                    username: this.service.username,
+                    password: this.service.password,
+                    version: svc.version
                 });
-            });
-
-            it("Callback#request relogin - success", function (done) {
-                var service = new splunkjs.Service(
-                    {
-                        scheme: this.service.scheme,
-                        host: this.service.host,
-                        port: this.service.port,
-                        username: this.service.username,
-                        password: this.service.password,
-                        sessionKey: "ABCDEF-not-real",
-                        version: svc.version
-                    }
-                );
-
-                var get = { count: 1 };
-                var post = null;
-                var body = null;
-                service.request("search/jobs", "GET", get, post, body, { "X-TestHeader": 1 }, function (err, res) {
-                    assert.strictEqual(res.data.paging.offset, 0);
-                    assert.ok(res.data.entry.length <= res.data.paging.total);
-                    assert.strictEqual(res.data.entry.length, 1);
-                    assert.ok(res.data.entry[0].content.sid);
-
-                    if (res.response.request) {
-                        assert.strictEqual(res.response.request.headers["X-TestHeader"], 1);
-                    }
-
-                    done();
-                });
-            });
-
-            it("Callback#request relogin - error", function (done) {
-                var service = new splunkjs.Service(
-                    {
-                        scheme: this.service.scheme,
-                        host: this.service.host,
-                        port: this.service.port,
-                        username: this.service.username,
-                        password: this.service.password + "ABC",
-                        sessionKey: "ABCDEF-not-real",
-                        version: svc.version
-                    }
-                );
-
-                var get = { count: 1 };
-                var post = null;
-                var body = null;
-                service.request("search/jobs", "GET", get, post, body, { "X-TestHeader": 1 }, function (err, res) {
-                    assert.ok(err);
-                    assert.strictEqual(err.status, 401);
-                    done();
-                });
-            });
-
-            it("Callback#abort", function (done) {
-                var req = this.service.get("search/jobs", { count: 1 }, function (err, res) {
-                    assert.ok(!res);
-                    assert.ok(err);
-                    assert.strictEqual(err.error, "abort");
-                    assert.strictEqual(err.status, "abort");
-                    done();
-                });
-
-                req.abort();
-            });
-
-            it("Callback#timeout default test", function (done) {
-                var service = new splunkjs.Service(
-                    {
-                        scheme: this.service.scheme,
-                        host: this.service.host,
-                        port: this.service.port,
-                        username: this.service.username,
-                        password: this.service.password,
-                        version: svc.version
-                    }
-                );
 
                 assert.strictEqual(0, service.timeout);
-                service.request("search/jobs", "GET", { count: 1 }, null, null, { "X-TestHeader": 1 }, function (err, res) {
-                    assert.ok(res);
-                    done();
-                });
+                let res = await service.request("search/jobs", "GET", { count: 1 }, null, null, { "X-TestHeader": 1 });
+                assert.ok(res);
             });
 
-            it("Callback#timeout timed test", function (done) {
-                var service = new splunkjs.Service(
-                    {
-                        scheme: this.service.scheme,
-                        host: this.service.host,
-                        port: this.service.port,
-                        username: this.service.username,
-                        password: this.service.password,
-                        version: svc.version,
-                        timeout: 10000
-                    }
-                );
+            it("Timeout timed test", async function () {
+                let service = new splunkjs.Service({
+                    scheme: this.service.scheme,
+                    host: this.service.host,
+                    port: this.service.port,
+                    username: this.service.username,
+                    password: this.service.password,
+                    version: svc.version,
+                    timeout: 10000
+                });
 
                 assert.strictEqual(service.timeout, 10000);
-                service.request("search/jobs", "GET", { count: 1 }, null, null, { "X-TestHeader": 1 }, function (err, res) {
-                    assert.ok(res);
-                    done();
-                });
+                let res = await service.request("search/jobs", "GET", { count: 1 }, null, null, { "X-TestHeader": 1 });
+                assert.ok(res);
             });
 
             // This test is not stable, commenting it out until we figure it out
@@ -716,24 +662,22 @@ exports.setup = function (svc) {
             //     });
             // },
 
-            it("Cancel test search", function (done) {
+            it("Cancel test search", async function () {
                 // Here, the search created for several of the previous tests is terminated, it is no longer necessary
-                var endpoint = "search/jobs/DELETEME_JSSDK_UNITTEST/control";
-                this.service.post(endpoint, { action: "cancel" }, function (err, res) {
-                    done();
-                });
+                let endpoint = "search/jobs/DELETEME_JSSDK_UNITTEST/control";
+                await this.service.post(endpoint, { action: "cancel" });
             });
 
-            it("fullpath gets its owner/app from the right places", function (done) {
-                var http = tutils.DummyHttp;
-                var ctx = new splunkjs.Context(http, { /*nothing*/ });
+            it("Fullpath gets its owner/app from the right places", function (done) {
+                let http = tutils.DummyHttp;
+                let ctx = new splunkjs.Context(http, { /*nothing*/ });
 
                 // Absolute paths are unchanged
                 assert.strictEqual(ctx.fullpath("/a/b/c"), "/a/b/c");
                 // Fall through to /services if there is no app
                 assert.strictEqual(ctx.fullpath("meep"), "/services/meep");
                 // Are username and app set properly?
-                var ctx2 = new splunkjs.Context(http, { owner: "alpha", app: "beta" });
+                let ctx2 = new splunkjs.Context(http, { owner: "alpha", app: "beta" });
                 assert.strictEqual(ctx2.fullpath("meep"), "/servicesNS/alpha/beta/meep");
                 assert.strictEqual(ctx2.fullpath("meep", { owner: "boris" }), "/servicesNS/boris/beta/meep");
                 assert.strictEqual(ctx2.fullpath("meep", { app: "factory" }), "/servicesNS/alpha/factory/meep");
@@ -743,14 +687,14 @@ exports.setup = function (svc) {
                 assert.strictEqual(ctx2.fullpath("meep", { sharing: "global" }), "/servicesNS/nobody/beta/meep");
                 assert.strictEqual(ctx2.fullpath("meep", { sharing: "system" }), "/servicesNS/nobody/system/meep");
                 // Do special characters get encoded?
-                var ctx3 = new splunkjs.Context(http, { owner: "alpha@beta.com", app: "beta" });
+                let ctx3 = new splunkjs.Context(http, { owner: "alpha@beta.com", app: "beta" });
                 assert.strictEqual(ctx3.fullpath("meep"), "/servicesNS/alpha%40beta.com/beta/meep");
                 done();
             });
 
-            it("version check", function (done) {
-                var http = tutils.DummyHttp;
-                var ctx;
+            it("Version check", function (done) {
+                let http = tutils.DummyHttp;
+                let ctx;
 
                 ctx = new splunkjs.Context(http, { "version": "4.0" });
                 assert.ok(ctx.version === "4.0");
@@ -788,283 +732,245 @@ exports.setup = function (svc) {
         }),
 
         describe("Cookie Tests", function (done) {
-            before(function (done) {
+            before(async function () {
                 this.service = svc;
                 this.skip = false;
                 var that = this;
-                svc.serverInfo(function (err, info) {
-                    var majorVersion = parseInt(info.properties().version.split(".")[0], 10);
-                    var minorVersion = parseInt(info.properties().version.split(".")[1], 10);
-                    // Skip cookie tests if Splunk older than 6.2
-                    if (majorVersion < 6 || (majorVersion === 6 && minorVersion < 2)) {
-                        that.skip = true;
-                        splunkjs.Logger.log("Skipping cookie tests...");
-                    }
-                    done();
-                });
+                let info = await svc.serverInfo();
+                let majorVersion = parseInt(info.properties().version.split(".")[0], 10);
+                let minorVersion = parseInt(info.properties().version.split(".")[1], 10);
+                // Skip cookie tests if Splunk older than 6.2
+                if (majorVersion < 6 || (majorVersion === 6 && minorVersion < 2)) {
+                    that.skip = true;
+                    splunkjs.Logger.log("Skipping cookie tests...");
+                }
             });
 
-            after(function (done) {
-                this.service.logout(done);
+            after(async function () {
+                await this.service.logout();
             });
 
             it("_getCookieString works as expected", function (done) {
-                var service = new splunkjs.Service(
-                    {
-                        scheme: svc.scheme,
-                        host: svc.host,
-                        port: svc.port
-                    });
+                let service = new splunkjs.Service({
+                    scheme: svc.scheme,
+                    host: svc.host,
+                    port: svc.port
+                });
 
                 service.http._cookieStore = {
                     'cookie': 'format',
                     'another': 'one'
                 };
 
-                var expectedCookieString = 'cookie=format; another=one; ';
-                var cookieString = service.http._getCookieString();
+                let expectedCookieString = 'cookie=format; another=one; ';
+                let cookieString = service.http._getCookieString();
 
                 assert.strictEqual(cookieString, expectedCookieString);
                 done();
             });
 
-            it("login and store cookie", function (done) {
+            it("Login and store cookie", async function () {
                 if (this.skip) {
-                    done();
                     return;
                 }
-                var service = new splunkjs.Service(
-                    {
-                        scheme: svc.scheme,
-                        host: svc.host,
-                        port: svc.port,
-                        username: svc.username,
-                        password: svc.password,
-                        version: svc.version
-                    });
+                let service = new splunkjs.Service({
+                    scheme: svc.scheme,
+                    host: svc.host,
+                    port: svc.port,
+                    username: svc.username,
+                    password: svc.password,
+                    version: svc.version
+                });
 
                 // Check that there are no cookies
                 assert.ok(utils.isEmpty(service.http._cookieStore));
-
-
-                service.login(function (err, success) {
-                    // Check that cookies were saved
-                    assert.ok(!utils.isEmpty(service.http._cookieStore));
-                    assert.notStrictEqual(service.http._getCookieString(), '');
-                    done();
-                });
+                await service.login();
+                // Check that cookies were saved
+                assert.ok(!utils.isEmpty(service.http._cookieStore));
+                assert.notStrictEqual(service.http._getCookieString(), '');
             });
 
-            it("request with cookie", function (done) {
+            it("Request with cookie", async function () {
                 if (this.skip) {
-                    done();
                     return;
                 }
-                var service = new splunkjs.Service(
-                    {
-                        scheme: svc.scheme,
-                        host: svc.host,
-                        port: svc.port,
-                        username: svc.username,
-                        password: svc.password,
-                        version: svc.version
-                    });
+                let service = new splunkjs.Service({
+                    scheme: svc.scheme,
+                    host: svc.host,
+                    port: svc.port,
+                    username: svc.username,
+                    password: svc.password,
+                    version: svc.version
+                });
                 // Create another service to put valid cookie into, give no other authentication information
-                var service2 = new splunkjs.Service(
-                    {
-                        scheme: svc.scheme,
-                        host: svc.host,
-                        port: svc.port,
-                        version: svc.version
-                    });
+                let service2 = new splunkjs.Service({
+                    scheme: svc.scheme,
+                    host: svc.host,
+                    port: svc.port,
+                    version: svc.version
+                });
 
-                // Login to service to get a valid cookie
-                Async.chain([
-                    function (done) {
-                        service.login(done);
-                    },
-                    function (job, done) {
-                        // Save the cookie store
-                        var cookieStore = service.http._cookieStore;
-                        // Test that there are cookies
-                        assert.ok(!utils.isEmpty(cookieStore));
-                        // Add the cookies to a service with no other authentication information
-                        service2.http._cookieStore = cookieStore;
-                        // Make a request that requires authentication
-                        service2.get("search/jobs", { count: 1 }, done);
-                    },
-                    function (res, done) {
-                        // Test that a response was returned
-                        assert.ok(res);
-                        done();
-                    }
-                ],
-                    function (err) {
-                        // Test that no errors were returned
-                        assert.ok(!err);
-                        done();
-                    }
-                );
+                try {
+                    // Login to service to get a valid cookie
+                    await service.login();
+                    // Save the cookie store
+                    let cookieStore = service.http._cookieStore;
+                    // Test that there are cookies
+                    assert.ok(!utils.isEmpty(cookieStore));
+                    // Add the cookies to a service with no other authentication information
+                    service2.http._cookieStore = cookieStore;
+                    // Make a request that requires authentication
+                    let resp = await service2.get("search/jobs", { count: 1 });
+                    // Test that a response was returned
+                    assert.ok(resp);
+                } catch (error) {
+                    // Test that no errors were returned
+                    assert.ok(!error);
+                }
             });
 
-            it("request fails with bad cookie", function (done) {
+            it("Request fails with bad cookie", async function () {
                 if (this.skip) {
-                    done();
                     return;
                 }
                 // Create a service with no login information
-                var service = new splunkjs.Service(
-                    {
-                        scheme: svc.scheme,
-                        host: svc.host,
-                        port: svc.port,
-                        version: svc.version
-                    });
+                let service = new splunkjs.Service({
+                    scheme: svc.scheme,
+                    host: svc.host,
+                    port: svc.port,
+                    version: svc.version
+                });
 
                 // Put a bad cookie into the service
                 service.http._cookieStore = { "bad": "cookie" };
 
                 // Try requesting something that requires authentication
-                service.get("search/jobs", { count: 1 }, function (err, res) {
+                let resp;
+                try {
+                    resp = await service.get("search/jobs", { count: 1 });
+                } catch (err) {
                     // Test if an error is returned
                     assert.ok(err);
                     // Check that it is an unauthorized error
                     assert.strictEqual(err.status, 401);
-                    done();
-                });
+                }
+                assert.ok(!resp);
             });
 
-            it("autologin with cookie", function (done) {
+            it("Autologin with cookie", async function () {
                 if (this.skip) {
-                    done();
                     return;
                 }
-                var service = new splunkjs.Service(
-                    {
-                        scheme: svc.scheme,
-                        host: svc.host,
-                        port: svc.port,
-                        username: svc.username,
-                        password: svc.password,
-                        version: svc.version
-                    });
+                let service = new splunkjs.Service({
+                    scheme: svc.scheme,
+                    host: svc.host,
+                    port: svc.port,
+                    username: svc.username,
+                    password: svc.password,
+                    version: svc.version
+                });
 
                 // Test if service has no cookies
                 assert.ok(utils.isEmpty(service.http._cookieStore));
 
-                service.get("search/jobs", { count: 1 }, function (err, res) {
-                    // Test if service now has a cookie
-                    assert.ok(service.http._cookieStore);
-                    done();
-                });
+                await service.get("search/jobs", { count: 1 });
+                // Test if service now has a cookie
+                assert.ok(service.http._cookieStore);
             });
 
-            it("login fails with no cookie and no sessionKey", function (done) {
+            it("Login fails with no cookie and no sessionKey", async function () {
                 if (this.skip) {
-                    done();
                     return;
                 }
-                var service = new splunkjs.Service(
-                    {
-                        scheme: svc.scheme,
-                        host: svc.host,
-                        port: svc.port,
-                        version: svc.version
-                    });
+                let service = new splunkjs.Service({
+                    scheme: svc.scheme,
+                    host: svc.host,
+                    port: svc.port,
+                    version: svc.version
+                });
 
                 // Test there is no authentication information
                 assert.ok(utils.isEmpty(service.http._cookieStore));
                 assert.strictEqual(service.sessionKey, '');
                 assert.ok(!service.username);
                 assert.ok(!service.password);
-
-                service.get("search/jobs", { count: 1 }, function (err, res) {
+                let res;
+                try {
+                    res = await service.get("search/jobs", { count: 1 });
+                } catch (error) {
                     // Test if an error is returned
-                    assert.ok(err);
-                    done();
-                });
+                    assert.ok(error);
+                }
+                assert.ok(!res);
             });
 
-            it("login with multiple cookies", function (done) {
+            it("Login with multiple cookies", async function () {
                 if (this.skip) {
-                    done();
                     return;
                 }
-                var service = new splunkjs.Service(
-                    {
-                        scheme: svc.scheme,
-                        host: svc.host,
-                        port: svc.port,
-                        username: svc.username,
-                        password: svc.password,
-                        version: svc.version
-                    });
+                let service = new splunkjs.Service({
+                    scheme: svc.scheme,
+                    host: svc.host,
+                    port: svc.port,
+                    username: svc.username,
+                    password: svc.password,
+                    version: svc.version
+                });
                 // Create another service to put valid cookie into, give no other authentication information
-                var service2 = new splunkjs.Service(
-                    {
-                        scheme: svc.scheme,
-                        host: svc.host,
-                        port: svc.port,
-                        version: svc.version
-                    });
+                let service2 = new splunkjs.Service({
+                    scheme: svc.scheme,
+                    host: svc.host,
+                    port: svc.port,
+                    version: svc.version
+                });
 
                 // Login to service to get a valid cookie
-                Async.chain([
-                    function (done) {
-                        service.login(done);
-                    },
-                    function (job, done) {
-                        // Save the cookie store
-                        var cookieStore = service.http._cookieStore;
-                        // Test that there are cookies
-                        assert.ok(!utils.isEmpty(cookieStore));
+                let res;
+                try {
+                    await service.login();
+                    // Save the cookie store
+                    let cookieStore = service.http._cookieStore;
+                    // Test that there are cookies
+                    assert.ok(!utils.isEmpty(cookieStore));
 
-                        // Add a bad cookie to the cookieStore
-                        cookieStore['bad'] = 'cookie';
+                    // Add a bad cookie to the cookieStore
+                    cookieStore['bad'] = 'cookie';
 
-                        // Add the cookies to a service with no other authenitcation information
-                        service2.http._cookieStore = cookieStore;
+                    // Add the cookies to a service with no other authenitcation information
+                    service2.http._cookieStore = cookieStore;
 
-                        // Make a request that requires authentication
-                        service2.get("search/jobs", { count: 1 }, done);
-                    },
-                    function (res, done) {
-                        // Test that a response was returned
-                        assert.ok(res);
-                        done();
-                    }
-                ],
-                    function (err) {
-                        // Test that no errors were returned
-                        assert.ok(!err);
-                        done();
-                    }
-                );
+                    // Make a request that requires authentication
+                    res = await service2.get("search/jobs", { count: 1 });
+                    // Test that a response was returned
+                } catch (error) {
+                    assert.ok(!error);
+                }
+                assert.ok(res);
             });
 
-            it("autologin with cookie and bad sessionKey", function (done) {
+            it("Autologin with cookie and bad sessionKey", async function () {
                 if (this.skip) {
-                    done();
                     return;
                 }
-                var service = new splunkjs.Service(
-                    {
-                        scheme: svc.scheme,
-                        host: svc.host, port: svc.port,
-                        username: svc.username,
-                        password: svc.password,
-                        sessionKey: 'ABC-BADKEY',
-                        version: svc.version
-                    });
+                let service = new splunkjs.Service({
+                    scheme: svc.scheme,
+                    host: svc.host, port: svc.port,
+                    username: svc.username,
+                    password: svc.password,
+                    sessionKey: 'ABC-BADKEY',
+                    version: svc.version
+                });
 
                 // Test if service has no cookies
                 assert.ok(utils.isEmpty(service.http._cookieStore));
-
-                service.get("search/jobs", { count: 1 }, function (err, res) {
+                try {
+                    await service.get("search/jobs", { count: 1 });
                     // Test if service now has a cookie
                     assert.ok(service.http._cookieStore);
-                    done();
-                });
+                } catch (error) {
+                    assert.ok(!error);
+                }
+
             });
         })
     )
@@ -1078,14 +984,14 @@ if (module.id === __filename && module.parent.id.includes('mocha')) {
     var options = require('./cmdline');
     var splunkjs = require('../index');
 
-    var cmdline = new options.create().parse(process.argv);
+    let cmdline = new options.create().parse(process.argv);
 
     // If there is no command line, we should return
     if (!cmdline) {
         throw new Error("Error in parsing command line parameters");
     }
 
-    var svc = new splunkjs.Service({
+    let svc = new splunkjs.Service({
         scheme: cmdline.opts.scheme,
         host: cmdline.opts.host,
         port: cmdline.opts.port,
@@ -1095,12 +1001,12 @@ if (module.id === __filename && module.parent.id.includes('mocha')) {
     });
 
     // Exports tests on a successful login
-    module.exports = new Promise((resolve, reject) => {
-        svc.login(function (err, success) {
-            if (err || !success) {
-                throw new Error("Login failed - not running tests", err || "");
-            }
-            return resolve(exports.setup(svc));
-        });
+    module.exports = new Promise(async (resolve, reject) => {
+        try {
+            await svc.login();
+            return resolve(exports.setup(svc))
+        } catch (error) {
+            throw new Error("Login failed - not running tests", error || "");
+        }
     });
 }

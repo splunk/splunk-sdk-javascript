@@ -4,32 +4,36 @@ var splunkjs = require('../../index');
 
 exports.setup = function (svc) {
     return (
-        describe("Endpoint tests", function (done) {
-            beforeEach(function (done) {
+        describe("Endpoint tests",  () => {
+            beforeEach(function () {
                 this.service = svc;
-                done();
             });
 
             it("Throws on null arguments to init", function (done) {
                 var service = this.service;
                 assert.throws(function () {
-                    var endpoint = new splunkjs.Service.Endpoint(null, "a/b");
+                    let endpoint = new splunkjs.Service.Endpoint(null, "a/b");
                 });
                 assert.throws(function () {
-                    var endpoint = new splunkjs.Service.Endpoint(service, null);
+                    let endpoint = new splunkjs.Service.Endpoint(service, null);
                 });
                 done();
             });
 
-            it("Endpoint delete on a relative path", function (done) {
+            it("Endpoint delete on a relative path", async function () {
                 var service = this.service;
-                var endpoint = new splunkjs.Service.Endpoint(service, "/search/jobs/12345");
-                endpoint.del("search/jobs/12345", {}, function () { done(); });
+                let endpoint = new splunkjs.Service.Endpoint(service, "/search/jobs/12345");
+                let res;
+                try {
+                    res = await endpoint.del("search/jobs/12345", {});
+                } catch (error) {
+                    assert.ok(error);
+                }
             });
 
             it("Methods of Resource to be overridden", function (done) {
                 var service = this.service;
-                var resource = new splunkjs.Service.Resource(service, "/search/jobs/12345");
+                let resource = new splunkjs.Service.Resource(service, "/search/jobs/12345");
                 assert.throws(function () { resource.path(); });
                 assert.throws(function () { resource.fetch(); });
                 assert.ok(splunkjs.Utils.isEmpty(resource.state()));
@@ -43,14 +47,14 @@ if (module.id === __filename && module.parent.id.includes('mocha')) {
     var splunkjs = require('../../index');
     var options = require('../cmdline');
 
-    var cmdline = options.create().parse(process.argv);
+    let cmdline = options.create().parse(process.argv);
 
     // If there is no command line, we should return
     if (!cmdline) {
         throw new Error("Error in parsing command line parameters");
     }
 
-    var svc = new splunkjs.Service({
+    let svc = new splunkjs.Service({
         scheme: cmdline.opts.scheme,
         host: cmdline.opts.host,
         port: cmdline.opts.port,
@@ -60,12 +64,12 @@ if (module.id === __filename && module.parent.id.includes('mocha')) {
     });
 
     // Exports tests on a successful login
-    module.exports = new Promise((resolve, reject) => {
-        svc.login(function (err, success) {
-            if (err || !success) {
-                throw new Error("Login failed - not running tests", err || "");
-            }
-            return resolve(exports.setup(svc));
-        });
+    module.exports = new Promise(async (resolve, reject) => {
+        try {
+            await svc.login();
+            return resolve(exports.setup(svc))
+        } catch (error) {
+            throw new Error("Login failed - not running tests", error || "");
+        }
     });
 }

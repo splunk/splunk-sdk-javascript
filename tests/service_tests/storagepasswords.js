@@ -1,229 +1,128 @@
-
 exports.setup = function (svc) {
     var assert = require('chai').assert;
     var splunkjs = require('../../index');
     var options = require('../cmdline');
     var parser = new options.create();
     var cmdline = parser.parse(process.argv);
-    var Async = splunkjs.Async;
     var idCounter = 0;
     var getNextId = function () {
         return "id" + (idCounter++) + "_" + ((new Date()).valueOf());
     };
     return (
-        describe("Storage Password Tests", function () {
-            beforeEach(function (done) {
+        describe("Storage Password Tests", () => {
+            beforeEach(function () {
                 this.service = svc;
-                done();
             });
 
-            it("Callback#Create", function (done) {
-                var startcount = -1;
-                var name = "delete-me-" + getNextId();
-                var realm = "delete-me-" + getNextId();
+            it("Create", async function () {
+                let startcount = -1;
+                let name = "delete-me-" + getNextId();
+                let realm = "delete-me-" + getNextId();
                 var that = this;
-                Async.chain([
-                    function (done) {
-                        that.service.storagePasswords().fetch(done);
-                    },
-                    function (storagePasswords, done) {
-                        startcount = storagePasswords.list().length;
-                        storagePasswords.create({ name: name, realm: realm, password: "changed!" }, done);
-                    },
-                    function (storagePassword, done) {
-                        assert.strictEqual(name, storagePassword.properties().username);
-                        assert.strictEqual(realm + ":" + name + ":", storagePassword.name);
-                        assert.strictEqual("changed!", storagePassword.properties().clear_password);
-                        assert.strictEqual(realm, storagePassword.properties().realm);
-                        that.service.storagePasswords().fetch(Async.augment(done, storagePassword));
-                    },
-                    function (storagePasswords, storagePassword, done) {
-                        assert.strictEqual(startcount + 1, storagePasswords.list().length);
-                        storagePassword.remove(done);
-                    },
-                    function (done) {
-                        that.service.storagePasswords().fetch(done);
-                    },
-                    function (storagePasswords, done) {
-                        assert.strictEqual(startcount, storagePasswords.list().length);
-                        done();
-                    }
-                ],
-                    function (err) {
-                        assert.ok(!err);
-                        done();
-                    }
-                );
+                let storagePasswords = await that.service.storagePasswords().fetch();
+                startcount = storagePasswords.list().length;
+                let storagePassword = await storagePasswords.create({ name: name, realm: realm, password: "changed!" });
+                assert.strictEqual(name, storagePassword.properties().username);
+                assert.strictEqual(realm + ":" + name + ":", storagePassword.name);
+                assert.strictEqual("changed!", storagePassword.properties().clear_password);
+                assert.strictEqual(realm, storagePassword.properties().realm);
+                storagePasswords = await that.service.storagePasswords().fetch();
+                assert.strictEqual(startcount + 1, storagePasswords.list().length);
+                await storagePassword.remove();
+                storagePasswords = await that.service.storagePasswords().fetch();
+                assert.strictEqual(startcount, storagePasswords.list().length);
             })
 
-            it("Callback#Create with backslashes", function (done) {
-                var startcount = -1;
-                var name = "\\delete-me-" + getNextId();
-                var realm = "\\delete-me-" + getNextId();
+            it("Create with backslashes", async function () {
+                let startcount = -1;
+                let name = "\\delete-me-" + getNextId();
+                let realm = "\\delete-me-" + getNextId();
                 var that = this;
-                Async.chain([
-                    function (done) {
-                        that.service.storagePasswords().fetch(done);
-                    },
-                    function (storagePasswords, done) {
-                        startcount = storagePasswords.list().length;
-                        storagePasswords.create({ name: name, realm: realm, password: "changed!" }, done);
-                    },
-                    function (storagePassword, done) {
-                        assert.strictEqual(name, storagePassword.properties().username);
-                        assert.strictEqual("\\" + realm + ":\\" + name + ":", storagePassword.name);
-                        assert.strictEqual("changed!", storagePassword.properties().clear_password);
-                        assert.strictEqual(realm, storagePassword.properties().realm);
-                        that.service.storagePasswords().fetch(Async.augment(done, storagePassword));
-                    },
-                    function (storagePasswords, storagePassword, done) {
-                        assert.strictEqual(startcount + 1, storagePasswords.list().length);
-                        storagePassword.remove(done);
-                    },
-                    function (done) {
-                        that.service.storagePasswords().fetch(done);
-                    },
-                    function (storagePasswords, done) {
-                        assert.strictEqual(startcount, storagePasswords.list().length);
-                        done();
-                    }
-                ],
-                    function (err) {
-                        assert.ok(!err);
-                        done();
-                    }
-                );
+                let storagePasswords = await that.service.storagePasswords().fetch();
+                startcount = storagePasswords.list().length;
+                let storagePassword = await storagePasswords.create({ name: name, realm: realm, password: "changed!" });
+                assert.strictEqual(name, storagePassword.properties().username);
+                assert.strictEqual("\\" + realm + ":\\" + name + ":", storagePassword.name);
+                assert.strictEqual("changed!", storagePassword.properties().clear_password);
+                assert.strictEqual(realm, storagePassword.properties().realm);
+                storagePasswords = await that.service.storagePasswords().fetch();
+                assert.strictEqual(startcount + 1, storagePasswords.list().length);
+                await storagePassword.remove();
+                storagePasswords = await that.service.storagePasswords().fetch();
+                assert.strictEqual(startcount, storagePasswords.list().length);
             })
 
-            it("Callback#Create with slashes", function (done) {
-                var startcount = -1;
-                var name = "/delete-me-" + getNextId();
-                var realm = "/delete-me-" + getNextId();
+            it("Create with slashes", async function () {
+                let startcount = -1;
+                let name = "/delete-me-" + getNextId();
+                let realm = "/delete-me-" + getNextId();
                 var that = this;
-                Async.chain([
-                    function (done) {
-                        that.service.storagePasswords().fetch(done);
-                    },
-                    function (storagePasswords, done) {
-                        startcount = storagePasswords.list().length;
-                        storagePasswords.create({ name: name, realm: realm, password: "changed!" }, done);
-                    },
-                    function (storagePassword, done) {
-                        assert.strictEqual(name, storagePassword.properties().username);
-                        assert.strictEqual(realm + ":" + name + ":", storagePassword.name);
-                        assert.strictEqual("changed!", storagePassword.properties().clear_password);
-                        assert.strictEqual(realm, storagePassword.properties().realm);
-                        that.service.storagePasswords().fetch(Async.augment(done, storagePassword));
-                    },
-                    function (storagePasswords, storagePassword, done) {
-                        assert.strictEqual(startcount + 1, storagePasswords.list().length);
-                        storagePassword.remove(done);
-                    },
-                    function (done) {
-                        that.service.storagePasswords().fetch(done);
-                    },
-                    function (storagePasswords, done) {
-                        assert.strictEqual(startcount, storagePasswords.list().length);
-                        done();
-                    }
-                ],
-                    function (err) {
-                        assert.ok(!err);
-                        done();
-                    }
-                );
+                let storagePasswords = await that.service.storagePasswords().fetch();
+                startcount = storagePasswords.list().length;
+                let storagePassword = await storagePasswords.create({ name: name, realm: realm, password: "changed!" });
+                assert.strictEqual(name, storagePassword.properties().username);
+                assert.strictEqual(realm + ":" + name + ":", storagePassword.name);
+                assert.strictEqual("changed!", storagePassword.properties().clear_password);
+                assert.strictEqual(realm, storagePassword.properties().realm);
+                storagePasswords = await that.service.storagePasswords().fetch();
+                assert.strictEqual(startcount + 1, storagePasswords.list().length);
+                await storagePassword.remove();
+                storagePasswords = await that.service.storagePasswords().fetch();
+                assert.strictEqual(startcount, storagePasswords.list().length);
             })
 
-            it("Callback#Create without realm", function (done) {
-                var startcount = -1;
-                var name = "delete-me-" + getNextId();
+            it("Create without realm", async function () {
+                let startcount = -1;
+                let name = "delete-me-" + getNextId();
                 var that = this;
-                Async.chain([
-                    function (done) {
-                        that.service.storagePasswords().fetch(done);
-                    },
-                    function (storagePasswords, done) {
-                        startcount = storagePasswords.list().length;
-                        storagePasswords.create({ name: name, password: "changed!" }, done);
-                    },
-                    function (storagePassword, done) {
-                        assert.strictEqual(name, storagePassword.properties().username);
-                        assert.strictEqual(":" + name + ":", storagePassword.name);
-                        assert.strictEqual("changed!", storagePassword.properties().clear_password);
-                        assert.strictEqual("", storagePassword.properties().realm);
-                        that.service.storagePasswords().fetch(Async.augment(done, storagePassword));
-                    },
-                    function (storagePasswords, storagePassword, done) {
-                        assert.strictEqual(startcount + 1, storagePasswords.list().length);
-                        storagePassword.remove(done);
-                    },
-                    function (done) {
-                        that.service.storagePasswords().fetch(done);
-                    },
-                    function (storagePasswords, done) {
-                        assert.strictEqual(startcount, storagePasswords.list().length);
-                        done();
-                    }
-                ],
-                    function (err) {
-                        assert.ok(!err);
-                        done();
-                    }
-                );
+                let storagePasswords = await that.service.storagePasswords().fetch();
+                startcount = storagePasswords.list().length;
+                let storagePassword = await storagePasswords.create({ name: name, password: "changed!" });
+                assert.strictEqual(name, storagePassword.properties().username);
+                assert.strictEqual(":" + name + ":", storagePassword.name);
+                assert.strictEqual("changed!", storagePassword.properties().clear_password);
+                assert.strictEqual("", storagePassword.properties().realm);
+                storagePasswords = await that.service.storagePasswords().fetch();
+                assert.strictEqual(startcount + 1, storagePasswords.list().length);
+                await storagePassword.remove();
+                storagePasswords = await that.service.storagePasswords().fetch();
+                assert.strictEqual(startcount, storagePasswords.list().length);
             })
 
-            it("Callback#Create should fail without user, or realm", function (done) {
+            it("Create should fail without user, or realm", async function () {
                 var that = this;
-                Async.chain([
-                    function (done) {
-                        that.service.storagePasswords().fetch(done);
-                    },
-                    function (storagePasswords, done) {
-                        storagePasswords.create({ name: null, password: "changed!" }, done);
-                    }
-                ],
-                    function (err) {
-                        assert.ok(err);
-                        done();
-                    }
-                );
+                let storagePasswords = that.service.storagePasswords().fetch();
+                try {
+                    let res = await storagePasswords.create({ name: null, password: "changed!" });
+                    assert.ok(!res);
+                } catch (error) {
+                    assert.ok(error);
+                }
             })
 
-            it("Callback#Create should fail without password", function (done) {
+            it("Create should fail without password", async function () {
                 var that = this;
-                Async.chain([
-                    function (done) {
-                        that.service.storagePasswords().fetch(done);
-                    },
-                    function (storagePasswords, done) {
-                        storagePasswords.create({ name: "something", password: null }, done);
-                    }
-                ],
-                    function (err) {
-                        assert.ok(err);
-                        done();
-                    }
-                );
+                let storagePasswords = that.service.storagePasswords().fetch();
+                try {
+                    let res = await storagePasswords.create({ name: "something", password: null });
+                    assert.ok(!res);
+                } catch (error) {
+                    assert.ok(error);
+                }
             })
 
-            it("Callback#Create should fail without user, realm, or password", function (done) {
+            it("Create should fail without user, realm, or password", async function () {
                 var that = this;
-                Async.chain([
-                    function (done) {
-                        that.service.storagePasswords().fetch(done);
-                    },
-                    function (storagePasswords, done) {
-                        storagePasswords.create({ name: null, password: null }, done);
-                    }
-                ],
-                    function (err) {
-                        assert.ok(err);
-                        done();
-                    }
-                );
+                let storagePasswords = that.service.storagePasswords().fetch();
+                try {
+                    let res = await storagePasswords.create({ name: null, password: null });
+                    assert.ok(!res);
+                } catch (error) {
+                    assert.ok(error);
+                }
             })
 
-            it("Callback#Create should fail if app or owner have wildcard", function (done) {
+            it("Create should fail if app or owner have wildcard", async function () {
                 var service = new splunkjs.Service({
                     scheme: cmdline.opts.scheme,
                     host: cmdline.opts.host,
@@ -238,246 +137,128 @@ exports.setup = function (svc) {
                 assert.throws(function (){
                     storagePasswords.create({ name: "delete-me-" + getNextId(), password: 'changed!' })
                 });
-                done();
-            })
-            
-            it("Callback#Create with colons", function (done) {
-                var startcount = -1;
-                var name = ":delete-me-" + getNextId();
-                var realm = ":delete-me-" + getNextId();
-                var that = this;
-                Async.chain([
-                    function (done) {
-                        that.service.storagePasswords().fetch(done);
-                    },
-                    function (storagePasswords, done) {
-                        startcount = storagePasswords.list().length;
-                        storagePasswords.create({ name: name, realm: realm, password: "changed!" }, done);
-                    },
-                    function (storagePassword, done) {
-                        assert.strictEqual(name, storagePassword.properties().username);
-                        assert.strictEqual("\\" + realm + ":\\" + name + ":", storagePassword.name);
-                        assert.strictEqual("changed!", storagePassword.properties().clear_password);
-                        assert.strictEqual(realm, storagePassword.properties().realm);
-                        that.service.storagePasswords().fetch(Async.augment(done, storagePassword));
-                    },
-                    function (storagePasswords, storagePassword, done) {
-                        assert.strictEqual(startcount + 1, storagePasswords.list().length);
-                        storagePassword.remove(done);
-                    },
-                    function (done) {
-                        that.service.storagePasswords().fetch(done);
-                    },
-                    function (storagePasswords, done) {
-                        assert.strictEqual(startcount, storagePasswords.list().length);
-                        done();
-                    }
-                ],
-                    function (err) {
-                        assert.ok(!err);
-                        done();
-                    }
-                );
             })
 
-            it("Callback#Create crazy", function (done) {
-                var startcount = -1;
-                var name = "delete-me-" + getNextId();
-                var realm = "delete-me-" + getNextId();
+            it("Create with colons", async function () {
+                let startcount = -1;
+                let name = ":delete-me-" + getNextId();
+                let realm = ":delete-me-" + getNextId();
                 var that = this;
-                Async.chain([
-                    function (done) {
-                        that.service.storagePasswords().fetch(done);
-                    },
-                    function (storagePasswords, done) {
-                        startcount = storagePasswords.list().length;
-                        storagePasswords.create({
-                            name: name + ":end!@#$%^&*()_+{}:|<>?",
-                            realm: ":start::!@#$%^&*()_+{}:|<>?" + realm,
-                            password: "changed!"
-                        },
-                            done);
-                    },
-                    function (storagePassword, done) {
-                        assert.strictEqual(name + ":end!@#$%^&*()_+{}:|<>?", storagePassword.properties().username);
-                        assert.strictEqual("\\:start\\:\\:!@#$%^&*()_+{}\\:|<>?" + realm + ":" + name + "\\:end!@#$%^&*()_+{}\\:|<>?:", storagePassword.name);
-                        assert.strictEqual("changed!", storagePassword.properties().clear_password);
-                        assert.strictEqual(":start::!@#$%^&*()_+{}:|<>?" + realm, storagePassword.properties().realm);
-                        that.service.storagePasswords().fetch(Async.augment(done, storagePassword));
-                    },
-                    function (storagePasswords, storagePassword, done) {
-                        assert.strictEqual(startcount + 1, storagePasswords.list().length);
-                        storagePassword.remove(done);
-                    },
-                    function (done) {
-                        that.service.storagePasswords().fetch(done);
-                    },
-                    function (storagePasswords, done) {
-                        assert.strictEqual(startcount, storagePasswords.list().length);
-                        done();
-                    }
-                ],
-                    function (err) {
-                        assert.ok(!err);
-                        done();
-                    }
-                );
+                let storagePasswords = await that.service.storagePasswords().fetch();
+                startcount = storagePasswords.list().length;
+                let storagePassword = await storagePasswords.create({ name: name, realm: realm, password: "changed!" });
+                assert.strictEqual(name, storagePassword.properties().username);
+                assert.strictEqual("\\" + realm + ":\\" + name + ":", storagePassword.name);
+                assert.strictEqual("changed!", storagePassword.properties().clear_password);
+                assert.strictEqual(realm, storagePassword.properties().realm);
+                storagePasswords = await that.service.storagePasswords().fetch();
+                assert.strictEqual(startcount + 1, storagePasswords.list().length);
+                await storagePassword.remove();
+                storagePasswords = await that.service.storagePasswords().fetch();
+                assert.strictEqual(startcount, storagePasswords.list().length);
             })
 
-            it("Callback#Create with unicode chars", function (done) {
-                var startcount = -1;
-                var name = "delete-me-" + getNextId();
-                var realm = "delete-me-" + getNextId();
+            it("Create crazy", async function () {
+                let startcount = -1;
+                let name = "delete-me-" + getNextId();
+                let realm = "delete-me-" + getNextId();
                 var that = this;
-                Async.chain([
-                    function (done) {
-                        that.service.storagePasswords().fetch(done);
-                    },
-                    function (storagePasswords, done) {
-                        startcount = storagePasswords.list().length;
-                        storagePasswords.create({
-                            name: name + ":end!@#$%^&*()_+{}:|<>?쎼 and 쎶 and &lt;&amp;&gt; für",
-                            realm: ":start::!@#$%^&*()_+{}:|<>?" + encodeURIComponent("쎼 and 쎶 and &lt;&amp;&gt; für") + realm,
-                            password: decodeURIComponent(encodeURIComponent("쎼 and 쎶 and &lt;&amp;&gt; für"))
-                        },
-                            done);
-                    },
-                    function (storagePassword, done) {
-                        assert.strictEqual(name + ":end!@#$%^&*()_+{}:|<>?쎼 and 쎶 and &lt;&amp;&gt; für", storagePassword.properties().username);
-                        assert.strictEqual("\\:start\\:\\:!@#$%^&*()_+{}\\:|<>?" + encodeURIComponent("쎼 and 쎶 and &lt;&amp;&gt; für") + realm + ":" + name + "\\:end!@#$%^&*()_+{}\\:|<>?쎼 and 쎶 and &lt;&amp;&gt; für:", storagePassword.name);
-                        assert.strictEqual(decodeURIComponent(encodeURIComponent("쎼 and 쎶 and &lt;&amp;&gt; für")), storagePassword.properties().clear_password);
-                        assert.strictEqual(":start::!@#$%^&*()_+{}:|<>?" + encodeURIComponent("쎼 and 쎶 and &lt;&amp;&gt; für") + realm, storagePassword.properties().realm);
-                        that.service.storagePasswords().fetch(Async.augment(done, storagePassword));
-                    },
-                    function (storagePasswords, storagePassword, done) {
-                        assert.strictEqual(startcount + 1, storagePasswords.list().length);
-                        storagePassword.remove(done);
-                    },
-                    function (done) {
-                        that.service.storagePasswords().fetch(done);
-                    },
-                    function (storagePasswords, done) {
-                        assert.strictEqual(startcount, storagePasswords.list().length);
-                        done();
-                    }
-                ],
-                    function (err) {
-                        assert.ok(!err);
-                        done();
-                    }
-                );
+                let storagePasswords = await that.service.storagePasswords().fetch();
+                startcount = storagePasswords.list().length;
+                let storagePassword = await storagePasswords.create({
+                    name: name + ":end!@#$%^&*()_+{}:|<>?",
+                    realm: ":start::!@#$%^&*()_+{}:|<>?" + realm,
+                    password: "changed!"
+                });
+                assert.strictEqual(name + ":end!@#$%^&*()_+{}:|<>?", storagePassword.properties().username);
+                assert.strictEqual("\\:start\\:\\:!@#$%^&*()_+{}\\:|<>?" + realm + ":" + name + "\\:end!@#$%^&*()_+{}\\:|<>?:", storagePassword.name);
+                assert.strictEqual("changed!", storagePassword.properties().clear_password);
+                assert.strictEqual(":start::!@#$%^&*()_+{}:|<>?" + realm, storagePassword.properties().realm);
+                storagePasswords = await that.service.storagePasswords().fetch();
+                assert.strictEqual(startcount + 1, storagePasswords.list().length);
+                await storagePassword.remove();
+                storagePasswords = await that.service.storagePasswords().fetch();
+                assert.strictEqual(startcount, storagePasswords.list().length);
             })
 
-            it("Callback#Read", function (done) {
-                var startcount = -1;
-                var name = "delete-me-" + getNextId();
-                var realm = "delete-me-" + getNextId();
+            it("Create with unicode chars", async function () {
+                let startcount = -1;
+                let name = "delete-me-" + getNextId();
+                let realm = "delete-me-" + getNextId();
                 var that = this;
-                Async.chain([
-                    function (done) {
-                        that.service.storagePasswords().fetch(done);
-                    },
-                    function (storagePasswords, done) {
-                        startcount = storagePasswords.list().length;
-                        storagePasswords.create({ name: name, realm: realm, password: "changed!" }, done);
-                    },
-                    function (storagePassword, done) {
-                        assert.strictEqual(name, storagePassword.properties().username);
-                        assert.strictEqual(realm + ":" + name + ":", storagePassword.name);
-                        assert.strictEqual("changed!", storagePassword.properties().clear_password);
-                        assert.strictEqual(realm, storagePassword.properties().realm);
-                        that.service.storagePasswords().fetch(Async.augment(done, storagePassword));
-                    },
-                    function (storagePasswords, storagePassword, done) {
-                        try {
-                            assert.ok(!!storagePasswords.item(realm + ":" + name + ":"));
-                        }
-                        catch (e) {
-                            assert.ok(false);
-                        }
-
-                        var list = storagePasswords.list();
-                        var found = false;
-
-                        assert.strictEqual(startcount + 1, list.length);
-                        for (var i = 0; i < list.length; i++) {
-                            if (realm + ":" + name + ":" === list[i].name) {
-                                found = true;
-                            }
-                        }
-                        assert.ok(found);
-
-                        storagePassword.remove(done);
-                    },
-                    function (done) {
-                        that.service.storagePasswords().fetch(done);
-                    },
-                    function (storagePasswords, done) {
-                        assert.strictEqual(startcount, storagePasswords.list().length);
-                        done();
-                    }
-                ],
-                    function (err) {
-                        assert.ok(!err);
-                        done();
-                    }
-                );
+                let storagePasswords = await that.service.storagePasswords().fetch();
+                startcount = storagePasswords.list().length;
+                let storagePassword = await storagePasswords.create({
+                    name: name + ":end!@#$%^&*()_+{}:|<>?쎼 and 쎶 and &lt;&amp;&gt; für",
+                    realm: ":start::!@#$%^&*()_+{}:|<>?" + encodeURIComponent("쎼 and 쎶 and &lt;&amp;&gt; für") + realm,
+                    password: decodeURIComponent(encodeURIComponent("쎼 and 쎶 and &lt;&amp;&gt; für"))
+                });
+                assert.strictEqual(name + ":end!@#$%^&*()_+{}:|<>?쎼 and 쎶 and &lt;&amp;&gt; für", storagePassword.properties().username);
+                assert.strictEqual("\\:start\\:\\:!@#$%^&*()_+{}\\:|<>?" + encodeURIComponent("쎼 and 쎶 and &lt;&amp;&gt; für") + realm + ":" + name + "\\:end!@#$%^&*()_+{}\\:|<>?쎼 and 쎶 and &lt;&amp;&gt; für:", storagePassword.name);
+                assert.strictEqual(decodeURIComponent(encodeURIComponent("쎼 and 쎶 and &lt;&amp;&gt; für")), storagePassword.properties().clear_password);
+                assert.strictEqual(":start::!@#$%^&*()_+{}:|<>?" + encodeURIComponent("쎼 and 쎶 and &lt;&amp;&gt; für") + realm, storagePassword.properties().realm);
+                storagePasswords = await that.service.storagePasswords().fetch();
+                assert.strictEqual(startcount + 1, storagePasswords.list().length);
+                await storagePassword.remove();
+                storagePasswords = await that.service.storagePasswords().fetch();
+                assert.strictEqual(startcount, storagePasswords.list().length);
             })
 
-            it("Callback#Read with slashes", function (done) {
-                var startcount = -1;
-                var name = "/delete-me-" + getNextId();
-                var realm = "/delete-me-" + getNextId();
+            it("Read", async function () {
+                let startcount = -1;
+                let name = "delete-me-" + getNextId();
+                let realm = "delete-me-" + getNextId();
                 var that = this;
-                Async.chain([
-                    function (done) {
-                        that.service.storagePasswords().fetch(done);
-                    },
-                    function (storagePasswords, done) {
-                        startcount = storagePasswords.list().length;
-                        storagePasswords.create({ name: name, realm: realm, password: "changed!" }, done);
-                    },
-                    function (storagePassword, done) {
-                        assert.strictEqual(name, storagePassword.properties().username);
-                        assert.strictEqual(realm + ":" + name + ":", storagePassword.name);
-                        assert.strictEqual("changed!", storagePassword.properties().clear_password);
-                        assert.strictEqual(realm, storagePassword.properties().realm);
-                        that.service.storagePasswords().fetch(Async.augment(done, storagePassword));
-                    },
-                    function (storagePasswords, storagePassword, done) {
-                        try {
-                            assert.ok(!!storagePasswords.item(realm + ":" + name + ":"));
-                        }
-                        catch (e) {
-                            assert.ok(false);
-                        }
+                let storagePasswords = await that.service.storagePasswords().fetch();
+                startcount = storagePasswords.list().length;
+                let storagePassword = await storagePasswords.create({ name: name, realm: realm, password: "changed!" });
+                assert.strictEqual(name, storagePassword.properties().username);
+                assert.strictEqual(realm + ":" + name + ":", storagePassword.name);
+                assert.strictEqual("changed!", storagePassword.properties().clear_password);
+                assert.strictEqual(realm, storagePassword.properties().realm);
+                storagePasswords = await that.service.storagePasswords().fetch();
+                assert.ok(!!storagePasswords.item(realm + ":" + name + ":"));
+                let list = storagePasswords.list();
+                let found = false;
 
-                        var list = storagePasswords.list();
-                        var found = false;
-
-                        assert.strictEqual(startcount + 1, list.length);
-                        for (var i = 0; i < list.length; i++) {
-                            if (realm + ":" + name + ":" === list[i].name) {
-                                found = true;
-                            }
-                        }
-                        assert.ok(found);
-
-                        storagePassword.remove(done);
-                    },
-                    function (done) {
-                        that.service.storagePasswords().fetch(done);
-                    },
-                    function (storagePasswords, done) {
-                        assert.strictEqual(startcount, storagePasswords.list().length);
-                        done();
+                assert.strictEqual(startcount + 1, list.length);
+                for (let i = 0; i < list.length; i++) {
+                    if (realm + ":" + name + ":" === list[i].name) {
+                        found = true;
                     }
-                ],
-                    function (err) {
-                        assert.ok(!err);
-                        done();
+                }
+                assert.ok(found);
+                await storagePassword.remove();
+                storagePasswords = await that.service.storagePasswords().fetch();
+                assert.strictEqual(startcount, storagePasswords.list().length);
+            })
+
+            it("Read with slashes", async function () {
+                let startcount = -1;
+                let name = "/delete-me-" + getNextId();
+                let realm = "/delete-me-" + getNextId();
+                var that = this;
+                let storagePasswords = await that.service.storagePasswords().fetch();
+                startcount = storagePasswords.list().length;
+                let storagePassword = await storagePasswords.create({ name: name, realm: realm, password: "changed!" });
+                assert.strictEqual(name, storagePassword.properties().username);
+                assert.strictEqual(realm + ":" + name + ":", storagePassword.name);
+                assert.strictEqual("changed!", storagePassword.properties().clear_password);
+                assert.strictEqual(realm, storagePassword.properties().realm);
+                storagePasswords = await that.service.storagePasswords().fetch();
+                assert.ok(!!storagePasswords.item(realm + ":" + name + ":"));
+                let list = storagePasswords.list();
+                let found = false;
+                assert.strictEqual(startcount + 1, list.length);
+                for (let i = 0; i < list.length; i++) {
+                    if (realm + ":" + name + ":" === list[i].name) {
+                        found = true;
                     }
-                );
+                }
+                assert.ok(found);
+                await storagePassword.remove();
+                storagePasswords = await that.service.storagePasswords().fetch();
+                assert.strictEqual(startcount, storagePasswords.list().length);
             })
 
             // Disabling this test because clear_password field has been removed in Splunk 8.2
@@ -554,80 +335,50 @@ exports.setup = function (svc) {
             //     );
             // },
 
-            it("Callback#Delete", function (done) {
-                var startcount = -1;
-                var name = "delete-me-" + getNextId();
-                var realm = "delete-me-" + getNextId();
+            it("Delete", async function () {
+                let startcount = -1;
+                let name = "delete-me-" + getNextId();
+                let realm = "delete-me-" + getNextId();
                 var that = this;
-                Async.chain([
-                    function (done) {
-                        that.service.storagePasswords().fetch(done);
-                    },
-                    function (storagePasswords, done) {
-                        startcount = storagePasswords.list().length;
-                        storagePasswords.create({ name: name, realm: realm, password: "changed!" }, done);
-                    },
-                    function (storagePassword, done) {
-                        assert.strictEqual(name, storagePassword.properties().username);
-                        assert.strictEqual(realm + ":" + name + ":", storagePassword.name);
-                        assert.strictEqual("changed!", storagePassword.properties().clear_password);
-                        assert.strictEqual(realm, storagePassword.properties().realm);
-                        that.service.storagePasswords().fetch(Async.augment(done, storagePassword));
-                    },
-                    function (storagePasswords, storagePassword, done) {
-                        assert.strictEqual(startcount + 1, storagePasswords.list().length);
-                        storagePassword.remove(done);
-                    },
-                    function (done) {
-                        that.service.storagePasswords().fetch(done);
-                    },
-                    function (storagePasswords, done) {
-                        assert.strictEqual(startcount, storagePasswords.list().length);
-                        storagePasswords.create({ name: name, realm: realm, password: "changed!" }, done);
-                    },
-                    function (storagePassword, done) {
-                        assert.strictEqual(name, storagePassword.properties().username);
-                        that.service.storagePasswords().fetch(done);
-                    },
-                    function (storagePasswords, done) {
-                        assert.strictEqual(startcount + 1, storagePasswords.list().length);
-                        var list = storagePasswords.list();
-                        var found = false;
-                        var index = -1;
-
-                        assert.strictEqual(startcount + 1, list.length);
-                        for (var i = 0; i < list.length; i++) {
-                            if (realm + ":" + name + ":" === list[i].name) {
-                                found = true;
-                                index = i;
-                                assert.strictEqual(name, list[i].properties().username);
-                                assert.strictEqual(realm + ":" + name + ":", list[i].name);
-                                assert.strictEqual("changed!", list[i].properties().clear_password);
-                                assert.strictEqual(realm, list[i].properties().realm);
-                            }
-                        }
-                        assert.ok(found);
-
-                        if (!found) {
-                            done(new Error("Didn't find the created password"));
-                        }
-                        else {
-                            list[index].remove(done);
-                        }
-                    },
-                    function (done) {
-                        that.service.storagePasswords().fetch(done);
-                    },
-                    function (storagePasswords, done) {
-                        assert.strictEqual(startcount, storagePasswords.list().length);
-                        done();
+                let storagePasswords = await that.service.storagePasswords().fetch();
+                startcount = storagePasswords.list().length;
+                let storagePassword = await storagePasswords.create({ name: name, realm: realm, password: "changed!" });
+                assert.strictEqual(name, storagePassword.properties().username);
+                assert.strictEqual(realm + ":" + name + ":", storagePassword.name);
+                assert.strictEqual("changed!", storagePassword.properties().clear_password);
+                assert.strictEqual(realm, storagePassword.properties().realm);
+                storagePasswords = await that.service.storagePasswords().fetch();
+                assert.strictEqual(startcount + 1, storagePasswords.list().length);
+                await storagePassword.remove();
+                storagePasswords = await that.service.storagePasswords().fetch();
+                assert.strictEqual(startcount, storagePasswords.list().length);
+                storagePassword = await storagePasswords.create({ name: name, realm: realm, password: "changed!" });
+                assert.strictEqual(name, storagePassword.properties().username);
+                storagePasswords = await that.service.storagePasswords().fetch();
+                assert.strictEqual(startcount + 1, storagePasswords.list().length);
+                let list = storagePasswords.list();
+                let found = false;
+                let index = -1;
+                assert.strictEqual(startcount + 1, list.length);
+                for (let i = 0; i < list.length; i++) {
+                    if (realm + ":" + name + ":" === list[i].name) {
+                        found = true;
+                        index = i;
+                        assert.strictEqual(name, list[i].properties().username);
+                        assert.strictEqual(realm + ":" + name + ":", list[i].name);
+                        assert.strictEqual("changed!", list[i].properties().clear_password);
+                        assert.strictEqual(realm, list[i].properties().realm);
                     }
-                ],
-                    function (err) {
-                        assert.ok(!err);
-                        done();
-                    }
-                );
+                }
+                assert.ok(found);
+                if (!found) {
+                    throw new Error("Didn't find the created password");
+                }
+                else {
+                    await list[index].remove();
+                }
+                storagePasswords = await that.service.storagePasswords().fetch();
+                assert.strictEqual(startcount, storagePasswords.list().length);
             })
         })
     );
@@ -637,14 +388,14 @@ if (module.id === __filename && module.parent.id.includes('mocha')) {
     var splunkjs = require('../../index');
     var options = require('../cmdline');
 
-    var cmdline = options.create().parse(process.argv);
+    let cmdline = options.create().parse(process.argv);
 
     // If there is no command line, we should return
     if (!cmdline) {
         throw new Error("Error in parsing command line parameters");
     }
 
-    var svc = new splunkjs.Service({
+    let svc = new splunkjs.Service({
         scheme: cmdline.opts.scheme,
         host: cmdline.opts.host,
         port: cmdline.opts.port,
@@ -654,12 +405,12 @@ if (module.id === __filename && module.parent.id.includes('mocha')) {
     });
 
     // Exports tests on a successful login
-    module.exports = new Promise((resolve, reject) => {
-        svc.login(function (err, success) {
-            if (err || !success) {
-                throw new Error("Login failed - not running tests", err || "");
-            }
-            return resolve(exports.setup(svc));
-        });
+    module.exports = new Promise(async (resolve, reject) => {
+        try {
+            await svc.login();
+            return resolve(exports.setup(svc))
+        } catch (error) {
+            throw new Error("Login failed - not running tests", error || "");
+        }
     });
 }

@@ -20,272 +20,238 @@ exports.setup = function (http) {
     splunkjs.Logger.setLevel("ALL");
 
     return (
-        describe("HTTP GET Tests", function (done) {
-            before(function (done) {
+        describe("HTTP GET Tests", () => {
+            before(function () {
                 this.http = http;
-                done();
             });
 
-            it("Callback#abort simple", function (done) {
-                var req = this.http.get("https://httpbin.org/get", {}, {}, 0, function (err, res) {
-                    assert.ok(err);
-                    assert.strictEqual(err.error, "abort");
-                    done();
-                });
-
-                req.abort();
+            it("Timeout simple", async function () {
+                try {
+                    //Response timeout set to 1ms i.e service call will abort after 1ms
+                    let res = await this.http.get("https://httpbin.org/get", {}, {}, 0, response_timeout = 1);
+                    assert.ok(!res);
+                } catch (error) {
+                    assert.ok(error);
+                    assert.strictEqual(error.error, "abort");
+                }
             });
 
-            it("Callback#abort delay", function (done) {
-                var req = this.http.get("https://httpbin.org/delay/20", {}, {}, 0, function (err, res) {
-                    assert.ok(err);
-                    assert.strictEqual(err.error, "abort");
-                    done();
-                });
-
-                splunkjs.Async.sleep(1000, function () {
-                    req.abort();
-                });
+            it("Timeout delay", async function () {
+                try {
+                    let req = await this.http.get("https://httpbin.org/delay/20", {}, {}, 0, response_timeout = 1000);
+                    assert.ok(!req);
+                } catch (error) {
+                    assert.ok(error);
+                    assert.strictEqual(error.error, "abort");
+                }
             });
 
-            it("Callback#no args", function (done) {
-                this.http.get("https://httpbin.org/get", [], {}, 0, function (err, res) {
+            it("No args", async function () {
+                let res = await this.http.get("https://httpbin.org/get", [], {}, 0);
+                assert.strictEqual(res.data.url, "https://httpbin.org/get");
+            });
+
+            it("Success and Error", async function () {
+                try {
+                    let res = await this.http.get("https://httpbin.org/get", [], {}, 0);
                     assert.strictEqual(res.data.url, "https://httpbin.org/get");
-                    done();
-                });
+                } catch (error) {
+                    assert.ok(!error);
+                }
             });
 
-            it("Callback#success success+error", function (done) {
-                this.http.get("https://httpbin.org/get", [], {}, 0, function (err, res) {
-                    assert.ok(!err);
-                    assert.strictEqual(res.data.url, "https://httpbin.org/get");
-                    done();
-                });
-            });
-
-            it("Callback#error all", function (done) {
+            it("Error all", async function () {
                 this.timeout(40000);
-                this.http.get("https://httpbin.org/status/404", [], {}, 0, function (err, res) {
-                    assert.strictEqual(err.status, 404);
-                    done();
-                });
+                try {
+                    let res = await this.http.get("https://httpbin.org/status/404", [], {}, 0);
+                    assert.ok(!res);
+                } catch (error) {
+                    assert.strictEqual(error.status, 404);
+                }
             });
 
-            it("Callback#args", function (done) {
+            it("With args", async function () {
                 this.timeout(40000);
-                this.http.get("https://httpbin.org/get", [], { a: 1, b: 2, c: [1, 2, 3], d: "a/b" }, 0, function (err, res) {
-                    var args = res.data.args;
-                    assert.strictEqual(args.a, "1");
-                    assert.strictEqual(args.b, "2");
-                    assert.deepEqual(args.c, ["1", "2", "3"]);
-                    assert.strictEqual(args.d, "a/b");
-                    assert.strictEqual(res.data.url, "https://httpbin.org/get?a=1&b=2&c=1&c=2&c=3&d=a%2Fb");
-                    done();
-                });
+                let res = await this.http.get("https://httpbin.org/get", [], { a: 1, b: 2, c: [1, 2, 3], d: "a/b" }, 0);
+                let args = res.data.args;
+                assert.strictEqual(args.a, "1");
+                assert.strictEqual(args.b, "2");
+                assert.deepEqual(args.c, ["1", "2", "3"]);
+                assert.strictEqual(args.d, "a/b");
+                assert.strictEqual(res.data.url, "https://httpbin.org/get?a=1&b=2&c=1&c=2&c=3&d=a%2Fb");
             });
 
-            it("Callback#args with objects", function (done) {
+            it("Args with objects", async function () {
                 this.timeout(40000);
-                this.http.get(
-                    "https://httpbin.org/get", [],
-                    { a: 1, b: { c: "ab", d: 12 } }, 0,
-                    function (err, res) {
-                        var args = res.data.args;
-                        assert.strictEqual(args.a, "1");
-                        assert.deepEqual(args.b, ["ab", "12"]);
-                        assert.strictEqual(
-                            res.data.url,
-                            "https://httpbin.org/get?a=1&b=ab&b=12"
-                        );
-                        done();
-                    }
+                let res = await this.http.get("https://httpbin.org/get", [], { a: 1, b: { c: "ab", d: 12 } }, 0);
+                let args = res.data.args;
+                assert.strictEqual(args.a, "1");
+                assert.deepEqual(args.b, ["ab", "12"]);
+                assert.strictEqual(
+                    res.data.url,
+                    "https://httpbin.org/get?a=1&b=ab&b=12"
                 );
             });
 
-            it("Callback#headers", function (done) {
-                var headers = { "X-Test1": 1, "X-Test2": "a/b/c" };
+            it("With headers", async function () {
+                let headers = { "X-Test1": 1, "X-Test2": "a/b/c" };
+                let res = await this.http.get("https://httpbin.org/get", { "X-Test1": 1, "X-Test2": "a/b/c" }, {}, 0);
+                let returnedHeaders = res.data.headers;
+                for (let headerName in headers) {
+                    // We have to make the header values into strings
+                    assert.strictEqual(headers[headerName] + "", returnedHeaders[headerName]);
+                }
 
-                this.http.get("https://httpbin.org/get", { "X-Test1": 1, "X-Test2": "a/b/c" }, {}, 0, function (err, res) {
-                    var returnedHeaders = res.data.headers;
-                    for (var headerName in headers) {
-                        if (headers.hasOwnProperty(headerName)) {
-                            // We have to make the header values into strings
-                            assert.strictEqual(headers[headerName] + "", returnedHeaders[headerName]);
-                        }
-                    }
-
-                    assert.strictEqual(res.data.url, "https://httpbin.org/get");
-                    done();
-                });
+                assert.strictEqual(res.data.url, "https://httpbin.org/get");
             });
 
-            it("Callback#all", function (done) {
-                var headers = { "X-Test1": 1, "X-Test2": "a/b/c" };
+            it("All", async function () {
+                let headers = { "X-Test1": 1, "X-Test2": "a/b/c" };
 
-                this.http.get("https://httpbin.org/get", { "X-Test1": 1, "X-Test2": "a/b/c" }, { a: 1, b: 2, c: [1, 2, 3], d: "a/b" }, 0, function (err, res) {
-                    var returnedHeaders = res.data.headers;
-                    for (var headerName in headers) {
-                        if (headers.hasOwnProperty(headerName)) {
-                            // We have to make the header values into strings
-                            assert.strictEqual(headers[headerName] + "", returnedHeaders[headerName]);
-                        }
-                    }
+                let res = await this.http.get("https://httpbin.org/get", { "X-Test1": 1, "X-Test2": "a/b/c" }, { a: 1, b: 2, c: [1, 2, 3], d: "a/b" }, 0);
+                let returnedHeaders = res.data.headers;
+                for (let headerName in headers) {
+                    // We have to make the header values into strings
+                    assert.strictEqual(headers[headerName] + "", returnedHeaders[headerName]);
+                }
 
-                    var args = res.data.args;
-                    assert.strictEqual(args.a, "1");
-                    assert.strictEqual(args.b, "2");
-                    assert.deepEqual(args.c, ["1", "2", "3"]);
-                    assert.strictEqual(args.d, "a/b");
-                    assert.strictEqual(res.data.url, "https://httpbin.org/get?a=1&b=2&c=1&c=2&c=3&d=a%2Fb");
-                    done();
-                });
+                let args = res.data.args;
+                assert.strictEqual(args.a, "1");
+                assert.strictEqual(args.b, "2");
+                assert.deepEqual(args.c, ["1", "2", "3"]);
+                assert.strictEqual(args.d, "a/b");
+                assert.strictEqual(res.data.url, "https://httpbin.org/get?a=1&b=2&c=1&c=2&c=3&d=a%2Fb");
             });
         }),
 
-        describe("HTTP POST Tests", function (done) {
-            before(function (done) {
+        describe("HTTP POST Tests", () => {
+            before(function () {
                 this.http = http;
-                done();
             });
 
-            it("Callback#no args", function (done) {
-                this.http.post("https://httpbin.org/post", {}, {}, 0, function (err, res) {
+            it("No args", async function () {
+                let res = await this.http.post("https://httpbin.org/post", {}, {}, 0);
+                assert.strictEqual(res.data.url, "https://httpbin.org/post");
+            });
+
+            it("Success and error", async function () {
+                try {
+                    let res = await this.http.post("https://httpbin.org/post", {}, {}, 0);
                     assert.strictEqual(res.data.url, "https://httpbin.org/post");
-                    done();
-                });
+                } catch (error) {
+                    assert.ok(!error);
+                }
             });
 
-            it("Callback#success success+error", function (done) {
-                this.http.post("https://httpbin.org/post", {}, {}, 0, function (err, res) {
-                    assert.ok(!err);
-                    assert.strictEqual(res.data.url, "https://httpbin.org/post");
-                    done();
-                });
+            it("Error all", async function () {
+                try {
+                    let res = await this.http.post("https://httpbin.org/status/405", {}, {}, 0);
+                    assert.ok(!res);
+                } catch (error) {
+                    assert.strictEqual(error.status, 405);
+                }
             });
 
-            it("Callback#error all", function (done) {
-                this.http.post("https://httpbin.org/status/405", {}, {}, 0, function (err, res) {
-                    assert.strictEqual(err.status, 405);
-                    done();
-                });
+            it("With args", async function () {
+                let res = await this.http.post("https://httpbin.org/post", {}, { a: 1, b: 2, c: [1, 2, 3], d: "a/b" }, 0);
+                let args = res.data.form;
+                assert.strictEqual(args.a, "1");
+                assert.strictEqual(args.b, "2");
+                assert.deepStrictEqual(args.c, ["1", "2", "3"]);
+                assert.strictEqual(args.d, "a/b");
+                assert.strictEqual(res.data.url, "https://httpbin.org/post");
             });
 
-            it("Callback#args", function (done) {
-                this.http.post("https://httpbin.org/post", {}, { a: 1, b: 2, c: [1, 2, 3], d: "a/b" }, 0, function (err, res) {
-                    var args = res.data.form;
-                    assert.strictEqual(args.a, "1");
-                    assert.strictEqual(args.b, "2");
-                    assert.deepStrictEqual(args.c, ["1", "2", "3"]);
-                    assert.strictEqual(args.d, "a/b");
-                    assert.strictEqual(res.data.url, "https://httpbin.org/post");
-                    done();
-                });
+            it("Headers", async function () {
+                let headers = { "X-Test1": 1, "X-Test2": "a/b/c" };
+
+                let res = await this.http.post("https://httpbin.org/post", { "X-Test1": 1, "X-Test2": "a/b/c" }, {}, 0);
+                let returnedHeaders = res.data.headers;
+                for (let headerName in headers) {
+                    // We have to make the header values into strings
+                    assert.strictEqual(headers[headerName] + "", returnedHeaders[headerName]);
+                }
+                assert.strictEqual(res.data.url, "https://httpbin.org/post");
             });
 
-            it("Callback#headers", function (done) {
-                var headers = { "X-Test1": 1, "X-Test2": "a/b/c" };
+            it("All", async function () {
+                let headers = { "X-Test1": 1, "X-Test2": "a/b/c" };
 
-                this.http.post("https://httpbin.org/post", { "X-Test1": 1, "X-Test2": "a/b/c" }, {}, 0, function (err, res) {
-                    var returnedHeaders = res.data.headers;
-                    for (var headerName in headers) {
-                        if (headers.hasOwnProperty(headerName)) {
-                            // We have to make the header values into strings
-                            assert.strictEqual(headers[headerName] + "", returnedHeaders[headerName]);
-                        }
-                    }
-                    assert.strictEqual(res.data.url, "https://httpbin.org/post");
-                    done();
-                });
-            });
+                let res = await this.http.post("https://httpbin.org/post", { "X-Test1": 1, "X-Test2": "a/b/c" }, { a: 1, b: 2, c: [1, 2, 3], d: "a/b" }, 0);
+                let returnedHeaders = res.data.headers;
+                for (let headerName in headers) {
+                    // We have to make the header values into strings
+                        assert.strictEqual(headers[headerName] + "", returnedHeaders[headerName]);
+                }
 
-            it("Callback#all", function (done) {
-                var headers = { "X-Test1": 1, "X-Test2": "a/b/c" };
-
-                this.http.post("https://httpbin.org/post", { "X-Test1": 1, "X-Test2": "a/b/c" }, { a: 1, b: 2, c: [1, 2, 3], d: "a/b" }, 0, function (err, res) {
-                    var returnedHeaders = res.data.headers;
-                    for (var headerName in headers) {
-                        if (headers.hasOwnProperty(headerName)) {
-                            // We have to make the header values into strings
-                            assert.strictEqual(headers[headerName] + "", returnedHeaders[headerName]);
-                        }
-                    }
-
-                    var args = res.data.form;
-                    assert.strictEqual(args.a, "1");
-                    assert.strictEqual(args.b, "2");
-                    assert.deepStrictEqual(args.c, ["1", "2", "3"]);
-                    assert.strictEqual(args.d, "a/b");
-                    assert.strictEqual(res.data.url, "https://httpbin.org/post");
-                    done();
-                });
+                let args = res.data.form;
+                assert.strictEqual(args.a, "1");
+                assert.strictEqual(args.b, "2");
+                assert.deepStrictEqual(args.c, ["1", "2", "3"]);
+                assert.strictEqual(args.d, "a/b");
+                assert.strictEqual(res.data.url, "https://httpbin.org/post");
             })
         }),
 
-        describe("HTTP DELETE Tests", function (done) {
-            before(function (done) {
+        describe("HTTP DELETE Tests", () => {
+            before(function () {
                 this.http = http;
-                done();
             });
 
-            it("Callback#no args", function (done) {
-                this.http.del("https://httpbin.org/delete", [], {}, 0, function (err, res) {
+            it("No args", async function () {
+                let res = await this.http.del("https://httpbin.org/delete", [], {}, 0);
+                assert.strictEqual(res.data.url, "https://httpbin.org/delete");
+            });
+
+            it("Success and error", async function () {
+                try {
+                    let res = await this.http.del("https://httpbin.org/delete", [], {}, 0);
                     assert.strictEqual(res.data.url, "https://httpbin.org/delete");
-                    done();
-                });
+                } catch (error) {
+                    assert.ok(!error);
+                }
             });
 
-            it("Callback#success success+error", function (done) {
-                this.http.del("https://httpbin.org/delete", [], {}, 0, function (err, res) {
-                    assert.ok(!err);
-                    assert.strictEqual(res.data.url, "https://httpbin.org/delete");
-                    done();
-                });
+            it("Error all", async function () {
+                try {
+                    let res = await this.http.del("https://httpbin.org/status/405", [], {}, 0);
+                    assert.ok(!res);
+                } catch (error) {
+                    assert.strictEqual(error.status, 405);
+                }
             });
 
-            it("Callback#error all", function (done) {
-                this.http.del("https://httpbin.org/status/405", [], {}, 0, function (err, res) {
-                    assert.strictEqual(err.status, 405);
-                    done();
-                });
+            it("Args", async function () {
+                let res = await this.http.del("https://httpbin.org/delete", [], { a: 1, b: 2, c: [1, 2, 3], d: "a/b" }, 0);
+                assert.strictEqual(res.data.url, "https://httpbin.org/delete?a=1&b=2&c=1&c=2&c=3&d=a%2Fb");
             });
 
-            it("Callback#args", function (done) {
-                this.http.del("https://httpbin.org/delete", [], { a: 1, b: 2, c: [1, 2, 3], d: "a/b" }, 0, function (err, res) {
-                    assert.strictEqual(res.data.url, "https://httpbin.org/delete?a=1&b=2&c=1&c=2&c=3&d=a%2Fb");
-                    done();
-                });
-            });
+            it("Headers", async function () {
+                let headers = { "X-Test1": 1, "X-Test2": "a/b/c" };
 
-            it("Callback#headers", function (done) {
-                var headers = { "X-Test1": 1, "X-Test2": "a/b/c" };
-
-                this.http.del("https://httpbin.org/delete", { "X-Test1": 1, "X-Test2": "a/b/c" }, {}, 0, function (err, res) {
-                    var returnedHeaders = res.data.headers;
-                    for (var headerName in headers) {
-                        if (headers.hasOwnProperty(headerName)) {
-                            // We have to make the header values into strings
-                            assert.strictEqual(headers[headerName] + "", returnedHeaders[headerName]);
-                        }
+                let res = await this.http.del("https://httpbin.org/delete", { "X-Test1": 1, "X-Test2": "a/b/c" }, {}, 0);
+                let returnedHeaders = res.data.headers;
+                for (let headerName in headers) {
+                    if (headers.hasOwnProperty(headerName)) {
+                        // We have to make the header values into strings
+                        assert.strictEqual(headers[headerName] + "", returnedHeaders[headerName]);
                     }
-                    assert.strictEqual(res.data.url, "https://httpbin.org/delete");
-                    done();
-                });
+                }
+                assert.strictEqual(res.data.url, "https://httpbin.org/delete");
             });
 
-            it("Callback#all", function (done) {
-                var headers = { "X-Test1": 1, "X-Test2": "a/b/c" };
+            it("All", async function () {
+                let headers = { "X-Test1": 1, "X-Test2": "a/b/c" };
 
-                this.http.del("https://httpbin.org/delete", { "X-Test1": 1, "X-Test2": "a/b/c" }, { a: 1, b: 2, c: [1, 2, 3], d: "a/b" }, 0, function (err, res) {
-                    var returnedHeaders = res.data.headers;
-                    for (var headerName in headers) {
-                        if (headers.hasOwnProperty(headerName)) {
-                            // We have to make the header values into strings
-                            assert.strictEqual(headers[headerName] + "", returnedHeaders[headerName]);
-                        }
+                let res = await this.http.del("https://httpbin.org/delete", { "X-Test1": 1, "X-Test2": "a/b/c" }, { a: 1, b: 2, c: [1, 2, 3], d: "a/b" }, 0);
+                let returnedHeaders = res.data.headers;
+                for (let headerName in headers) {
+                    if (headers.hasOwnProperty(headerName)) {
+                        // We have to make the header values into strings
+                        assert.strictEqual(headers[headerName] + "", returnedHeaders[headerName]);
                     }
-                    assert.strictEqual(res.data.url, "https://httpbin.org/delete?a=1&b=2&c=1&c=2&c=3&d=a%2Fb");
-                    done();
-                });
+                }
+                assert.strictEqual(res.data.url, "https://httpbin.org/delete?a=1&b=2&c=1&c=2&c=3&d=a%2Fb");
             });
 
             it("Default arguments to Http work", function (done) {

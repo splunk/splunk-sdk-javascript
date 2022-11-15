@@ -45,7 +45,6 @@ var __exportName = 'splunkjs';
         Service         : require('./lib/service'),
         Http            : require('./lib/http'),
         Utils           : require('./lib/utils'),
-        Async           : require('./lib/async'),
         Paths           : require('./lib/paths').Paths,
         Class           : require('./lib/jquery.class').Class
     };
@@ -55,550 +54,7 @@ var __exportName = 'splunkjs';
     }
 })();
 }).call(this)}).call(this,require('_process'))
-},{"./lib/async":3,"./lib/context":4,"./lib/http":7,"./lib/jquery.class":8,"./lib/log":9,"./lib/paths":10,"./lib/platform/node/node_http":13,"./lib/service":14,"./lib/utils":15,"_process":205,"dotenv":97}],3:[function(require,module,exports){
-/*!*/
-// Copyright 2012 Splunk, Inc.
-//
-// Licensed under the Apache License, Version 2.0 (the "License"): you may
-// not use this file except in compliance with the License. You may obtain
-// a copy of the License at
-//
-//     http://www.apache.org/licenses/LICENSE-2.0
-//
-// Unless required by applicable law or agreed to in writing, software
-// distributed under the License is distributed on an "AS IS" BASIS, WITHOUT
-// WARRANTIES OR CONDITIONS OF ANY KIND, either express or implied. See the
-// License for the specific language governing permissions and limitations
-// under the License.
-
-(function() {
-    "use strict";
-    
-    var utils = require('./utils');
-    var root = exports || this;
-
-    /**
-     * Provides utilities for asynchronous control flow and collection handling.
-     *
-     * @module splunkjs.Async
-     */
-
-    /**
-     * Runs an asynchronous `while` loop.
-     *
-     * @example
-     *      
-     *      var i = 0;
-     *      Async.whilst(
-     *          function() { return i++ < 3; },
-     *          function(done) {
-     *              Async.sleep(0, function() { done(); });
-     *          },
-     *          function(err) {
-     *              console.log(i) // == 3;
-     *          }
-     *      );
-     *
-     * @param {Function} condition A function that returns a _boolean_ indicating whether the condition has been met.
-     * @param {Function} body A function that runs the body of the loop: `(done)`.
-     * @param {Function} callback The function to call when the loop is complete: `(err)`.
-     *
-     * @function splunkjs.Async
-     */
-    root.whilst = function(condition, body, callback) {  
-        condition = condition || function() { return false; };
-        body = body || function(done) { done(); };
-        callback = callback || function() {};
-        
-        var iterationDone = function(err) {
-            if (err) {
-                callback(err);
-            }
-            else {
-                root.whilst(condition, body, callback);
-            }
-        };
-        
-        if (condition()) {
-            body(iterationDone);
-        }
-        else {
-            callback(null);
-        }
-    };
-    
-    /**
-     * Runs multiple functions (tasks) in parallel. 
-     * Each task takes the callback function as a parameter. 
-     * When all tasks have been completed or if an error occurs, the callback 
-     * function is called with the combined results of all tasks. 
-     *
-     * **Note**: Tasks might not be run in the same order as they appear in the array,
-     * but the results will be returned in that order. 
-     *
-     * @example
-     *      
-     *      Async.parallel([
-     *          function(done) {
-     *              done(null, 1);
-     *          },
-     *          function(done) {
-     *              done(null, 2, 3);
-     *          }],
-     *          function(err, one, two) {
-     *              console.log(err); // == null
-     *              console.log(one); // == 1
-     *              console.log(two); // == [1,2]
-     *          }
-     *      );
-     *
-     * @param {Function} tasks An array of functions: `(done)`.
-     * @param {Function} callback The function to call when all tasks are done or if an error occurred: `(err, ...)`.
-     *
-     * @function splunkjs.Async
-     */
-    root.parallel = function(tasks, callback) {
-        // Allow for just a list of functions
-        if (arguments.length > 1 && utils.isFunction(arguments[0])) {
-            var args = utils.toArray(arguments);
-            tasks = args.slice(0, args.length - 1);
-            callback = args[args.length - 1];
-        }
-        
-        tasks = tasks || [];
-        callback = callback || function() {};
-        
-        if (tasks.length === 0) {
-            callback();
-        }
-        
-        var tasksLeft = tasks.length;
-        var results = [];
-        var doneCallback = function(idx) {
-            return function(err) {
-                
-                if (err) {
-                    if (callback) {
-                        callback(err);
-                    }
-                    callback = null;
-                }
-                else {
-                    var args = utils.toArray(arguments);  
-                    args.shift();
-                    
-                    if (args.length === 1) {
-                        args = args[0];
-                    }
-                    results[idx] = args;
-                    
-                    if ((--tasksLeft) === 0) {
-                        results.unshift(null);
-                        if (callback) {
-                            callback.apply(null, results);
-                        }
-                    }
-                }
-            };
-        };
-        
-        for(var i = 0; i < tasks.length; i++) {
-            var task = tasks[i];
-            task(doneCallback(i));
-        }
-    };
-    
-    /**
-     * Runs multiple functions (tasks) in series. 
-     * Each task takes the callback function as a parameter. 
-     * When all tasks have been completed or if an error occurs, the callback 
-     * function is called with the combined results of all tasks in the order
-     * they were run. 
-     *
-     * @example
-     *      
-     *      var keeper = 0;
-     *      Async.series([
-     *          function(done) {
-     *              Async.sleep(10, function() {
-     *                  console.log(keeper++); // == 0
-     *                  done(null, 1);
-     *              });
-     *          },
-     *          function(done) {
-     *              console.log(keeper++); // == 1
-     *              done(null, 2, 3);
-     *          }],
-     *          function(err, one, two) {
-     *              console.log(err); // == null
-     *              console.log(one); // == 1
-     *              console.log(two); // == [1,2]
-     *          }
-     *      );
-     *
-     * @param {Function} tasks An array of functions: `(done)`.
-     * @param {Function} callback The function to call when all tasks are done or if an error occurred: `(err, ...)`.
-     *
-     * @function splunkjs.Async
-     */
-    root.series = function(tasks, callback) {
-        // Allow for just a list of functions
-        if (arguments.length > 1 && utils.isFunction(arguments[0])) {
-            var args = utils.toArray(arguments);
-            tasks = args.slice(0, args.length - 1);
-            callback = args[args.length - 1];
-        }
-        
-        tasks = tasks || [];
-        callback = callback || function() {};
-        
-        var innerSeries = function(task, restOfTasks, resultsSoFar, callback) {
-            if (!task) {
-                resultsSoFar.unshift(null);
-                callback.apply(null, resultsSoFar);
-                return;
-            }
-            
-            task(function(err) {
-                if (err) {
-                    if (callback) {
-                        callback(err);
-                    }
-                    callback = null;
-                }
-                else {
-                    var args = utils.toArray(arguments);
-                    args.shift();
-                    if (args.length === 1) {
-                        args = args[0];
-                    }
-                    resultsSoFar.push(args);
-                    
-                    innerSeries(restOfTasks[0], restOfTasks.slice(1), resultsSoFar, callback);
-                }
-            });
-        };
-        
-        innerSeries(tasks[0], tasks.slice(1), [], callback);
-    };
-    
-    /**
-     * Runs an asynchronous function (mapping it) over each element in an array, in parallel.
-     * When all tasks have been completed or if an error occurs, a callback
-     * function is called with the resulting array.
-     *
-     * @example
-     *      
-     *      Async.parallelMap(
-     *          [1, 2, 3],
-     *          function(val, idx, done) { 
-     *              if (val === 2) {
-     *                  Async.sleep(100, function() { done(null, val+1); });   
-     *              }
-     *              else {
-     *                  done(null, val + 1);
-     *              }
-     *          },
-     *          function(err, vals) {
-     *              console.log(vals); // == [2,3,4]
-     *          }
-     *      );
-     *
-     * @param {Array} vals An array of values.
-     * @param {Function} fn A function (possibly asynchronous) to apply to each element: `(done)`. 
-     * @param {Function} callback The function to call when all tasks are done or if an error occurred: `(err, mappedVals)`.
-     *
-     * @function splunkjs.Async
-     */
-    root.parallelMap = function(vals, fn, callback) {     
-        vals = vals || [];
-        callback = callback || function() {};
-        
-        var tasks = [];
-        var createTask = function(val, idx) {
-            return function(done) { fn(val, idx, done); };
-        };
-        
-        for(var i = 0; i < vals.length; i++) {
-            tasks.push(createTask(vals[i], i));
-        }
-        
-        root.parallel(tasks, function(err) {
-            if (err) {
-                if (callback) {
-                    callback(err);
-                }
-                callback = null;
-            }
-            else {
-                var args = utils.toArray(arguments);
-                args.shift();
-                callback(null, args);
-            }
-        });
-    };
-    
-    /**
-     * Runs an asynchronous function (mapping it) over each element in an array, in series.
-     * When all tasks have been completed or if an error occurs, a callback
-     * function is called with the resulting array.
-     *
-     * @example
-     *      
-     *      var keeper = 1;
-     *      Async.seriesMap(
-     *          [1, 2, 3],
-     *          function(val, idx, done) { 
-     *              console.log(keeper++); // == 1, then 2, then 3
-     *              done(null, val + 1);
-     *          },
-     *          function(err, vals) {
-     *              console.log(vals); // == [2,3,4];
-     *          }
-     *      );
-     *
-     * @param {Array} vals An array of values.
-     * @param {Function} fn A function (possibly asynchronous) to apply to each element: `(done)`.
-     * @param {Function} callback The function to call when all tasks are done or if an error occurred: `(err, mappedVals)`.
-     *
-     * @function splunkjs.Async
-     */
-    root.seriesMap = function(vals, fn, callback) {     
-        vals = vals || [];
-        callback = callback || function() {};
-        
-        var tasks = [];
-        var createTask = function(val, idx) {
-            return function(done) { fn(val, idx, done); };
-        };
-        
-        for(var i = 0; i < vals.length; i++) {
-            tasks.push(createTask(vals[i], i));
-        }
-        
-        root.series(tasks, function(err) {
-            if (err) {
-                if (callback) {
-                    callback(err);
-                }
-            }
-            else {
-                var args = utils.toArray(arguments);
-                args.shift();
-                callback(null, args);
-            }
-        });
-    };
-    
-    /**
-     * Applies an asynchronous function over each element in an array, in parallel.
-     * A callback function is called when all tasks have been completed. If an 
-     * error occurs, the callback function is called with an error parameter.
-     *
-     * @example
-     *      
-     *      var total = 0;
-     *      Async.parallelEach(
-     *          [1, 2, 3],
-     *          function(val, idx, done) { 
-     *              var go = function() {
-     *                  total += val;
-     *                  done();
-     *              };
-     *              
-     *              if (idx === 1) {
-     *                  Async.sleep(100, go);    
-     *              }
-     *              else {
-     *                  go();
-     *              }
-     *          },
-     *          function(err) {
-     *              console.log(total); // == 6
-     *          }
-     *      );
-     *
-     * @param {Array} vals An array of values.
-     * @param {Function} fn A function (possibly asynchronous) to apply to each element: `(done)`.
-     * @param {Function} callback The function to call when all tasks are done or if an error occurred: `(err)`.
-     *
-     * @function splunkjs.Async
-     */
-    root.parallelEach = function(vals, fn, callback) {  
-        vals = vals || [];   
-        callback = callback || function() {};
-        
-        root.parallelMap(vals, fn, function(err, result) {
-            callback(err); 
-        });
-    };
-    
-    /**
-     * Applies an asynchronous function over each element in an array, in series.
-     * A callback function is called when all tasks have been completed. If an 
-     * error occurs, the callback function is called with an error parameter.
-     *
-     * @example
-     *      
-     *      var results = [1, 3, 6];
-     *      var total = 0;
-     *      Async.seriesEach(
-     *          [1, 2, 3],
-     *          function(val, idx, done) { 
-     *              total += val;
-     *              console.log(total === results[idx]); //== true
-     *              done();
-     *          },
-     *          function(err) {
-     *              console.log(total); //== 6
-     *          }
-     *      );
-     *
-     * @param {Array} vals An array of values.
-     * @param {Function} fn A function (possibly asynchronous)to apply to each element: `(done)`.
-     * @param {Function} callback The function to call when all tasks are done or if an error occurred: `(err)`.
-     *
-     * @function splunkjs.Async
-     */
-    root.seriesEach = function(vals, fn, callback) {    
-        vals = vals || []; 
-        callback = callback || function() {};
-        
-        root.seriesMap(vals, fn, function(err, result) {
-            callback(err); 
-        });
-    };
-    
-    /**
-     * Chains asynchronous tasks together by running a function (task) and
-     * passing the results as arguments to the next task. When all tasks have 
-     * been completed or if an error occurs, a callback function is called with 
-     * the results of the final task.
-     *
-     * Each task takes one or more parameters, depending on the previous task in the chain.
-     * The last parameter is always the function to run when the task is complete.
-     *
-     * `err` arguments are not passed to individual tasks, but are are propagated 
-     * to the final callback function.
-     *
-     * @example
-     *      
-     *     Async.chain(
-     *         function(callback) { 
-     *             callback(null, 1, 2);
-     *         },
-     *         function(val1, val2, callback) {
-     *             callback(null, val1 + 1);
-     *         },
-     *         function(val1, callback) {
-     *             callback(null, val1 + 1, 5);
-     *         },
-     *         function(err, val1, val2) {
-     *             console.log(val1); //== 3
-     *             console.log(val2); //== 5
-     *         }
-     *     );
-     *     
-     * @param {Function} tasks An array of functions: `(done)`.
-     * @param {Function} callback The function to call when all tasks are done or if an error occurred: `(err, ...)`.
-     *
-     * @function splunkjs.Async
-     */
-    root.chain = function(tasks, callback) {
-        // Allow for just a list of functions
-        if (arguments.length > 1 && utils.isFunction(arguments[0])) {
-            var args = utils.toArray(arguments);
-            tasks = args.slice(0, args.length - 1);
-            callback = args[args.length - 1];
-        }
-        
-        tasks = tasks || [];
-        callback = callback || function() {};
-        
-        if (!tasks.length) {
-            callback();
-        }
-        else {
-            var innerChain = function(task, restOfTasks, result) {
-                var chainCallback = function(err) {
-                    if (err) {
-                        callback(err);
-                        callback = function() {};
-                    }
-                    else {
-                        var args = utils.toArray(arguments);
-                        args.shift();
-                        innerChain(restOfTasks[0], restOfTasks.slice(1), args);
-                    }
-                };
-                
-                var args = result;
-                if (!restOfTasks.length) {
-                    args.push(callback);
-                }
-                else {
-                    args.push(chainCallback);
-                }
-                
-                task.apply(null, args);
-            };
-            
-            innerChain(tasks[0], tasks.slice(1), []);
-        }
-    };
-    
-    /**
-     * Runs a function after a delay (a specified timeout period). 
-     * The main purpose of this function is to make `setTimeout` adhere to 
-     * Node.js-style function signatures.
-     *
-     * @example
-     *      
-     *     Async.sleep(1000, function() { console.log("TIMEOUT");});
-     *     
-     * @param {Number} timeout The timeout period, in milliseconds.
-     * @param {Function} callback The function to call when the timeout occurs.
-     *
-     * @function splunkjs.Async
-     */
-    root.sleep = function(timeout, callback) {
-        setTimeout(function() {
-            callback();   
-        }, timeout);
-    };
-    
-    /**
-     * Runs a callback function with additional parameters, which are appended to
-     * the parameter list. 
-     *
-     * @example
-     *
-     *      var callback = function(a, b) {
-     *          console.log(a); //== 1
-     *          console.log(b); //== 2
-     *      };
-     *      
-     *      var augmented = Async.augment(callback, 2);
-     *      augmented(1);
-     *     
-     * @param {Function} callback The callback function to augment.
-     * @param {Anything...} rest The number of arguments to add.
-     *
-     * @function splunkjs.Async
-     */
-    root.augment = function(callback) {
-        var args = Array.prototype.slice.call(arguments, 1);
-        return function() {
-            var augmentedArgs = Array.prototype.slice.call(arguments);
-            for(var i = 0; i < args.length; i++) {
-              augmentedArgs.push(args[i]);
-            }
-            
-            callback.apply(null, augmentedArgs);
-        };
-    };
-})();
-},{"./utils":15}],4:[function(require,module,exports){
+},{"./lib/context":3,"./lib/http":6,"./lib/jquery.class":7,"./lib/log":8,"./lib/paths":9,"./lib/platform/node/node_http":12,"./lib/service":13,"./lib/utils":14,"_process":204,"dotenv":96}],3:[function(require,module,exports){
 /*!*/
 // Copyright 2012 Splunk, Inc.
 //
@@ -702,7 +158,7 @@ var __exportName = 'splunkjs';
                     throw new Error("Http instance required when creating a Context within a browser.");
                 }
                 else {
-                    var NodeHttp = require('./platform/node/node_http').NodeHttp;
+                    let NodeHttp = require('./platform/node/node_http').NodeHttp;
                     http = new NodeHttp();
                 }
             }
@@ -713,21 +169,20 @@ var __exportName = 'splunkjs';
 
             // Store our full prefix, which is just combining together
             // the scheme with the host
-            var versionPrefix = utils.getWithVersion(this.version, prefixMap);
+            let versionPrefix = utils.getWithVersion(this.version, prefixMap);
             this.prefix = this.scheme + "://" + this.host + ":" + this.port + versionPrefix;
 
-            // We perform the bindings so that every function works
-            // properly when it is passed as a callback.
-            this._headers           = utils.bind(this, this._headers);
-            this.fullpath           = utils.bind(this, this.fullpath);
-            this.urlify             = utils.bind(this, this.urlify);
-            this.get                = utils.bind(this, this.get);
-            this.del                = utils.bind(this, this.del);
-            this.post               = utils.bind(this, this.post);
-            this.login              = utils.bind(this, this.login);
-            this._shouldAutoLogin   = utils.bind(this, this._shouldAutoLogin);
-            this._requestWrapper    = utils.bind(this, this._requestWrapper);
-            this.getInfo            = utils.bind(this, this.getInfo);
+            // We perform the bindings so that every function works properly
+            this._headers         = utils.bind(this, this._headers);
+            this.fullpath         = utils.bind(this, this.fullpath);
+            this.urlify           = utils.bind(this, this.urlify);
+            this.get              = utils.bind(this, this.get);
+            this.del              = utils.bind(this, this.del);
+            this.post             = utils.bind(this, this.post);
+            this.login            = utils.bind(this, this.login);
+            this._shouldAutoLogin = utils.bind(this, this._shouldAutoLogin);
+            this._requestWrapper  = utils.bind(this, this._requestWrapper);
+            this.getInfo       = utils.bind(this, this.getInfo);
             this.disableV2SearchApi = utils.bind(this, this.disableV2SearchApi);
         },
 
@@ -756,85 +211,40 @@ var __exportName = 'splunkjs';
         /*!*/
         /**
          * This internal function aids with the autologin feature.
-         * It takes two parameters: `task`, which is a function describing an
-         * HTTP request, and `callback`, to be invoked when all is said
-         * and done.
+         * It takes one parameters: `task`, which is a function describing an
+         * HTTP request.
          *
-         * @param  {Function} task A function taking a single argument: `(callback)`.
-         * @param  {Function} callback The function to call when the request is complete: `(err, response)`.
+         * @param  {Function} task A function with no arguments which returns a promise.
          */
-        _requestWrapper: function(task, callback) {
-            callback = callback || function() {};
-
+        _requestWrapper:function (task){
             var that = this;
-            var req = null;
-
-            // This is the callback that will be invoked
-            // if we are currently logged in but our session key
-            // expired (i.e. we get a 401 response from the server).
-            // We will only retry once.
-            var reloginIfNecessary = function(err) {
-                // If we aborted, ignore it
-                if (req.wasAborted) {
-                    return;
-                }
-
-                if (err && err.status === 401 && that._shouldAutoLogin()) {
-                    // If we had an authorization error, we'll try and login
-                    // again, but only once
-                    that.sessionKey = null;
-                    that.login(function(err, success) {
-                        // If we've already aborted the request,
-                        // just do nothing
-                        if (req.wasAborted) {
-                            return;
-                        }
-
-                        if (err) {
-                            // If there was an error logging in, send it through
-                            callback(err);
-                        }
-                        else {
-                            // Relogging in was successful, so we execute
-                            // our task again.
-                            task(callback);
-                        }
-                    });
-                }
-                else {
-                    callback.apply(null, arguments);
-                }
-            };
 
             if (!this._shouldAutoLogin() || this.sessionKey) {
                 // Since we are not auto-logging in, just execute our task,
                 // but intercept any 401s so we can login then
-                req = task(reloginIfNecessary);
-                return req;
+                return task().then((res)=>{
+                    return res;
+                })
+                .catch((err)=>{
+                    if(err && err.status===401 && that._shouldAutoLogin()){
+                        that.sessionKey = null;
+                        return that.login().then((response)=>{
+                                return task();
+                            }).catch((error)=>{
+                                throw error;
+                            });
+                    }
+                    throw err;
+                });
             }
 
-            // OK, so we know that we should try and autologin,
-            // so we try and login, and if we succeed, execute
-            // the original task
-            req = this.login(function(err, success) {
-                // If we've already aborted the request,
-                // just do nothing
-                if (req.wasAborted) {
-                    return;
-                }
-
-                if (err) {
-                    // If there was an error logging in, send it through
-                    callback(err);
-                }
-                else {
-                    // Logging in was successful, so we execute
-                    // our task.
-                    task(callback);
-                }
-            });
-
-            return req;
+            return this.login()
+                    .then((res)=>{
+                            return task();
+                        })
+                        .catch((err)=>{
+                            throw err;
+                        });
         },
 
         /**
@@ -861,8 +271,8 @@ var __exportName = 'splunkjs';
 
             // Get the app and owner, first from the passed in namespace, then the service,
             // finally defaulting to wild cards
-            var owner = namespace.owner || this.owner || "-";
-            var app   = namespace.app || this.app || "-";
+            let owner = namespace.owner || this.owner || "-";
+            let app   = namespace.app || this.app || "-";
 
             namespace.sharing = (namespace.sharing || "").toLowerCase();
 
@@ -894,97 +304,83 @@ var __exportName = 'splunkjs';
         /**
          * Get Splunk version during login phase.
          *
-         * @param {Function} callback The function to call when login has finished: `()`.
+         * @param {Number} response_timeout A timeout period for aborting a request in milisecs (0 means no timeout).
          *
          * @method splunkjs.Context
          * @private
          */
-        getInfo: function (callback) {
+         getInfo: function (response_timeout) {
             var that = this;
-            var url = this.paths.info;
-
-            callback = callback || function() {};
-
-            var wrappedCallback = function(err, response) {
-                var hasVersion = !!(!err && response.data && response.data.generator.version);
-                let hasInstanceType = !!(!err && response.data && response.data.generator["instance_type"]);
-
-                if (err || !hasVersion) {
-                    callback(err || "No version found", false);
-                }
-                else {
-                    that.instanceType = hasInstanceType ? response.data.generator["instance_type"] : "";
-                    that.version = response.data.generator.version;
-                    that.http.version = that.version;
-                    callback(null, true);
-                }
-            };
+            let url = this.paths.info;
             return this.http.get(
                 this.urlify(url),
                 this._headers(),
                 "",
                 this.timeout,
-                wrappedCallback
-            );
+                response_timeout
+            ).then((response)=>{
+                let hasVersion = !!(response.data && response.data.generator.version);
+                let hasInstanceType = !!(response.data && response.data.generator["instance_type"]);
+                
+                if (!hasVersion) {
+                    return Promise.reject("No version found");
+                }
+                else{
+                    that.instanceType = hasInstanceType ? response.data.generator["instance_type"] : "";
+                    that.version = response.data.generator.version;
+                    that.http.version = that.version;
+                    return Promise.resolve(true);
+                }
+
+            });
         },
 
         /**
          * Authenticates and logs in to a Splunk instance, then stores the
          * resulting session key.
          *
-         * @param {Function} callback The function to call when login has finished: `(err, wasSuccessful)`.
+         * @param {Number} response_timeout A timeout period for aborting a request in milisecs (0 means no timeout).
          *
          * @method splunkjs.Context
          * @private
          */
-        login: function(callback) {
+        login: function(response_timeout) {
             var that = this;
-            var url = this.paths.login;
-            var params = {
+            let url = this.paths.login;
+            let params = {
                 username: this.username,
                 password: this.password,
                 cookie  : '1'
             };
 
-            callback = callback || function() {};
-
-            var wrappedCallback = function(err, response) {
-                // Let's make sure that not only did the request succeed, but
-                // we actually got a non-empty session key back.
-                var hasSessionKey = !!(!err && response.data && response.data.sessionKey);
-
-                if (err || !hasSessionKey) {
-                    callback(err || "No session key available", false);
-                }
-                else {
-                    that.sessionKey = response.data.sessionKey;
-                    that.getInfo(callback);
-                }
-            };
             return this.http.post(
                 this.urlify(url),
                 this._headers(),
                 params,
                 this.timeout,
-                wrappedCallback
-            );
+                response_timeout
+            ).then((response)=>{
+                let hasSessionKey = !!(response.data && response.data.sessionKey);
+                if (!hasSessionKey) {
+                    return Promise.reject("No session key available");
+                }
+                else {
+                    that.sessionKey = response.data.sessionKey;
+                    return that.getInfo();
+                }
+            })
         },
 
         /**
          * Logs the session out resulting in the removal of all cookies and the
          * session key.
          *
-         * @param {Function} callback The function to call when logout has finished: `()`.
-         *
          * @method splunkjs.Context
          * @private
          */
-        logout: function(callback) {
-            callback = callback || function() {};
-
+        logout: function() {
             this.sessionKey = null;
             this.http._cookieStore = {};
-            callback();
         },
 
         /**
@@ -992,35 +388,34 @@ var __exportName = 'splunkjs';
          *
          * @param {String} path The REST endpoint path of the GET request.
          * @param {Object} params The entity-specific parameters for this request.
-         * @param {Function} callback The function to call when the request is complete: `(err, response)`.
+         * @param {Number} response_timeout A timeout period for aborting a request in milisecs (0 means no timeout).
          *
          * @method splunkjs.Context
          */
-        get: function(path, params, callback, isAsync) {
+        get: function(path, params, response_timeout, isAsync) {
             var that = this;
-
             if(isAsync) {
                 return that.http.get(
                     that.urlify(path),
                     that._headers(),
                     params,
                     that.timeout,
-                    null,
+                    response_timeout,
                     true
                 );
             }
             else {
-                var request = function(callback) {
+                let request = function() {
                     return that.http.get(
                         that.urlify(path),
                         that._headers(),
                         params,
                         that.timeout,
-                        callback
+                        response_timeout
                     );
                 };
     
-                return this._requestWrapper(request, callback);
+                return this._requestWrapper(request);
             }
         },
 
@@ -1029,23 +424,22 @@ var __exportName = 'splunkjs';
          *
          * @param {String} path The REST endpoint path of the DELETE request.
          * @param {Object} params The entity-specific parameters for this request.
-         * @param {Function} callback The function to call when the request is complete: `(err, response)`.
-         *
+         * @param {Number} response_timeout A timeout period for aborting a request in milisecs (0 means no timeout).
          * @method splunkjs.Context
          */
-        del: function(path, params, callback) {
+        del: function(path, params,response_timeout) {
             var that = this;
-            var request = function(callback) {
+            let request = function() {
                 return that.http.del(
                     that.urlify(path),
                     that._headers(),
                     params,
                     that.timeout,
-                    callback
+                    response_timeout
                 );
             };
 
-            return this._requestWrapper(request, callback);
+            return this._requestWrapper(request);
         },
 
         /**
@@ -1053,23 +447,22 @@ var __exportName = 'splunkjs';
          *
          * @param {String} path The REST endpoint path of the POST request.
          * @param {Object} params The entity-specific parameters for this request.
-         * @param {Function} callback The function to call when the request is complete: `(err, response)`.
-         *
+         * @param {Number} response_timeout A timeout period for aborting a request in milisecs (0 means no timeout).
          * @method splunkjs.Context
          */
-        post: function(path, params, callback) {
+        post: function(path, params, response_timeout) {
             var that = this;
-            var request = function(callback) {
+            let request = function() {
                 return that.http.post(
                     that.urlify(path),
                     that._headers(),
                     params,
                     that.timeout,
-                    callback
+                    response_timeout
                 );
             };
 
-            return this._requestWrapper(request, callback);
+            return this._requestWrapper(request);
         },
 
         /**
@@ -1081,13 +474,13 @@ var __exportName = 'splunkjs';
          * @param {Object} post A dictionary of POST argument that will get form encoded.
          * @param {Object} body The body of the request, mutually exclusive with `post`.
          * @param {Object} headers Headers for this request.
-         * @param {Function} callback The function to call when the request is complete: `(err, response)`.
+         * @param {Number} response_timeout A timeout period for aborting a request in milisecs (0 means no timeout).
          *
          * @method splunkjs.Context
          */
-        request: function(path, method, query, post, body, headers, callback) {
+        request: function(path, method, query, post, body, headers,response_timeout) {
             var that = this;
-            var request = function(callback) {
+            let request = function() {
                 return that.http.request(
                     that.urlify(path),
                     {
@@ -1097,12 +490,11 @@ var __exportName = 'splunkjs';
                         post: post,
                         body: body,
                         timeout: that.timeout
-                    },
-                    callback
-                );
+                    }
+                ,response_timeout);
             };
 
-            return this._requestWrapper(request, callback);
+            return this._requestWrapper(request);
         },
 
         /**
@@ -1116,18 +508,18 @@ var __exportName = 'splunkjs';
          * @method splunkjs.Context
          */
         versionCompare: function (otherVersion) {
-            var thisVersion = this.version;
+            let thisVersion = this.version;
             if (thisVersion === "default") {
                 thisVersion = "5.0";
             }
 
-            var components1 = thisVersion.split(".");
-            var components2 = otherVersion.split(".");
-            var numComponents = Math.max(components1.length, components2.length);
+            let components1 = thisVersion.split(".");
+            let components2 = otherVersion.split(".");
+            let numComponents = Math.max(components1.length, components2.length);
 
-            for (var i = 0; i < numComponents; i++) {
-                var c1 = (i < components1.length) ? parseInt(components1[i], 10) : 0;
-                var c2 = (i < components2.length) ? parseInt(components2[i], 10) : 0;
+            for (let i = 0; i < numComponents; i++) {
+                let c1 = (i < components1.length) ? parseInt(components1[i], 10) : 0;
+                let c2 = (i < components2.length) ? parseInt(components2[i], 10) : 0;
                 if (c1 < c2) {
                     return -1;
                 } else if (c1 > c2) {
@@ -1157,7 +549,7 @@ var __exportName = 'splunkjs';
     };
 })();
 
-},{"./http":7,"./jquery.class":8,"./paths":10,"./platform/node/node_http":13,"./utils":15}],5:[function(require,module,exports){
+},{"./http":6,"./jquery.class":7,"./paths":9,"./platform/node/node_http":12,"./utils":14}],4:[function(require,module,exports){
 
 // Copyright 2011 Splunk, Inc.
 //
@@ -1202,7 +594,7 @@ var __exportName = 'splunkjs';
     // Load the UI component loader
     require("../../lib/entries/browser.ui.entry");
 })(__exportName);
-},{"../../index":2,"../../lib/entries/browser.ui.entry":6,"../../lib/platform/client/jquery_http":11,"../../lib/platform/client/proxy_http":12}],6:[function(require,module,exports){
+},{"../../index":2,"../../lib/entries/browser.ui.entry":5,"../../lib/platform/client/jquery_http":10,"../../lib/platform/client/proxy_http":11}],5:[function(require,module,exports){
 
 // Copyright 2011 Splunk, Inc.
 //
@@ -1280,7 +672,7 @@ var __exportName = 'splunkjs';
         $script.ready(token, callback);
     };
 })(__exportName);
-},{"../../contrib/script":1}],7:[function(require,module,exports){
+},{"../../contrib/script":1}],6:[function(require,module,exports){
 /*!*/
 // Copyright 2012 Splunk, Inc.
 //
@@ -1348,8 +740,7 @@ var __exportName = 'splunkjs';
          */
         init: function() {
 
-            // We perform the bindings so that every function works
-            // properly when it is passed as a callback.
+            // We perform the bindings so that every function works properly
             this.get                = utils.bind(this, this.get);
             this.del                = utils.bind(this, this.del);
             this.post               = utils.bind(this, this.post);
@@ -1372,7 +763,7 @@ var __exportName = 'splunkjs';
          * Returns all cookies formatted as a string to be put into the Cookie Header.
          */
         _getCookieString: function() {
-            var cookieString = "";
+            let cookieString = "";
 
             utils.forEach(this._cookieStore, function (cookieValue, cookieKey) {
                 cookieString += cookieKey;
@@ -1390,8 +781,8 @@ var __exportName = 'splunkjs';
          */
         _parseCookieHeader: function(cookieHeader) {
             // Returns an object of form { $cookieKey: $cookieValue, $optionalCookieAttributeName: $""value, ... }
-            var parsedCookieObject = CookieHandler.parse(cookieHeader);
-            var cookie = {};
+            let parsedCookieObject = CookieHandler.parse(cookieHeader);
+            let cookie = {};
 
             // This gets the first key value pair into an object and just repeatedly returns thereafter
             utils.forEach(parsedCookieObject, function(cookieValue, cookieKey) {
@@ -1412,19 +803,19 @@ var __exportName = 'splunkjs';
          * @param {Object} headers An object of headers for this request.
          * @param {Object} params Parameters for this request.
          * @param {Number} timeout A timeout period.
-         * @param {Function} callback The function to call when the request is complete: `(err, response)`.
+         * @param {Number} response_timeout A timeout period for aborting a request in milisecs (0 means no timeout).
          *
          * @method splunkjs.Http
          */
-        get: function(url, headers, params, timeout, callback, isAsync) {
-            var message = {
+        get: function(url, headers, params, timeout, response_timeout, isAsync) {
+            let message = {
                 method: "GET",
                 headers: headers,
                 timeout: timeout,
-                query: params
+                response_timeout: response_timeout,
+                query: params,
             };
-
-            return this.request(url, message, callback, isAsync);
+            return this.request(url, message, isAsync);
         },
 
         /**
@@ -1434,20 +825,21 @@ var __exportName = 'splunkjs';
          * @param {Object} headers  An object of headers for this request.
          * @param {Object} params Parameters for this request.
          * @param {Number} timeout A timeout period.
-         * @param {Function} callback The function to call when the request is complete: `(err, response)`.
+         * @param {Number} response_timeout A timeout period for aborting a request in milisecs (0 means no timeout).
          *
          * @method splunkjs.Http
          */
-        post: function(url, headers, params, timeout, callback) {
+        post: function(url, headers, params, timeout, response_timeout) {
             headers["Content-Type"] = "application/x-www-form-urlencoded";
-            var message = {
+            let message = {
                 method: "POST",
                 headers: headers,
                 timeout: timeout,
+                response_timeout: response_timeout,
                 post: params
             };
 
-            return this.request(url, message, callback);
+            return this.request(url, message);
         },
 
         /**
@@ -1457,19 +849,20 @@ var __exportName = 'splunkjs';
          * @param {Object} headers An object of headers for this request.
          * @param {Object} params Query parameters for this request.
          * @param {Number} timeout A timeout period.
-         * @param {Function} callback The function to call when the request is complete: `(err, response)`.
+         * @param {Number} response_timeout A timeout period for aborting a request in milisecs (0 means no timeout).
          *
          * @method splunkjs.Http
          */
-        del: function(url, headers, params, timeout, callback) {
-            var message = {
+        del: function(url, headers, params, timeout, response_timeout) {
+            let message = {
                 method: "DELETE",
                 headers: headers,
                 timeout: timeout,
+                response_timeout: response_timeout,
                 query: params
             };
 
-            return this.request(url, message, callback);
+            return this.request(url, message);
         },
 
         /**
@@ -1480,20 +873,19 @@ var __exportName = 'splunkjs';
          *
          * @param {String} url The encoded URL of the request.
          * @param {Object} message An object with values for method, headers, timeout, and encoded body.
-         * @param {Function} callback The function to call when the request is complete: `(err, response)`.
          *
          * @method splunkjs.Http
          * @see makeRequest
          */
-        request: function(url, message, callback, isAsync) {
+        request: function(url, message, isAsync) {
             var that = this;
-            var query = utils.getWithVersion(this.version, queryBuilderMap)(message);
-            var post = message.post || {};
+            let query = utils.getWithVersion(this.version, queryBuilderMap)(message);
+            let post = message.post || {};
 
-            var encodedUrl = url + "?" + Http.encode(query);
-            var body = message.body ? message.body : Http.encode(post);
+            let encodedUrl = url + "?" + Http.encode(query);
+            let body = message.body ? message.body : Http.encode(post);
 
-            var cookieString = that._getCookieString();
+            let cookieString = that._getCookieString();
 
             if (cookieString.length !== 0) {
                 message.headers["Cookie"] = cookieString;
@@ -1503,44 +895,42 @@ var __exportName = 'splunkjs';
                 delete message.headers["Authorization"];
             }
 
-            var options = {
+            let options = {
                 method: message.method,
                 headers: message.headers,
                 timeout: message.timeout,
+                response_timeout: message.response_timeout,
                 query: message.query,
                 body: body
             };
 
-            // Now we can invoke the user-provided HTTP class,
-            // passing in our "wrapped" callback
             if(isAsync) {
                 return this.makeRequestAsync(encodedUrl, options);
             }
             else {
-                var wrappedCallback = function(response) {
-                    callback = callback || function() {};
-    
+                let res = this.makeRequest(encodedUrl, options);
+                return res.then((response) => {
+                    if(!response){
+                        return;
+                    }
                     // Handle cookies if 'set-cookie' header is in the response
-    
-                    var cookieHeaders = response.response.headers['set-cookie'];
-                    if (cookieHeaders) {
-                        utils.forEach(cookieHeaders, function (cookieHeader) {
-                            var cookie = that._parseCookieHeader(cookieHeader);
-                            that._cookieStore[cookie.key] = cookie.value;
-                        });
-                    }
-    
-                    // Handle callback
-    
-                    if (response.status < 400 && response.status !== "abort") {
-                        callback(null, response);
-                    }
-                    else {
-                        callback(response);
-                    }
-                };
+                    let cookieHeaders = response.response.headers['set-cookie'];
+                        if (cookieHeaders) {
+                            utils.forEach(cookieHeaders, function (cookieHeader) {
+                                let cookie = that._parseCookieHeader(cookieHeader);
+                                that._cookieStore[cookie.key] = cookie.value;
+                            });
+                        }
 
-                return this.makeRequest(encodedUrl, options, wrappedCallback);
+                        if (response.status < 400 && response.status !== "abort") {
+                            return response;
+                        }
+                        else {
+                            throw response;
+                        }
+                    }).catch((error) => {
+                        throw error;
+                    });
             }
         },
 
@@ -1550,11 +940,10 @@ var __exportName = 'splunkjs';
          *
          * @param {String} url The encoded URL of the request.
          * @param {Object} message An object with values for method, headers, timeout, and encoded body.
-         * @param {Function} callback The function to call when the request is complete: `(err, response)`.
          *
          * @method splunkjs.Http
          */
-        makeRequest: function(url, message, callback) {
+        makeRequest: function(url, message) {
             throw new Error("UNDEFINED FUNCTION - OVERRIDE REQUIRED");
         },
 
@@ -1581,9 +970,9 @@ var __exportName = 'splunkjs';
          * @method splunkjs.Http
          */
         _buildResponse: function(error, response, data) {
-            var complete_response, json = {};
+            let complete_response, json = {};
 
-            var contentType = null;
+            let contentType = null;
             if (response && response.headers) {
                 contentType = utils.trim(response.headers["content-type"] || response.headers["Content-Type"] || response.headers["Content-type"] || response.headers["contentType"]);
             }
@@ -1630,10 +1019,10 @@ var __exportName = 'splunkjs';
      * @function splunkjs.Http
      */
     Http.encode = function(params) {
-        var encodedStr = "";
+        let encodedStr = "";
 
         // We loop over all the keys so we encode them.
-        for (var key in params) {
+        for (let key in params) {
             if (params.hasOwnProperty(key)) {
                 // Only append the ampersand if we already have
                 // something encoded, and the last character isn't
@@ -1643,19 +1032,19 @@ var __exportName = 'splunkjs';
                 }
 
                 // Get the value
-                var value = params[key];
+                let value = params[key];
 
                 // If it's an array, we loop over each value
                 // and encode it in the form &key=value[i]
                 if (value instanceof Array) {
-                    for (var i = 0; i < value.length; i++) {
+                    for (let i = 0; i < value.length; i++) {
                         encodedStr = encodedStr + key + "=" + encodeURIComponent(value[i]) + "&";
                     }
                 }
                 else if (typeof value === "object") {
-                    for(var innerKey in value) {
+                    for(let innerKey in value) {
                         if (value.hasOwnProperty(innerKey)) {
-                            var innerValue = value[innerKey];
+                            let innerValue = value[innerKey];
                             encodedStr = encodedStr + key + "=" + encodeURIComponent(value[innerKey]) + "&";
                         }
                     }
@@ -1675,7 +1064,7 @@ var __exportName = 'splunkjs';
     };
 })();
 
-},{"./jquery.class":8,"./log":9,"./utils":15,"cookie":76}],8:[function(require,module,exports){
+},{"./jquery.class":7,"./log":8,"./utils":14,"cookie":75}],7:[function(require,module,exports){
 /*! Simple JavaScript Inheritance
  * By John Resig http://ejohn.org/
  * MIT Licensed.
@@ -1742,7 +1131,7 @@ var __exportName = 'splunkjs';
       return Class;
     };
 })();
-},{}],9:[function(require,module,exports){
+},{}],8:[function(require,module,exports){
 (function (process){(function (){
 /*!*/
 // Copyright 2012 Splunk, Inc.
@@ -1932,7 +1321,7 @@ var __exportName = 'splunkjs';
 })();
 
 }).call(this)}).call(this,require('_process'))
-},{"./utils":15,"_process":205}],10:[function(require,module,exports){
+},{"./utils":14,"_process":204}],9:[function(require,module,exports){
 /*!*/
 // Copyright 2012 Splunk, Inc.
 //
@@ -1997,7 +1386,7 @@ var __exportName = 'splunkjs';
     };
 })();
 
-},{}],11:[function(require,module,exports){
+},{}],10:[function(require,module,exports){
 
 // Copyright 2011 Splunk, Inc.
 //
@@ -2038,15 +1427,16 @@ var __exportName = 'splunkjs';
             this._super(isSplunk);
         },
 
-        makeRequest: function(url, message, callback) {
+        makeRequest: function(url, message) {
             message.headers["Splunk-Client"] = "splunk-sdk-javascript/" + SDK_VERSION;
             var that = this;
+            var complete_response;
             var params = {
                 url: url,
                 type: message.method,
                 headers: message.headers,
                 data: message.body || "",
-                timeout: message.timeout || 0,
+                timeout: Math.max(message.timeout, message.response_timeout) || 0,
                 dataType: "json",
                 success: utils.bind(this, function(data, error, res) {
                     var response = {
@@ -2055,9 +1445,15 @@ var __exportName = 'splunkjs';
                     };
 
                     var complete_response = this._buildResponse(error, response, data);
-                    callback(complete_response);
+                    return Promise.resolve(complete_response)
                 }),
                 error: function(res, data, error) {
+                    // Format abort response
+                    if(data === "timeout"){
+                        let response = { headers: {}, statusCode: "abort", body: {}};
+                        complete_response = that._buildResponse("abort",response,{});
+                        return Promise.reject(complete_response);
+                    }
                     var response = {
                         statusCode: res.status,
                         headers: getHeaders(res.getAllResponseHeaders())
@@ -2069,12 +1465,16 @@ var __exportName = 'splunkjs';
                     }
                     var json = JSON.parse(res.responseText);
 
-                    var complete_response = that._buildResponse(error, response, json);
-                    callback(complete_response);
+                    complete_response = that._buildResponse(error, response, json);
+                    return Promise.reject(complete_response);
                 }
             };
             
-            return $.ajax(params);
+            return $.ajax(params).then((xhr)=>{
+                return complete_response;
+            }).catch((err)=>{
+                return complete_response;
+            });
         },
 
         parseJson: function(json) {
@@ -2083,8 +1483,7 @@ var __exportName = 'splunkjs';
         }
     });
 })();
-},{"../../../package.json":259,"../../http":7,"../../utils":15}],12:[function(require,module,exports){
-
+},{"../../../package.json":258,"../../http":6,"../../utils":14}],11:[function(require,module,exports){
 // Copyright 2011 Splunk, Inc.
 //
 // Licensed under the Apache License, Version 2.0 (the "License"): you may
@@ -2167,7 +1566,7 @@ var __exportName = 'splunkjs';
             this._super();
         },
 
-        makeRequest: function(url, message, callback) {
+        makeRequest: function(url, message) {
             // Add our original destination to to headers,
             // as some proxy implementations would rather
             // use this.
@@ -2181,33 +1580,31 @@ var __exportName = 'splunkjs';
             
             // Now, we prepend the prefix
             url = this.prefix + url;
-            
             var that = this;
+            var complete_response;
             var params = {
                 url: url,
                 type: message.method,
                 headers: message.headers,
                 data: message.body || "",
-                timeout: message.timeout || 0,
+                timeout: Math.max(message.timeout, message.response_timeout) || 0,
                 dataType: "text",
                 success: function(data, error, res) {
-                    if (req.wasAborted) {
-                        return;
-                    }
-                    
                     var response = {
                         statusCode: res.status,
                         headers: getHeaders(res.getAllResponseHeaders())
                     };
 
-                    var complete_response = that._buildResponse(error, response, data);
-                    callback(complete_response);
+                    complete_response = that._buildResponse(error, response, data);
+                    return Promise.resolve(complete_response);
                 },
                 error: function(res, data, error) {
-                    if (req.wasAborted) {
-                        return;
+                    // Format abort response
+                    if(data === "timeout"){
+                        let response = { headers: {}, statusCode: "abort", body: {}};
+                        complete_response = that._buildResponse("abort",response,{});
+                        return Promise.reject(complete_response);
                     }
-                    
                     var response = {
                         statusCode: res.status,
                         headers: getHeaders(res.getAllResponseHeaders())
@@ -2219,21 +1616,80 @@ var __exportName = 'splunkjs';
                     }
                     var json = res.responseText;
 
-                    var complete_response = that._buildResponse(error, response, json);
-                    callback(complete_response);
+                    complete_response = that._buildResponse(error, response, json);
                     
-                    // Note the fact that we aborted after we call
-                    // our initial callback, otherwise it will never
-                    // execute
-                    if (data === "abort") {
-                        req.wasAborted = true;
-                    }
+                    return Promise.reject(complete_response);
                 }
             };
             
-            var req = $.ajax(params);
+            return $.ajax(params).then((xhr)=>{
+                return complete_response;
+            }).catch((err)=>{
+                return complete_response;
+            });
+        },
+
+        makeRequestAsync: function(url, message) {
+            // Add our original destination to to headers,
+            // as some proxy implementations would rather
+            // use this.
+            message.headers["X-ProxyDestination"] = url;
+            message.headers["Splunk-Client"] = "splunk-sdk-javascript/" + SDK_VERSION;
+
+            // Need to remove the hostname from the URL
+            var parsed = parseUri(url);
+            var prefixToRemove = "" + (parsed.protocol ? parsed.protocol : "") + "://" + parsed.authority;
+            url = url.replace(new RegExp(escape(prefixToRemove), "i"), "");
             
-            return req;
+            // Now, we prepend the prefix
+            url = this.prefix + url;
+            
+            var that = this;
+            var complete_response;
+            var params = {
+                url: url,
+                type: message.method,
+                headers: message.headers,
+                data: message.body || "",
+                timeout: Math.max(message.timeout,message.response_timeout) || 0,
+                dataType: "text",
+                success: function(data, error, res) {
+                    var response = {
+                        statusCode: res.status,
+                        headers: getHeaders(res.getAllResponseHeaders()),
+                        body: JSON.parse(data)
+                    };
+                    complete_response = response;
+                    return Promise.resolve(complete_response);
+                },
+                error: function(res, data, error) {
+                    // Format abort response
+                    if(data === "timeout"){
+                        let response = { headers: {}, statusCode: "abort", body: {}};
+                        complete_response = that._buildResponse("abort",response,{});
+                        return Promise.reject(complete_response);
+                    }
+                    var response = {
+                        statusCode: res.status,
+                        headers: getHeaders(res.getAllResponseHeaders()),
+                    };
+                    
+                    if (data === "abort") {
+                        response.statusCode = "abort";
+                        res.responseText = "{}";
+                    }
+                    var json = res.responseText;
+                    complete_response = that._buildResponse(error, response, json);;
+                    
+                    return Promise.reject(complete_response);
+                }
+            };
+            
+            return $.ajax(params).then((xhr)=>{
+                return complete_response;
+            }).catch((err)=>{
+                return complete_response;
+            });
         },
 
         parseJson: function(json) {
@@ -2248,7 +1704,7 @@ var __exportName = 'splunkjs';
         }
     });
 })();
-},{"../../../package.json":259,"../../http":7,"../../utils":15}],13:[function(require,module,exports){
+},{"../../../package.json":258,"../../http":6,"../../utils":14}],12:[function(require,module,exports){
 (function (Buffer){(function (){
 
 // Copyright 2011 Splunk, Inc.
@@ -2278,7 +1734,7 @@ var __exportName = 'splunkjs';
             this._super();
         },
 
-        makeRequest: function(url, message, callback) {
+        makeRequest: function(url, message) {
             var request_options = {
                 url: url,
                 method: message.method,
@@ -2291,6 +1747,10 @@ var __exportName = 'splunkjs';
                 rejectUnauthorized : false
             };
 
+            if(message.response_timeout != undefined){
+                request_options.response_timeout = message.response_timeout;
+            }
+
             // Get the byte-length of the content, which adjusts for multi-byte characters
             request_options.headers["Content-Length"] = Buffer.byteLength(request_options.body, "utf8");
             request_options.headers["User-Agent"] = "splunk-sdk-javascript/" + SDK_VERSION;
@@ -2300,42 +1760,38 @@ var __exportName = 'splunkjs';
             }
 
             var that = this;
-            var req = needle.request(request_options.method, request_options.url, request_options.body, request_options, 
-                function (error, res, data) 
-                {
-                // If we already aborted this request, then do nothing
-                if (req.wasAborted) {
-                    return;
-                }
-                
+
+            function formatResponse(error = null, res = null) {
+                var complete_response;
+
                 var response = {
                     headers: res ? res.headers : {},
                     statusCode: res ? res.statusCode : 600
                 };
-
-                var complete_response;
+                var body = res ? res.body : {};
 
                 if(message.query && ["xml", "csv"].includes(message.query.output_mode)){
-                    complete_response = that._buildResponse(error, response, data);
+                    complete_response = that._buildResponse(error, response, body);
                 }
                 else {
-                    complete_response = that._buildResponse(error, response, JSON.stringify(data));
+                    complete_response = that._buildResponse(error, response, JSON.stringify(body));
                 }
-                
-                callback(complete_response);
-            });
-            
-            req.abort = function () {
-                var res = { headers: {}, statusCode: "abort" };
-                var data = "{}";
-                var complete_response = that._buildResponse("abort", res, data);
-                
-                callback(complete_response);
-                
-                // Note that we were aborted
-                req.wasAborted = true;
+
+                return complete_response;
             }
-            
+
+            var req = needle(request_options.method, request_options.url, request_options.body, request_options)
+                    .then((res) => {
+                        return formatResponse(null, res);
+                    })
+                    .catch((err) => {
+                        if(err.code == 'ECONNRESET' && request_options.response_timeout != undefined){
+                            var res = { headers: {}, statusCode: "abort", body: {}};
+                            throw formatResponse("abort", res);
+                        }
+                        throw formatResponse(err, null);
+                    });
+
             return req;
         },
 
@@ -2352,6 +1808,10 @@ var __exportName = 'splunkjs';
                 rejectUnauthorized : false,
             };
 
+            if(message.response_timeout != undefined){
+                request_options.response_timeout = message.response_timeout;
+            }
+            
             // Get the byte-length of the content, which adjusts for multi-byte characters
             request_options.headers["Content-Length"] = Buffer.byteLength(request_options.body, "utf8");
             request_options.headers["User-Agent"] = "splunk-sdk-javascript/" + SDK_VERSION;
@@ -2369,7 +1829,7 @@ var __exportName = 'splunkjs';
 })();
 
 }).call(this)}).call(this,require("buffer").Buffer)
-},{"../../../package.json":259,"../../http":7,"../../utils":15,"buffer":71,"needle":175}],14:[function(require,module,exports){
+},{"../../../package.json":258,"../../http":6,"../../utils":14,"buffer":70,"needle":174}],13:[function(require,module,exports){
 /*!*/
 // Copyright 2014 Splunk, Inc.
 //
@@ -2390,7 +1850,6 @@ var __exportName = 'splunkjs';
     
     var Context     = require('./context');
     var Http        = require('./http');
-    var Async       = require('./async');
     var Paths       = require('./paths').Paths;
     var Class       = require('./jquery.class').Class;
     var utils       = require('./utils');
@@ -2444,8 +1903,7 @@ var __exportName = 'splunkjs';
         init: function() {
             this._super.apply(this, arguments);
 
-            // We perform the bindings so that every function works 
-            // properly when it is passed as a callback.
+            // We perform the bindings so that every function works properly
             this.specialize         = utils.bind(this, this.specialize);
             this.apps               = utils.bind(this, this.apps);
             this.configurations     = utils.bind(this, this.configurations);
@@ -2465,8 +1923,8 @@ var __exportName = 'splunkjs';
          *
          * @example
          *
-         *      var svc = ...;
-         *      var newService = svc.specialize("myuser", "unix");
+         *      let svc = ...;
+         *      let newService = svc.specialize("myuser", "unix");
          *
          * @param {String} owner The Splunk username, such as "admin". A value of "nobody" means no specific user. The "-" wildcard means all users.
          * @param {String} app The app context for this resource (such as "search"). The "-" wildcard means all apps.
@@ -2495,9 +1953,10 @@ var __exportName = 'splunkjs';
          * @example
          *
          *      // List installed apps
-         *      var apps = svc.apps();
-         *      apps.fetch(function(err) { console.log(apps.list()); });
-         *
+         *      let apps = svc.apps();
+         *      let res = await apps.fetch();
+         *      console.log(res.list());
+         * 
          * @return {splunkjs.Service.Collection} The `Applications` collection.
          *
          * @endpoint apps/local
@@ -2515,13 +1974,11 @@ var __exportName = 'splunkjs';
          * @example
          *
          *      // List all properties in the 'props.conf' file
-         *      var files = svc.configurations();
-         *      files.item("props", function(err, propsFile) {
-         *          propsFile.fetch(function(err, props) {
-         *              console.log(props.properties()); 
-         *          });
-         *      });
-         *
+         *      let files = svc.configurations();
+         *      let propsFile = await files.item("props");
+         *      let props = await propsFile.fetch();
+         *      console.log(props.properties());
+         * 
          * @param {Object} namespace Namespace information:
          *    - `owner` (_string_): The Splunk username, such as "admin". A value of "nobody" means no specific user. The "-" wildcard means all users.
          *    - `app` (_string_): The app context for this resource (such as "search"). The "-" wildcard means all apps.
@@ -2543,12 +2000,11 @@ var __exportName = 'splunkjs';
          * @example
          *
          *      // Check if we have an _internal index
-         *      var indexes = svc.indexes();
-         *      indexes.fetch(function(err, indexes) {
-         *          var index = indexes.item("_internal");
-         *          console.log("Was index found: " + !!index);
-         *          // `index` is an Index object.
-         *      });
+         *      let indexes = svc.indexes();
+         *      let res = await indexes.fetch();
+         *      let index = res.item("_internal");
+         *      console.log("Was index found: " + !!index);
+         *      // `index` is an Index object.
          *
          * @param {Object} namespace Namespace information:
          *    - `owner` (_string_): The Splunk username, such as "admin". A value of "nobody" means no specific user. The "-" wildcard means all users.
@@ -2571,10 +2027,9 @@ var __exportName = 'splunkjs';
          * @example
          *
          *      // List all # of saved searches
-         *      var savedSearches = svc.savedSearches();
-         *      savedSearches.fetch(function(err, savedSearches) {
-         *          console.log("# Of Saved Searches: " + savedSearches.list().length);
-         *      });
+         *      let savedSearches = svc.savedSearches();
+         *      let res = await savedSearches.fetch();
+         *      console.log("# Of Saved Searches: " + res.list().length);
          *
          * @param {Object} namespace Namespace information:
          *    - `owner` (_string_): The Splunk username, such as "admin". A value of "nobody" means no specific user. The "-" wildcard means all users.
@@ -2597,10 +2052,9 @@ var __exportName = 'splunkjs';
          * @example
          *
          *      // List all # of storage passwords
-         *      var storagePasswords = svc.storagePasswords();
-         *      storagePasswords.fetch(function(err, storagePasswords) {
-         *          console.log("# of Storage Passwords: " + storagePasswords.list().length);
-         *      });
+         *      let storagePasswords = svc.storagePasswords();
+         *      let res = await storagePasswords.fetch();
+         *      console.log("# of Storage Passwords: " + res.list().length);
          *
          * @param {Object} namespace Namespace information:
          *    - `owner` (_string_): The Splunk username, such as "admin". A value of "nobody" means no specific user. The "-" wildcard means all users.
@@ -2623,11 +2077,9 @@ var __exportName = 'splunkjs';
          * @example
          *      
          *      // List all # of fired alert groups
-         *      var firedAlertGroups = svc.firedAlertGroups();
-         *      firedAlertGroups.fetch(function(err, firedAlertGroups) {
-         *          console.log("# of alert groups: " + firedAlertGroups.list().length);
-         *      });
-         *
+         *      let firedAlertGroups = svc.firedAlertGroups();
+         *      let res = await firedAlertGroups.fetch();
+         *      console.log("# of alert groups: " + res.list().length);
          *
          * @param {Object} namespace Namespace information:
          *    - `owner` (_string_): The Splunk username, such as "admin". A value of "nobody" means no specific user. The "-" wildcard means all users.
@@ -2650,13 +2102,12 @@ var __exportName = 'splunkjs';
          * @example
          *
          *      // List all job IDs
-         *      var jobs = svc.jobs();
-         *      jobs.fetch(function(err, jobs) {
-         *          var list = jobs.list();
-         *          for(var i = 0; i < list.length; i++) {
-         *              console.log("Job " + (i+1) + ": " + list[i].sid);
-         *          }
-         *      });
+         *      let jobs = svc.jobs();
+         *      let res = await jobs.fetch();
+         *      let list = res.list();
+         *      for(let i = 0; i < list.length; i++) {
+         *          console.log("Job " + (i+1) + ": " + list[i].sid);
+         *      }
          *
          * @param {Object} namespace Namespace information:
          *    - `owner` (_string_): The Splunk username, such as "admin". A value of "nobody" means no specific user. The "-" wildcard means all users.
@@ -2691,13 +2142,12 @@ var __exportName = 'splunkjs';
          * @example
          *
          *      // List all usernames
-         *      var users = svc.users();
-         *      users.fetch(function(err, users) {
-         *          var list = users.list();
-         *          for(var i = 0; i < list.length; i++) {
-         *              console.log("User " + (i+1) + ": " + list[i].properties().name);
-         *          }
-         *      });
+         *      let users = svc.users();
+         *      let res = await users.fetch();
+         *      let list = res.list();
+         *      for(let i = 0; i < list.length; i++) {
+         *          console.log("User " + (i+1) + ": " + list[i].properties().name);
+         *      }
          *
          * @return {splunkjs.Service.Users} The `Users` collection.
          *
@@ -2716,13 +2166,12 @@ var __exportName = 'splunkjs';
          * @example
          *
          *      // List all views
-         *      var views = svc.views();
-         *      views.fetch(function(err, views) {
-         *          var list = views.list();
-         *          for(var i = 0; i < list.length; i++) {
-         *              console.log("View " + (i+1) + ": " + list[i].properties().name);
-         *          }
-         *      });
+         *      let views = svc.views();
+         *      let res = await views.fetch();
+         *      let list = res.list();
+         *      for(let i = 0; i < list.length; i++) {
+         *          console.log("View " + (i+1) + ": " + list[i].properties().name);
+         *      }
          *
          * @param {Object} namespace Namespace information:
          *    - `owner` (_string_): The Splunk username, such as "admin". A value of "nobody" means no specific user. The "-" wildcard means all users.
@@ -2750,9 +2199,8 @@ var __exportName = 'splunkjs';
          *
          * @example
          *
-         *      service.search("search ERROR", {id: "myjob_123"}, function(err, newJob) {
-         *          console.log("CREATED": newJob.sid);
-         *      });
+         *      let newJob = await service.search("search ERROR", {id: "myjob_123"});
+         *      console.log("CREATED: ", newJob.sid);
          *
          * @param {String} query The search query.
          * @param {Object} params A dictionary of properties for the job. For a list of available parameters, see <a href=" http://dev.splunk.com/view/SP-CAAAEFA#searchjobparams" target="_blank">Search job parameters</a> on Splunk Developer Portal.
@@ -2760,19 +2208,19 @@ var __exportName = 'splunkjs';
          *    - `owner` (_string_): The Splunk username, such as "admin". A value of "nobody" means no specific user. The "-" wildcard means all users.
          *    - `app` (_string_): The app context for this resource (such as "search"). The "-" wildcard means all apps.
          *    - `sharing` (_string_): A mode that indicates how the resource is shared. The sharing mode can be "user", "app", "global", or "system".
-         * @param {Function} callback A function to call with the created job: `(err, createdJob)`.
+         * @param {Number} response_timeout A timeout period for aborting a request in milisecs (0 means no timeout).
          *
          * @endpoint search/jobs
          * @method splunkjs.Service
          */
-        search: function(query, params, namespace, callback) {
-            if (!callback && utils.isFunction(namespace)) {
-                callback = namespace;
+        search: function(query, params,namespace, response_timeout) {
+            if (!response_timeout && utils.isNumber(namespace)) {
+                response_timeout = namespace;
                 namespace = null;
             }
             
-            var jobs = new root.Jobs(this, namespace);
-            return jobs.search(query, params, callback);
+            let jobs = new root.Jobs(this, namespace);
+            return jobs.search(query, params,response_timeout);
         },
 
         /**
@@ -2783,18 +2231,18 @@ var __exportName = 'splunkjs';
          *    - `owner` (_string_): The Splunk username, such as "admin". A value of "nobody" means no specific user. The "-" wildcard means all users.
          *    - `app` (_string_): The app context for this resource (such as "search"). The "-" wildcard means all apps.
          *    - `sharing` (_string_): A mode that indicates how the resource is shared. The sharing mode can be "user", "app", "global", or "system".
-         * @param {Function} callback A function to call with the created job: `(err, job)`.
+         * @param {Number} response_timeout A timeout period for aborting a request in milisecs (0 means no timeout).
          *
          * @endpoint search/jobs
          * @method splunkjs.Service
          */
-        getJob: function(sid, namespace, callback) {
-            if (!callback && utils.isFunction(namespace)) {
-                callback = namespace;
+        getJob: function(sid, namespace,response_timeout) {
+            if (!response_timeout && utils.isNumber(response_timeout)) {
+                response_timeout = namespace;
                 namespace = null;
             }
-            var job = new root.Job(this, sid, namespace);
-            return job.fetch({}, callback);
+            let job = new root.Job(this, sid, namespace);
+            return job.fetch({}, response_timeout);
         },
         
         /**
@@ -2802,9 +2250,8 @@ var __exportName = 'splunkjs';
          *
          * @example
          *
-         *      service.oneshotSearch("search ERROR", {id: "myjob_123"}, function(err, results) {
-         *          console.log("RESULT FIELDS": results.fields);
-         *      });
+         *      let results = await service.oneshotSearch("search ERROR", {id: "myjob_123"});
+         *      console.log("RESULT FIELDS: ", results.fields);
          *
          * @param {String} query The search query.
          * @param {Object} params A dictionary of properties for the search:
@@ -2816,19 +2263,19 @@ var __exportName = 'splunkjs';
          *    - `owner` (_string_): The Splunk username, such as "admin". A value of "nobody" means no specific user. The "-" wildcard means all users.
          *    - `app` (_string_): The app context for this resource (such as "search"). The "-" wildcard means all apps.
          *    - `sharing` (_string_): A mode that indicates how the resource is shared. The sharing mode can be "user", "app", "global", or "system".
-         * @param {Function} callback A function to call with the results of the search: `(err, results)`.
+         * @param {Number} response_timeout A timeout period for aborting a request in milisecs (0 means no timeout).
          *
          * @endpoint search/jobs
          * @method splunkjs.Service
          */
-        oneshotSearch: function(query, params, namespace, callback) {
-            if (!callback && utils.isFunction(namespace)) {
-                callback = namespace;
+        oneshotSearch: function(query, params, namespace,response_timeout) {
+            if (!response_timeout && utils.isNumber(response_timeout)) {
+                response_timeout = namespace;
                 namespace = null;
             }
             
-            var jobs = new root.Jobs(this, namespace);
-            return jobs.oneshotSearch(query, params, callback);
+            let jobs = new root.Jobs(this, namespace);
+            return jobs.oneshotSearch(query, params, response_timeout);
         },
         
         /**
@@ -2836,36 +2283,21 @@ var __exportName = 'splunkjs';
          *
          * @example
          *
-         *      service.currentUser(function(err, user) {
-         *          console.log("Real name: ", user.properties().realname);
-         *      });
+         *      let user  = await service.currentUser();
+         *      console.log("Real name: ", user.properties().realname);
          *
-         * @param {Function} callback A function to call with the user instance: `(err, user)`.
+         * @param {Number} response_timeout A timeout period for aborting a request in milisecs (0 means no timeout).
          * @return {splunkjs.Service.currentUser} The `User`.
          *
          * @endpoint authorization/current-context
          * @method splunkjs.Service
          */
-        currentUser: function(callback) {
-            callback = callback || function() {};
-            
+        currentUser: function(response_timeout) {
             var that = this;
-            var req = this.get(Paths.currentUser, {}, function(err, response) {
-                if (err) {
-                    callback(err);
-                } 
-                else {
-                    var username = response.data.entry[0].content.username;
-                    var user = new root.User(that, username);
-                    user.fetch(function() {
-                        if (req.wasAborted) {
-                            return; // aborted, so ignore
-                        }
-                        else {
-                            callback.apply(null, arguments);
-                        }
-                    });
-                }
+            let req = this.get(Paths.currentUser, {}, response_timeout).then((response)=>{
+                let username = response.data.entry[0].content.username;
+                let user = new root.User(that, username);
+                return user.fetch({}, response_timeout)
             });
             
             return req;
@@ -2876,20 +2308,17 @@ var __exportName = 'splunkjs';
          *
          * @example
          *
-         *      service.serverInfo(function(err, info) {
-         *          console.log("Splunk Version: ", info.properties().version);
-         *      });
+         *      let info = await service.serverInfo();
+         *      console.log("Splunk Version: ", info.properties().version);
          *
-         * @param {Function} callback A function to call with the server info: `(err, info)`.
+         * @param {Number} response_timeout A timeout period for aborting a request in milisecs (0 means no timeout).
          *
          * @endpoint server/info
          * @method splunkjs.Service
          */
-        serverInfo: function(callback) {
-            callback = callback || function() {};
-            
-            var serverInfo = new root.ServerInfo(this);
-            return serverInfo.fetch(callback);
+        serverInfo: function(response_timeout) {
+            let serverInfo = new root.ServerInfo(this);
+            return serverInfo.fetch({}, response_timeout);
         },
         
         /**
@@ -2897,9 +2326,8 @@ var __exportName = 'splunkjs';
          *
          * @example
          *
-         *      service.parse("search index=_internal | head 1", function(err, parse) {
-         *          console.log("Commands: ", parse.commands);
-         *      });
+         *      let parse = await service.parse("search index=_internal | head 1");
+         *      console.log("Commands: ", parse.commands);
          *
          * @param {String} query The search query to parse.
          * @param {Object} params An object of options for the parser:
@@ -2907,42 +2335,31 @@ var __exportName = 'splunkjs';
          *    - `output_mode` (_string_): The output format (XML or JSON).
          *    - `parse_only` (_boolean_): If `true`, disables the expansion of search due to evaluation of subsearches, time term expansion, lookups, tags, eventtypes, and sourcetype alias.
          *    - `reload_macros` (_boolean_): If `true`, reloads macro definitions from macros.conf.
-         * @param {Function} callback A function to call with the parse info: `(err, parse)`.
+         * @param {Number} response_timeout A timeout period for aborting a request in milisecs (0 means no timeout).
          *
          * @endpoint search/parser
          * @method splunkjs.Service
          */
-        parse: function(query, params, callback) {
-            if (!callback && utils.isFunction(params)) {
-                callback = params;
+        parse: function(query, params,response_timeout) {
+            if (!response_timeout && utils.isNumber(params)) {
+                response_timeout = params;
                 params = {};
             }
-            
-            callback = callback || function() {};
+
             params = params || {};
             
             params.q = query;
             
             // Pre-9.0 uses GET and v1 endpoint
             if (this.disableV2SearchApi()) {
-                return this.get(Paths.parser, params, function(err, response) {
-                    if (err) {
-                        callback(err);
-                    } 
-                    else {
-                        callback(null, response.data);
-                    }
+                return this.get(Paths.parser, params, response_timeout).then((response) => {
+                    return response.data;
                 });
             }
 
             // Post-9.0 uses POST and v2 endpoint
-            return this.post(Paths.parserV2, params, function(err, response) {
-                if (err) {
-                    callback(err);
-                } 
-                else {
-                    callback(null, response.data);
-                }
+            return this.post(Paths.parserV2, params, response_timeout).then((response) => {
+                return response.data;
             });
 
         },
@@ -2952,37 +2369,25 @@ var __exportName = 'splunkjs';
          *
          * @example
          *
-         *      service.typeahead("index=", 10, function(err, options) {
-         *          console.log("Autocompletion options: ", options);
-         *      });
+         *      let options = await service.typeahead("index=", 10);
+         *      console.log("Autocompletion options: ", options);
          *
          * @param {String} prefix The query fragment to autocomplete.
          * @param {Number} count The number of options to return (optional).
-         * @param {Function} callback A function to call with the autocompletion info: `(err, options)`.
+         * @param {Number} response_timeout A timeout period for aborting a request in milisecs (0 means no timeout).
          *
          * @endpoint search/typeahead
          * @method splunkjs.Service
          */
-        typeahead: function(prefix, count, callback) {
-            if (!callback && utils.isFunction(count)) {
-                callback = count;
-                count = 10;
-            }
-            
-            callback = callback || function() {};
-            var params = {
+        typeahead: function(prefix, count, response_timeout) {
+            let params = {
                 count: count || 10,
                 prefix: prefix
             };
             
-            return this.get(Paths.typeahead, params, function(err, response) {
-                if (err) {
-                    callback(err);
-                }
-                else {
-                    var results = (response.data || {}).results;
-                    callback(null, results || []);
-                }
+            return this.get(Paths.typeahead, params,response_timeout).then((response) => {
+                    let results = (response.data || {}).results;
+                    return (results || []);
             });
         },
         
@@ -2991,9 +2396,8 @@ var __exportName = 'splunkjs';
          *
          * @example
          *
-         *      service.log("A new event", {index: "_internal", sourcetype: "mysourcetype"}, function(err, result) {
-         *          console.log("Submitted event: ", result);
-         *      });
+         *      let result = await service.log("A new event", {index: "_internal", sourcetype: "mysourcetype"});
+         *      console.log("Submitted event: ", result);
          *
          * @param {String|Object} event The text for this event, or a JSON object.
          * @param {Object} params A dictionary of parameters for indexing: 
@@ -3002,18 +2406,16 @@ var __exportName = 'splunkjs';
          *    - `host_regex` (_string_): A regular expression used to extract the host value from each event. 
          *    - `source` (_string_): The value to populate in the Source field for events from this data input.
          *    - `sourcetype` (_string_): The value to populate in the Sourcetype field for events from this data input.
-         * @param {Function} callback A function to call when the event is submitted: `(err, result)`.
+         * @param {Number} response_timeout A timeout period for aborting a request in milisecs (0 means no timeout).
          *
          * @endpoint receivers/simple
          * @method splunkjs.Service
          */
-        log: function(event, params, callback) {
-            if (!callback && utils.isFunction(params)) {
-                callback = params;
+        log: function(event, params,response_timeout) {
+            if (!response_timeout && utils.isNumber(params)) {
+                response_timeout = params;
                 params = {};
             }
-            
-            callback = callback || function() {};
             params = params || {};
             
             // If the event is a JSON object, convert it to a string.
@@ -3021,29 +2423,24 @@ var __exportName = 'splunkjs';
                 event = JSON.stringify(event);
             }
             
-            var path = this.paths.submitEvent;
-            var method = "POST";
-            var headers = {"Content-Type": "text/plain"};
-            var body = event;
-            var get = params;
-            var post = {};
+            let path = this.paths.submitEvent;
+            let method = "POST";
+            let headers = {"Content-Type": "text/plain"};
+            let body = event;
+            let get = params;
+            let post = {};
             
-            var req = this.request(
+            let req = this.request(
                 path, 
                 method, 
                 get, 
                 post, 
                 body, 
-                headers, 
-                function(err, response) {
-                    if (err) {
-                        callback(err);
-                    } 
-                    else {
-                        callback(null, response.data);
-                    }
-                }
-            );
+                headers,
+                response_timeout
+            ).then((response) => {
+                return response.data;
+            });
             
             return req;
         }
@@ -3080,8 +2477,7 @@ var __exportName = 'splunkjs';
             this.service = service;
             this.qualifiedPath = qualifiedPath;
 
-            // We perform the bindings so that every function works 
-            // properly when it is passed as a callback.
+            // We perform the bindings so that every function works properly
             this.get    = utils.bind(this, this.get);
             this.post   = utils.bind(this, this.post);
             this.del    = utils.bind(this, this.del);
@@ -3179,22 +2575,23 @@ var __exportName = 'splunkjs';
          * @example
          *
          *      // Will make a request to {service.prefix}/search/jobs/123456/results?offset=1
-         *      var endpoint = new splunkjs.Service.Endpoint(service, "search/jobs/12345");
-         *      endpoint.get("results", {offset: 1}, function() { console.log("DONE"))});
+         *      let endpoint = new splunkjs.Service.Endpoint(service, "search/jobs/12345");
+         *      let res = await endpoint.get("results", {offset: 1});
+         *      console.log("DONE");
          *
          * @param {String} relpath A relative path to append to the endpoint path.
          * @param {Object} params A dictionary of entity-specific parameters to add to the query string.
-         * @param {Function} callback A function to call when the request is complete: `(err, response)`.
+         * @param {Number} response_timeout A timeout period for aborting a request in milisecs (0 means no timeout).
          *
          * @method splunkjs.Service.Endpoint
          */
-        get: function (relpath, params, callback, isAsync) {
-            var url = this.createUrl(this.qualifiedPath, relpath);
+        get: function(relpath, params, response_timeout, isAsync) {
+            let url = this.createUrl(this.qualifiedPath, relpath);
 
             return this.service.get(
                 url,
                 params,
-                callback,
+                response_timeout,
                 isAsync
             );
         },
@@ -3206,22 +2603,23 @@ var __exportName = 'splunkjs';
          * @example
          *
          *      // Will make a request to {service.prefix}/search/jobs/123456/control
-         *      var endpoint = new splunkjs.Service.Endpoint(service, "search/jobs/12345");
-         *      endpoint.post("control", {action: "cancel"}, function() { console.log("CANCELLED"))});
+         *      let endpoint = new splunkjs.Service.Endpoint(service, "search/jobs/12345");
+         *      let res = await endpoint.post("control", {action: "cancel"});
+         *      console.log("CANCELLED");
          *
          * @param {String} relpath A relative path to append to the endpoint path.
          * @param {Object} params A dictionary of entity-specific parameters to add to the body.
-         * @param {Function} callback A function to call when the request is complete: `(err, response)`.
+         * @param {Number} response_timeout A timeout period for aborting a request in milisecs (0 means no timeout).
          *
          * @method splunkjs.Service.Endpoint
          */
-        post: function (relpath, params, callback) {
-            var url = this.createUrl(this.qualifiedPath, relpath);
+        post: function(relpath, params, response_timeout) {
+            let url = this.createUrl(this.qualifiedPath, relpath);
 
             return this.service.post(
                 url,
                 params,
-                callback
+                response_timeout
             );
         },
 
@@ -3232,17 +2630,18 @@ var __exportName = 'splunkjs';
          * @example
          *
          *      // Will make a request to {service.prefix}/search/jobs/123456
-         *      var endpoint = new splunkjs.Service.Endpoint(service, "search/jobs/12345");
-         *      endpoint.delete("", {}, function() { console.log("DELETED"))});
+         *      let endpoint = new splunkjs.Service.Endpoint(service, "search/jobs/12345");
+         *      let res = await endpoint.delete("", {});
+         *      console.log("DELETED");
          *
          * @param {String} relpath A relative path to append to the endpoint path.
          * @param {Object} params A dictionary of entity-specific parameters to add to the query string.
-         * @param {Function} callback A function to call when the request is complete: `(err, response)`.
+         * @param {Number} response_timeout A timeout period for aborting a request in milisecs (0 means no timeout).
          *
          * @method splunkjs.Service.Endpoint
          */
-        del: function(relpath, params, callback) {
-            var url = this.qualifiedPath;
+        del: function(relpath, params, response_timeout) {
+            let url = this.qualifiedPath;
 
             // If we have a relative path, we will append it with a preceding
             // slash.
@@ -3253,7 +2652,7 @@ var __exportName = 'splunkjs';
             return this.service.del(
                 url,
                 params,
-                callback
+                response_timeout
             );
         }
     });
@@ -3285,15 +2684,14 @@ var __exportName = 'splunkjs';
          * @method splunkjs.Service.Resource
          */
         init: function (service, path, namespace) {
-            var fullpath = service.fullpath(path, namespace);
+            let fullpath = service.fullpath(path, namespace);
             
             this._super(service, fullpath);
             this.namespace = namespace;
             this._properties = {};
             this._state = {};
             
-            // We perform the bindings so that every function works 
-            // properly when it is passed as a callback.
+            // We perform the bindings so that every function works properly
             this._load       = utils.bind(this, this._load);
             this.fetch       = utils.bind(this, this.fetch);
             this.properties  = utils.bind(this, this.properties);
@@ -3327,12 +2725,12 @@ var __exportName = 'splunkjs';
          * Refreshes the resource by fetching the object from the server
          * and loading it.
          *
-         * @param {Function} callback A function to call when the object is retrieved: `(err, resource)`.
+         * 
          *
          * @method splunkjs.Service.Resource
          * @protected
          */
-        fetch: function(callback) {
+        fetch: function() {
             throw new Error("MUST BE OVERRIDDEN");
         },
         
@@ -3397,8 +2795,7 @@ var __exportName = 'splunkjs';
         init: function(service, path, namespace) {
             this._super(service, path, namespace);
             
-            // We perform the bindings so that every function works 
-            // properly when it is passed as a callback.
+            // We perform the bindings so that every function works properly
             this._load     = utils.bind(this, this._load);
             this.fetch     = utils.bind(this, this.fetch);
             this.remove    = utils.bind(this, this.remove);
@@ -3532,83 +2929,60 @@ var __exportName = 'splunkjs';
          *    - `sort_dir` (_string_): The direction to sort returned items: “asc” or “desc”.
          *    - `sort_key` (_string_): The field to use for sorting (optional).
          *    - `sort_mode` (_string_): The collating sequence for sorting returned items: “auto”, “alpha”, “alpha_case”, or “num”.
-         * @param {Function} callback A function to call when the object is retrieved: `(err, resource)`.
+         * @param {Number} response_timeout A timeout period for aborting a request in milisecs (0 means no timeout).
          *
          * @method splunkjs.Service.Entity
          */
-        fetch: function(options, callback) {
-            if (!callback && utils.isFunction(options)) {
-                callback = options;
+        fetch: function(options, response_timeout) {
+            if (utils.isNumber(options) && !response_timeout) {
+                response_timeout = options;
                 options = {};
             }
-            callback = callback || function() {};
-            
             options = options || {};
-            
             var that = this;
-            return this.get("", options, function(err, response) {
-                if (err) {
-                    callback(err);
-                } 
-                else {
-                    that._load(response.data ? response.data.entry : null);
-                    callback(null, that);
-                }
+            return this.get("", options, response_timeout).then((res) => {
+                that._load(res.data ? res.data.entry : null);
+                return that;
             });
         },
         
         /**
          * Deletes the entity from the server.
          *
-         * @param {Function} callback A function to call when the object is deleted: `(err)`.
+         * @param {Number} response_timeout A timeout period for aborting a request in milisecs (0 means no timeout).
          *
          * @method splunkjs.Service.Entity
          * @protected
          */
-        remove: function(callback) {
-            callback = callback || function() {};
-            
-            var that = this;
-            return this.del("", {}, function(err) {
-                callback(err);
-            });
+        remove: function(response_timeout) {
+            return this.del("", {}, response_timeout);
         },
         
         /**
          * Updates the entity on the server.
          *
          * @param {Object} props The properties to update the object with.
-         * @param {Function} callback A function to call when the object is updated: `(err, entity)`.
+         * @param {Number} response_timeout A timeout period for aborting a request in milisecs (0 means no timeout).
          *
          * @method splunkjs.Service.Entity
          * @protected
          */
-        update: function(props, callback) {
-            callback = callback || function() {};
-            
+        update: function(props, response_timeout) {
             if (props.hasOwnProperty("name")) {
                 throw new Error("Cannot set 'name' field in 'update'");
             }
             
             var that = this;
-            var req = this.post("", props, function(err, response) {
-                if (!err && !that.fetchOnUpdate) {
+            let req = this.post("", props, response_timeout).then((response)=>{
+                if (!that.fetchOnUpdate){
                     that._load(response.data.entry);
-                    callback(err, that);
+                    return that;
                 }
-                else if (!err && that.fetchOnUpdate) {
-                    that.fetch(function() {
-                        if (req.wasAborted) {
-                            return; // aborted, so ignore
-                        }
-                        else {
-                            callback.apply(null, arguments);
-                        }
-                    });
+                else{
+                    return that.fetch({}, response_timeout)
                 }
-                else {
-                    callback(err, that);
-                }
+            }).catch((err) => {
+                throw [err, that];
             });
             
             return req;
@@ -3617,67 +2991,47 @@ var __exportName = 'splunkjs';
         /**
          * Disables the entity on the server.
          *
-         * @param {Function} callback A function to call when the object is disabled: `(err, entity)`.
+         * @param {Number} response_timeout A timeout period for aborting a request in milisecs (0 means no timeout).
          *
          * @method splunkjs.Service.Entity
          * @protected
          */
-        disable: function(callback) {
-            callback = callback || function() {};
-            
+        disable: function(response_timeout) {
             var that = this;
-            this.post("disable", {}, function(err, response) {
-                if (err) {
-                    callback(err);
-                }
-                else {
-                    callback(null, that);
-                }
-            });
+            return this.post("disable", {}, response_timeout).then((response) => {
+                return that;
+            });;
         },
         
         /**
          * Enables the entity on the server.
          *
-         * @param {Function} callback A function to call when the object is enabled: `(err, entity)`.
+         * @param {Number} response_timeout A timeout period for aborting a request in milisecs (0 means no timeout).
          *
          * @method splunkjs.Service.Entity
          * @protected
          */
-        enable: function(callback) {
-            callback = callback || function() {};
-            
+        enable: function(response_timeout) {
             var that = this;
-            this.post("enable", {}, function(err, response) {
-                if (err) {
-                    callback(err);
-                }
-                else {
-                    callback(null, that);
-                }
+            return this.post("enable", {}, response_timeout).then((response)=>{
+                return that;
             });
         },
         
         /**
          * Reloads the entity on the server.
-         *
-         * @param {Function} callback A function to call when the object is reloaded: `(err, entity)`.
+         * 
+         * @param {Number} response_timeout A timeout period for aborting a request in milisecs (0 means no timeout).
          *
          * @method splunkjs.Service.Entity
          * @protected
          */
-        reload: function(callback) {
-            callback = callback || function() {};
-            
+        reload: function(response_timeout) {
             var that = this;
-            this.post("_reload", {}, function(err, response) {
-                if (err) {
-                    callback(err);
-                }
-                else {
-                    callback(null, that);
-                }
-            });
+            return this.post("_reload", {}, response_timeout)
+                .then((res) => {
+                    return that;
+                });
         }
     });
 
@@ -3716,8 +3070,7 @@ var __exportName = 'splunkjs';
         init: function (service, path, namespace) {
             this._super(service, path, namespace);
             
-            // We perform the bindings so that every function works 
-            // properly when it is passed as a callback.
+            // We perform the bindings so that every function works properly
             this._load             = utils.bind(this, this._load);
             this.fetch             = utils.bind(this, this.fetch);
             this.create            = utils.bind(this, this.create);
@@ -3758,12 +3111,12 @@ var __exportName = 'splunkjs';
         _load: function(properties) {
             this._super(properties);
             
-            var entities = [];
-            var entitiesByName = {};
-            var entityPropertyList = properties.entry || [];
-            for(var i = 0; i < entityPropertyList.length; i++) {
-                var props = entityPropertyList[i];
-                var entity = this.instantiateEntity(props);
+            let entities = [];
+            let entitiesByName = {};
+            let entityPropertyList = properties.entry || [];
+            for(let i = 0; i < entityPropertyList.length; i++) {
+                let props = entityPropertyList[i];
+                let entity = this.instantiateEntity(props);
                 entity._load(props);
                 entities.push(entity);
                 
@@ -3826,16 +3179,15 @@ var __exportName = 'splunkjs';
          *    - `sort_dir` (_string_): The direction to sort returned items: “asc” or “desc”.
          *    - `sort_key` (_string_): The field to use for sorting (optional).
          *    - `sort_mode` (_string_): The collating sequence for sorting returned items: “auto”, “alpha”, “alpha_case”, or “num”.
-         * @param {Function} callback A function to call when the object is retrieved: `(err, resource)`.
+         * @param {Number} response_timeout A timeout period for aborting a request in milisecs (0 means no timeout).
          *
          * @method splunkjs.Service.Collection
          */
-        fetch: function(options, callback) {
-            if (!callback && utils.isFunction(options)) {
-                callback = options;
+        fetch: function(options, response_timeout) {
+            if (utils.isNumber(options) && !response_timeout) {
+                response_timeout = options;
                 options = {};
             }
-            callback = callback || function() {};
             
             options = options || {};
             if (!options.count) {
@@ -3843,21 +3195,17 @@ var __exportName = 'splunkjs';
             }
             
             var that = this;
-            var req = that.get("", options, function(err, response) {
-                if (err) {
-                    callback(err);
-                }
-                else {
-                    that._load(response.data);
-                    callback(null, that);
-                }
+            let req = that.get("", options, response_timeout);
+            return req.then((res) => {
+                that._load(res.data);
+                return that;
+            }).catch((err) => {
+                throw err;
             });
-            
-            return req;
         },
 
         /**
-         * It's an asynchronous version of fetch(options, callback) function.
+         * It's an asynchronous version of fetch(options, response_timeout) function.
          * 
          * Refreshes the resource by fetching the object from the server and 
          * loading it.
@@ -3869,17 +3217,23 @@ var __exportName = 'splunkjs';
          *    - `sort_dir` (_string_): The direction to sort returned items: “asc” or “desc”.
          *    - `sort_key` (_string_): The field to use for sorting (optional).
          *    - `sort_mode` (_string_): The collating sequence for sorting returned items: “auto”, “alpha”, “alpha_case”, or “num”.
+         * @param {Number} response_timeout A timeout period for aborting a request in milisecs (0 means no timeout).
          *
          * @method splunkjs.Service.Collection
          */
-        fetchAsync: async function(options) {
+        fetchAsync: async function(options, response_timeout) {
+            if (utils.isNumber(options) && !response_timeout) {
+                response_timeout = options;
+                options = {};
+            }
+
             options = options || {};
             if (!options.count) {
                 options.count = 0;
             }
             
             var that = this;
-            var response = await that.get("", options, null, true);
+            let response = await that.get("", options, response_timeout, true);
             that._load(response.body);
             return that;
         },
@@ -3889,12 +3243,11 @@ var __exportName = 'splunkjs';
          *
          * @example
          *
-         *      var apps = service.apps();
-         *      apps.fetch(function(err, apps) {
-         *          var app = apps.item("search");
-         *          console.log("Search App Found: " + !!app);
-         *          // `app` is an Application object.
-         *      });
+         *      let apps = service.apps();
+         *      let res = await apps.fetch();
+         *      let app = res.item("search");
+         *      console.log("Search App Found: " + !!app);
+         *      // `app` is an Application object.
          *
          * @param {String} id The name of the entity to retrieve.
          * @param {Object} namespace Namespace information:
@@ -3918,9 +3271,9 @@ var __exportName = 'splunkjs';
                 throw new Error("When searching for an entity, wildcards are not allowed in the namespace. Please refine your search.");
             }
             
-            var fullPath = null;
+            let fullPath = null;
             if (this._entitiesByName.hasOwnProperty(id)) {
-                var entities = this._entitiesByName[id];                 
+                let entities = this._entitiesByName[id];                 
                 
                 if (entities.length === 1 && !namespace) {
                     // If there is only one entity with the
@@ -3950,8 +3303,8 @@ var __exportName = 'splunkjs';
                 else {
                     // There is more than one entity, and we do have
                     // a namespace, so we try and find it
-                    for(var i = 0; i < entities.length; i++) {
-                        var entity = entities[i];
+                    for(let i = 0; i < entities.length; i++) {
+                        let entity = entities[i];
                         fullPath = this.service.fullpath(entities[i].path(), namespace);
                         if (entity.qualifiedPath === fullPath) {
                             return entity;
@@ -3970,46 +3323,33 @@ var __exportName = 'splunkjs';
          *
          * @example
          *
-         *      var apps = service.apps();
-         *      apps.create({name: "NewSearchApp"}, function(err, newApp) {
-         *          console.log("CREATED");
-         *      });
+         *      let apps = service.apps();
+         *      let newApp = await apps.create({name: "NewSearchApp"});
+         *      console.log("CREATED");
          *
          * @param {Object} params A dictionary of entity-specific properties.
-         * @param {Function} callback The function to call when the request is complete: `(err, response)`.
+         * @param {Number} response_timeout A timeout period for aborting a request in milisecs (0 means no timeout).
          * @returns {Array} An array of `splunkjs.Service.Entity` objects.
          *
          * @method splunkjs.Service.Collection
          */
-        create: function(params, callback) {
-            callback = callback || function() {};
+        create: function(params, response_timeout) {
+            response_timeout = response_timeout ? response_timeout :  0;
             var that = this;
-            var req = this.post("", params, function(err, response) {
-                if (err) {
-                    callback(err);
+            let req = this.post("", params, response_timeout).then((response)=>{
+                let props = response.data.entry;
+                if (utils.isArray(props)) {
+                    props = props[0];
                 }
-                else {
-                    var props = response.data.entry;
-                    if (utils.isArray(props)) {
-                        props = props[0];
-                    }
-                    
-                    var entity = that.instantiateEntity(props);
-                    entity._load(props); 
-                    
-                    if (that.fetchOnEntityCreation) {
-                        entity.fetch(function() {
-                            if (req.wasAborted) {
-                                return; // aborted, so ignore
-                            }
-                            else {
-                                callback.apply(null, arguments);
-                            }
-                        });
-                    }
-                    else {                   
-                        callback(null, entity);
-                    }
+                
+                let entity = that.instantiateEntity(props);
+                entity._load(props); 
+                
+                if (that.fetchOnEntityCreation) {
+                    return entity.fetch({}, response_timeout);
+                }
+                else {                   
+                    return entity;
                 }
             });
             
@@ -4021,19 +3361,14 @@ var __exportName = 'splunkjs';
          *
          * @example
          *
-         *      var apps = service.apps();
-         *      apps.fetch(function(err, apps) {
-         *          var appList = apps.list();
-         *          console.log(appList.length);
-         *      });
-         *
-         * @param {Function} callback A function to call with the list of entities: `(err, list)`.
+         *      let apps = service.apps();
+         *      let res = await apps.fetch();
+         *      let appList = res.list();
+         *      console.log(appList.length);
          *
          * @method splunkjs.Service.Collection
          */
-        list: function(callback) {
-            callback = callback || function() {};
-            
+        list: function() {
             return utils.clone(this._entities);
         }
     });
@@ -4086,8 +3421,8 @@ var __exportName = 'splunkjs';
          *
          * @example
          *
-         *      var savedSearch = service.savedSearches().item("MySavedSearch");
-         *      var alertCount = savedSearch.alertCount();
+         *      let savedSearch = service.savedSearches().item("MySavedSearch");
+         *      let alertCount = savedSearch.alertCount();
          * 
          * @return {Number} The count of triggered alerts.
          *
@@ -4103,22 +3438,19 @@ var __exportName = 'splunkjs';
          *
          * @example
          *
-         *      var savedSearch = service.savedSearches().item("MySavedSearch");
-         *      savedSearch.acknowledge(function(err, search) {
-         *          console.log("ACKNOWLEDGED");
-         *      });
+         *      let savedSearch = service.savedSearches().item("MySavedSearch");
+         *      let search = await savedSearch.acknowledge();
+         *      console.log("ACKNOWLEDGED");
          *
-         * @param {Function} callback A function to call when the saved search is acknowledged: `(err, savedSearch)`.
+         * @param {Number} response_timeout A timeout period for aborting a request in milisecs (0 means no timeout).
          *
          * @endpoint saved/searches/{name}/acknowledge
          * @method splunkjs.Service.SavedSearch
          */
-        acknowledge: function(callback) {
-            callback = callback || function() {};
-            
+        acknowledge: function(response_timeout) {    
             var that = this;
-            var req = this.post("acknowledge", {}, function(err) {
-                callback(err, that);
+            let req = this.post("acknowledge", {},response_timeout).catch((err) => {
+                throw [err, that];
             });
             
             return req;
@@ -4126,45 +3458,38 @@ var __exportName = 'splunkjs';
         
         /**
          * Dispatches a saved search, which creates a search job and returns a 
-         * `splunkjs.Service.Job` instance in the callback function.
+         * `splunkjs.Service.Job` instance in the response array.
          *
          * @example
          *
-         *      var savedSearch = service.savedSearches().item("MySavedSearch");
-         *      savedSearch.dispatch({force_dispatch: false}, function(err, job, savedSearch) {
-         *          console.log("Job SID: ", job.sid);
-         *      });
+         *      let savedSearch = service.savedSearches().item("MySavedSearch");
+         *      let [job, savedSearch] = await savedSearch.dispatch({force_dispatch: false});
+         *      console.log("Job SID: ", job.sid);
          *
          * @param {Object} options The options for dispatching this saved search:
          *    - `dispatch.now` (_string_): The time that is used to dispatch the search as though the specified time were the current time.
          *    - `dispatch.*` (_string_): Overwrites the value of the search field specified in *.
          *    - `trigger_actions` (_boolean_): Indicates whether to trigger alert actions.
          *    - `force_dispatch` (_boolean_): Indicates whether to start a new search if another instance of this search is already running.
-         * @param {Function} callback A function to call when the saved search is dispatched: `(err, job, savedSearch)`.
+         * @param {Number} response_timeout A timeout period for aborting a request in milisecs (0 means no timeout).         
          *
          * @endpoint saved/searches/{name}/dispatch
          * @method splunkjs.Service.SavedSearch
          */
-        dispatch: function(options, callback) {
-            if (!callback && utils.isFunction(options)) {
-                callback = options;
+        dispatch: function(options, response_timeout) {
+            if (!response_timeout && utils.isNumber(options)) {
+                response_timeout = options;
                 options = {};
             }
             
-            callback = callback || function() {};
             options = options || {};
             
             var that = this;
-            var req = this.post("dispatch", options, function(err, response) {
-                if (err) {
-                    callback(err);
-                    return;
-                }
+            let req = this.post("dispatch", options, response_timeout).then((response) => {
+                let sid = response.data.sid;
+                let job = new root.Job(that.service, sid, that.namespace);
                 
-                var sid = response.data.sid;
-                var job = new root.Job(that.service, sid, that.namespace);
-                
-                callback(null, job, that);
+                return [job, that];
             });
             
             return req;
@@ -4175,7 +3500,7 @@ var __exportName = 'splunkjs';
          *
          * @example
          *
-         *      var alerts = service.firedAlertGroups().item("MySavedSearch");
+         *      let alerts = service.firedAlertGroups().item("MySavedSearch");
          *
          * @return {splunkjs.Service.FiredAlertGroup} An AlertGroup object with the
          * same name as this SavedSearch object.
@@ -4192,47 +3517,40 @@ var __exportName = 'splunkjs';
          *
          * @example
          *
-         *      var savedSearch = service.savedSearches().item("MySavedSearch");
-         *      savedSearch.history({count: 10}, function(err, jobs, search) {
-         *          for(var i = 0; i < jobs.length; i++) {
-         *              console.log("Job", i, ":", jobs[i].sid);
-         *          }
-         *      });
+         *      let savedSearch = service.savedSearches().item("MySavedSearch");
+         *      let [jobs, search] = await savedSearch.history({count: 10});
+         *      for(let i = 0; i < jobs.length; i++) {
+         *          console.log("Job", i, ":", jobs[i].sid);
+         *      }
          *
          * @param {Object} options Options for retrieving history. For a full list, see the <a href="https://docs.splunk.com/Documentation/Splunk/8.0.2/RESTREF/RESTprolog#Pagination_and_filtering_parameters" target="_blank">Pagination and Filtering options</a> in the REST API documentation.
-         * @param {Function} callback A function to call when the history is retrieved: `(err, job, savedSearch)`.
+         * @param {Number} response_timeout A timeout period for aborting a request in milisecs (0 means no timeout).         
          *
          * @endpoint saved/searches/{name}/history
          * @method splunkjs.Service.SavedSearch
          */
-        history: function(options, callback) {
-            if (!callback && utils.isFunction(options)) {
-                callback = options;
+        history: function(options, response_timeout) {
+            if (!response_timeout && utils.isNumber(options)) {
+                response_timeout = options;
                 options = {};
             }
             
-            callback = callback || function() {};
             options = options || {};
             
             var that = this;
-            return this.get("history", options, function(err, response) {
-                if (err) {
-                    callback(err);
-                    return;
-                }
-                
-                var jobs = [];
-                var data = response.data.entry || [];
-                for(var i = 0; i < data.length; i++) {
-                    var jobData = response.data.entry[i];
-                    var namespace = utils.namespaceFromProperties(jobData);
-                    var job = new root.Job(that.service, jobData.name, namespace);
+            return this.get("history", options, response_timeout).then((response) => {
+                let jobs = [];
+                let data = response.data.entry || [];
+                for(let i = 0; i < data.length; i++) {
+                    let jobData = response.data.entry[i];
+                    let namespace = utils.namespaceFromProperties(jobData);
+                    let job = new root.Job(that.service, jobData.name, namespace);
                     
                     job._load(jobData);
                     jobs.push(job);
                 }
                 
-                callback(null, jobs, that);
+                return [jobs, that];
             });
         },
         
@@ -4241,22 +3559,19 @@ var __exportName = 'splunkjs';
          *
          * @example
          *
-         *      var savedSearch = service.savedSearches().item("MySavedSearch");
-         *      savedSearch.history(function(err, suppressionState, search) {
-         *          console.log("STATE: ", suppressionState);
-         *      });
+         *      let savedSearch = service.savedSearches().item("MySavedSearch");
+         *      let [suppressionState, search] = await savedSearch.history();
+         *      console.log("STATE: ", suppressionState);
          *
-         * @param {Function} callback A function to call when the suppression state is retrieved: `(err, suppressionState, savedSearch)`.
+         * @param {Number} response_timeout A timeout period for aborting a request in milisecs (0 means no timeout).         
          *
          * @endpoint saved/searches/{name}/suppress
          * @method splunkjs.Service.SavedSearch
          */
-        suppressInfo: function(callback) {
-            callback = callback || function() {};
-            
+        suppressInfo: function(response_timeout) {
             var that = this;
-            return this.get("suppress", {}, function(err, response) {
-                callback(err, response.data.entry.content, that);
+            return this.get("suppress", {}, response_timeout).then((response) => {
+                return [response.data.entry.content, that];
             });
         },
         
@@ -4268,36 +3583,28 @@ var __exportName = 'splunkjs';
          * the server or from the local cache. 
          *
          * @param {Object} props The properties to update the saved search with. For a list of available parameters, see <a href="http://dev.splunk.com/view/SP-CAAAEFA#savedsearchparams" target="_blank">Saved search parameters</a> on Splunk Developer Portal.
-         * @param {Function} callback A function to call when the object is updated: `(err, entity)`.
+         * @param {Number} response_timeout A timeout period for aborting a request in milisecs (0 means no timeout).
          *
          * @method splunkjs.Service.SavedSearch
          */
-        update: function(params, callback) {
+        update: function(params, response_timeout) {
+            if (utils.isNumber(params) && !response_timeout) {
+                response_timeout = params;
+                params = {};
+            }
             params = params || {};
             
             if (!params.search) {
-                var update = this._super;
-                var req = this.fetch(function(err, search) {
-                    if (err) {
-                        callback(err);
-                    }
-                    else {
-                        params.search = search.properties().search;
-                        update.call(search, params, function() {
-                            if (req.wasAborted) {
-                                return; // aborted, so ignore
-                            }
-                            else {
-                                callback.apply(null, arguments);
-                            }
-                        });
-                    }
+                let update = this._super;
+                let req = this.fetch({}, response_timeout).then((search) => {
+                    params.search = search.properties().search;
+                    return update.call(search, params, response_timeout);
                 });
                 
                 return req;
             }
             else {
-                return this._super(params, callback);
+                return this._super(params, response_timeout);
             }
         }
     });
@@ -4330,7 +3637,7 @@ var __exportName = 'splunkjs';
          * @method splunkjs.Service.SavedSearches
          */
         instantiateEntity: function(props) {
-            var entityNamespace = utils.namespaceFromProperties(props);
+            let entityNamespace = utils.namespaceFromProperties(props);
             return new root.SavedSearch(this.service, props.name, entityNamespace);
         },
         
@@ -4428,7 +3735,7 @@ var __exportName = 'splunkjs';
          * @method splunkjs.Service.StoragePasswords
          */
         instantiateEntity: function(props) {
-            var entityNamespace = utils.namespaceFromProperties(props);
+            let entityNamespace = utils.namespaceFromProperties(props);
             return new root.StoragePassword(this.service, props.name, entityNamespace);
         },
         
@@ -4448,11 +3755,11 @@ var __exportName = 'splunkjs';
         init: function(service, namespace) {
             this._super(service, this.path(), namespace);
         },
-        create: function(params, callback){
+        create: function(params, response_timeout){
             if(this.service.app == '-' || this.service.owner == '-'){
                 throw new Error("While creating StoragePasswords, namespace cannot have wildcards.");
             }
-            this._super(params,callback);
+            return this._super(params,response_timeout);
         }
     });
 
@@ -4645,44 +3952,36 @@ var __exportName = 'splunkjs';
          *
          * @example
          *
-         *      var alertGroup = service.firedAlertGroups().item("MyAlert");
-         *      alertGroup.list(function(err, firedAlerts, alert) {
-         *          for(var i = 0; i < firedAlerts.length; i++) {
-         *              console.log("Fired alert", i, ":", firedAlerts[i].sid);
-         *          }
-         *      });
+         *      let alertGroup = service.firedAlertGroups().item("MyAlert");
+         *      let [firedAlerts, alert] = await alertGroup.list();
+         *      for(let i = 0; i < firedAlerts.length; i++) {
+         *          console.log("Fired alert", i, ":", firedAlerts[i].sid);
+         *      }
          *
-         * @param {Function} callback A function to call when the fired alerts are retrieved: `(err, firedAlerts, alertGroup)`.
+         * @param {Number} response_timeout A timeout period for aborting a request in milisecs (0 means no timeout).
          *
          * @method splunkjs.Service.FiredAlertGroup
          */
-        list: function(options, callback) {
-            if (!callback && utils.isFunction(options)) {
-                callback = options;
+        list: function(options, response_timeout) {
+            if (!response_timeout && utils.isNumber(options)) {
+                response_timeout = options;
                 options = {};
             }
 
-            callback = callback || function() {};
             options = options || {};
 
             var that = this;
-            return this.get("", options, function(err, response) {
-                if (err) {
-                    callback(err);
-                    return;
-                }
-                
-                var firedAlerts = [];
-                var data = response.data.entry || [];
-                for (var i = 0; i < data.length; i++) {
-                    var firedAlertData = response.data.entry[i];
-                    var namespace = utils.namespaceFromProperties(firedAlertData);
-                    var firedAlert = new root.FiredAlert(that.service, firedAlertData.name, namespace);
+            return this.get("", options, response_timeout).then((response) => {
+                let firedAlerts = [];
+                let data = response.data.entry || [];
+                for (let i = 0; i < data.length; i++) {
+                    let firedAlertData = response.data.entry[i];
+                    let namespace = utils.namespaceFromProperties(firedAlertData);
+                    let firedAlert = new root.FiredAlert(that.service, firedAlertData.name, namespace);
                     firedAlert._load(firedAlertData);
                     firedAlerts.push(firedAlert);
                 }
-                
-                callback(null, firedAlerts, that);
+                return [firedAlerts, that];
             });
         },
 
@@ -4737,7 +4036,7 @@ var __exportName = 'splunkjs';
          * @method splunkjs.Service.FiredAlertGroupCollection
          */
         instantiateEntity: function(props) {
-            var entityNamespace = utils.namespaceFromProperties(props);
+            let entityNamespace = utils.namespaceFromProperties(props);
             return new root.FiredAlertGroup(this.service, props.name, entityNamespace);
         },
 
@@ -4820,27 +4119,20 @@ var __exportName = 'splunkjs';
          *
          * @example
          *
-         *      var app = service.apps().item("app");
-         *      app.setup(function(err, info, search) {
-         *          console.log("SETUP INFO: ", info);
-         *      });
+         *      let app = service.apps().item("app");
+         *      let search;
+         *      [info, search] = await app.setup();
+         *      console.log("SETUP INFO: ", info);
          *
-         * @param {Function} callback A function to call when setup information is retrieved: `(err, info, app)`.
+         * @param {Number} response_timeout A timeout period for aborting a request in milisecs (0 means no timeout).
          *
          * @endpoint apps/local/{name}/setup
          * @method splunkjs.Service.Application
          */
-        setupInfo: function(callback) {
-            callback = callback || function() {};
-            
+        setupInfo: function(response_timeout) {
             var that = this;
-            return this.get("setup", {}, function(err, response) {
-                if (err) {
-                    callback(err);
-                } 
-                else {
-                    callback(null, response.data.entry.content, that);
-                }
+            return this.get("setup", {}, response_timeout).then((response) => {
+                return [response.data.entry.content, that];
             });
         },
         
@@ -4849,27 +4141,20 @@ var __exportName = 'splunkjs';
          *
          * @example
          *
-         *      var app = service.apps().item("MyApp");
-         *      app.updateInfo(function(err, info, app) {
-         *          console.log("UPDATE INFO: ", info);
-         *      });
+         *      let app = service.apps().item("MyApp");
+         *      let info;
+         *      [info, app] = await app.updateInfo();
+         *      console.log("UPDATE INFO: ", info);
          *
-         * @param {Function} callback A function to call when update information is retrieved: `(err, info, app)`.
+         * @param {Number} response_timeout A timeout period for aborting a request in milisecs (0 means no timeout).
          *
          * @endpoint apps/local/{name}/update
          * @method splunkjs.Service.Application
          */
-        updateInfo: function(callback) {
-            callback = callback || function() {};
-            
+        updateInfo: function(response_timeout) {
             var that = this;
-            return this.get("update", {}, function(err, response) {
-                if (err) {
-                    callback(err);
-                } 
-                else {
-                    callback(null, response.data.entry.content, that);
-                }
+            return this.get("update", {}, response_timeout).then((response) => {
+                return [response.data.entry.content, that];
             });
         }
     });
@@ -5051,32 +4336,22 @@ var __exportName = 'splunkjs';
          * **Note:** This endpoint requires a special implementation.
          *
          * @param {Object} params A dictionary of properties. For a list of available parameters, see <a href="http://dev.splunk.com/view/SP-CAAAEJ8#userauthparams" target="_blank">User authentication parameters</a> on Splunk Developer Portal.
-         * @param {Function} callback A function to call with the new entity: `(err, createdEntity)`.
+         * @param {Number} response_timeout A timeout period for aborting a request in milisecs (0 means no timeout).
          *
          * @method splunkjs.Service.Users
          */
-        create: function(params, callback) {
-            callback = callback || function() {};
-            
+        create: function(params, response_timeout) {
+            if (utils.isNumber(params) && !response_timeout) {
+                response_timeout = params;
+                params = {};
+            }
             var that = this;
-            var req = this.post("", params, function(err, response) {
-                if (err) {
-                    callback(err);
-                }
-                else {
-                    // This endpoint requires us to use the passed-in name
-                    var props = {name: params.name};
-                    
-                    var entity = that.instantiateEntity(props);                    
-                    entity.fetch(function() {
-                        if (req.wasAborted) {
-                            return; // aborted, so ignore
-                        }
-                        else {
-                            callback.apply(null, arguments);
-                        }
-                    });
-                }
+            let req = this.post("", params, response_timeout).then((response) => {
+                // This endpoint requires us to use the passed-in name
+                let props = {name: params.name};
+                                    
+                let entity = that.instantiateEntity(props);                                     
+                return entity.fetch({}, response_timeout);
             });
             
             return req;
@@ -5148,7 +4423,7 @@ var __exportName = 'splunkjs';
          * @method splunkjs.Service.Views
          */
         instantiateEntity: function(props) {
-            var entityNamespace = utils.namespaceFromProperties(props);
+            let entityNamespace = utils.namespaceFromProperties(props);
             return new root.View(this.service, props.name, entityNamespace);
         },
         
@@ -5213,10 +4488,10 @@ var __exportName = 'splunkjs';
          *
          * @example
          *
-         *      var index = service.indexes().item("_internal");
-         *      index.submitEvent("A new event", {sourcetype: "mysourcetype"}, function(err, result, index) {
-         *          console.log("Submitted event: ", result);
-         *      });
+         *      let index = service.indexes().item("_internal");
+         *      let result;
+         *      [result, index] = await index.submitEvent("A new event", {sourcetype: "mysourcetype"});
+         *      console.log("Submitted event: ", result);
          *
          * @param {String} event The text for this event.
          * @param {Object} params A dictionary of parameters for indexing: 
@@ -5224,35 +4499,36 @@ var __exportName = 'splunkjs';
          *    - `host_regex` (_string_): A regular expression used to extract the host value from each event. 
          *    - `source` (_string_): The source value to fill in the metadata for this input's events.
          *    - `sourcetype` (_string_): The sourcetype to apply to events from this input.
-         * @param {Function} callback A function to call when the event is submitted: `(err, result, index)`.
+         * @param {Number} response_timeout A timeout period for aborting a request in milisecs (0 means no timeout).
          *
          * @endpoint receivers/simple?index={name}
          * @method splunkjs.Service.Index
          */
-        submitEvent: function(event, params, callback) {
-            if (!callback && utils.isFunction(params)) {
-                callback = params;
+        submitEvent: function(event, params, response_timeout) {
+            if (!response_timeout && utils.isNumber(params)) {
+                response_timeout = params;
                 params = {};
             }
             
-            callback = callback || function() {};
             params = params || {};
             
             // Add the index name
             params["index"] = this.name;
             
             var that = this;
-            return this.service.log(event, params, function(err, result) {
-                callback(err, result, that); 
+            return this.service.log(event, params, response_timeout).then((result) => {
+                return [result, that];
+            }).catch((err) => {
+                throw [err, that];
             });
         },
         
-        remove: function(callback) {
+        remove: function(response_timeout) {
             if (this.service.versionCompare("5.0") < 0) {
                 throw new Error("Indexes cannot be removed in Splunk 4.x");
             }
             else {
-                return this._super(callback);
+                return this._super(response_timeout);
             }
         }
     });
@@ -5284,7 +4560,7 @@ var __exportName = 'splunkjs';
          * @method splunkjs.Service.Indexes
          */
         instantiateEntity: function(props) {
-            var entityNamespace = utils.namespaceFromProperties(props);
+            let entityNamespace = utils.namespaceFromProperties(props);
             return new root.Index(this.service, props.name, entityNamespace);
         },
         
@@ -5310,31 +4586,27 @@ var __exportName = 'splunkjs';
          *
          * @example
          *
-         *      var indexes = service.indexes();
-         *      indexes.create("NewIndex", {assureUTF8: true}, function(err, newIndex) {
-         *          console.log("CREATED");
-         *      });
+         *      let indexes = service.indexes();
+         *      let newIndex = await indexes.create("NewIndex", {assureUTF8: true});
+         *      console.log("CREATED");
          *
          * @param {String} name A name for this index.
          * @param {Object} params A dictionary of properties. For a list of available parameters, see <a href="http://dev.splunk.com/view/SP-CAAAEJ3#indexparams" target="_blank">Index parameters</a> on Splunk Developer Portal.
-         * @param {Function} callback A function to call with the new index: `(err, createdIndex)`.
+         * @param {Number} response_timeout A timeout period for aborting a request in milisecs (0 means no timeout).
          *
          * @endpoint data/indexes
          * @method splunkjs.Service.Indexes
          */
-        create: function(name, params, callback) {
-            // If someone called us with the default style of (params, callback),
-            // lets make it work
-            if (utils.isObject(name) && utils.isFunction(params) && !callback) {
-                callback = params;
+        create: function(name, params, response_timeout) {
+            if (utils.isObject(name) && utils.isNumber(params) && !response_timeout) {
+                response_timeout = params;
                 params = name;
                 name = params.name;
             }
-            
             params = params || {};
             params["name"] = name;
             
-            return this._super(params, callback);
+            return this._super(params, response_timeout);
         }
     });
     
@@ -5353,7 +4625,7 @@ var __exportName = 'splunkjs';
          * @method splunkjs.Service.ConfigurationStanza
          */
         path: function() {
-            var name = this.name === "default" ? "_new" : this.name;
+            let name = this.name === "default" ? "_new" : this.name;
             return Paths.configurations + "/conf-" + encodeURIComponent(this.file) + "/" + encodeURIComponent(name);
         },
         
@@ -5421,7 +4693,7 @@ var __exportName = 'splunkjs';
          * @method splunkjs.Service.ConfigurationFile
          */
         instantiateEntity: function(props) {
-            var entityNamespace = utils.namespaceFromProperties(props);
+            let entityNamespace = utils.namespaceFromProperties(props);
             return new root.ConfigurationStanza(this.service, this.name, props.name, entityNamespace);
         },
         
@@ -5449,36 +4721,33 @@ var __exportName = 'splunkjs';
          *
          * @example
          *
-         *      var file = service.configurations().item("props");
-         *      file.create("my_stanza", function(err, newStanza) {
-         *          console.log("CREATED");
-         *      });
+         *      let file = service.configurations().item("props");
+         *      let newStanza = await file.create("my_stanza");
+         *      console.log("CREATED");
          *
          * @param {String} stanzaName A name for this stanza.
          * @param {Object} values A dictionary of key-value pairs to put in this stanza.
-         * @param {Function} callback A function to call with the created stanza: `(err, createdStanza)`.
+         * @param {Number} response_timeout A timeout period for aborting a request in milisecs (0 means no timeout).
          *
          * @endpoint configs/conf-{file}
          * @method splunkjs.Service.ConfigurationFile
          */
-        create: function(stanzaName, values, callback) {
-            // If someone called us with the default style of (params, callback),
-            // lets make it work
-            if (utils.isObject(stanzaName) && utils.isFunction(values) && !callback) {
-                callback = values;
+        create: function(stanzaName, values, response_timeout) {
+            if (utils.isObject(stanzaName) && utils.isNumber(values) && !response_timeout) {
+                response_timeout = values;
                 values = stanzaName;
                 stanzaName = values.name;
             }
             
-            if (utils.isFunction(values) && !callback) {
-                callback = values;
+            if (utils.isNumber(values) && !response_timeout) {
+                response_timeout = values;
                 values = {};
             }
             
             values = values || {};
             values["name"] = stanzaName;
             
-            return this._super(values, callback);
+            return this._super(values, response_timeout);
         }
     });
     
@@ -5547,42 +4816,25 @@ var __exportName = 'splunkjs';
          *
          * @example
          *
-         *      var configurations = service.configurations();
-         *      configurations.create("myprops", function(err, newFile) {
-         *          console.log("CREATED");
-         *      });
+         *      let configurations = service.configurations();
+         *      let newFile = await configurations.create("myprops");
+         *      console.log("CREATED");
          *
          * @param {String} filename A name for this configuration file.
-         * @param {Function} callback A function to call with the new configuration file: `(err, createdFile)`.
+         * @param {Number} response_timeout A timeout period for aborting a request in milisecs (0 means no timeout).
          *
          * @endpoint properties
          * @method splunkjs.Service.Configurations
          */
-        create: function(filename, callback) {
-            // If someone called us with the default style of (params, callback),
-            // lets make it work
+        create: function(filename, response_timeout) {
             if (utils.isObject(filename)) {
                 filename = filename["__conf"];
             }
             
-            callback = callback || function() {};
-            
             var that = this;
-            var req = this.post("", {__conf: filename}, function(err, response) {
-                if (err) {
-                    callback(err);
-                }
-                else {
-                    var entity = new root.ConfigurationFile(that.service, filename);
-                    entity.fetch(function() {
-                        if (req.wasAborted) {
-                            return; // aborted, so ignore
-                        }
-                        else {
-                            callback.apply(null, arguments);
-                        }
-                    });
-                }
+            let req = this.post("", {__conf: filename}, response_timeout).then((response) => {
+                let entity = new root.ConfigurationFile(that.service, filename);
+                return entity.fetch({}, response_timeout);
             });
             
             return req;
@@ -5592,19 +4844,20 @@ var __exportName = 'splunkjs';
          * Fetch a configuration file.
          *
          * @param {String} file A name for configuration file.
+         * @param {Number} response_timeout A timeout period for aborting a request in milisecs (0 means no timeout).
          * @return file, if exists or null
          * 
          * @endpoint properties
          * @method splunkjs.Service.Configurations
          */
-        getConfFile: async function(filename) {
+        getConfFile: async function(filename, response_timeout) {
             var that = this;
 
             // 1. Fetch files list
-            var response = await this.get("",  {__conf: filename}, null, true);
+            let response = await this.get("",  {__conf: filename}, response_timeout, true);
 
             // 2. Filter the files
-            var files = response 
+            let files = response 
                             && response.body 
                             && response.body.entry 
                             && response.body.entry.filter(f => f.name === filename);
@@ -5615,10 +4868,10 @@ var __exportName = 'splunkjs';
             }
 
             // 4. Create a local instance
-            var configurationFile = new root.ConfigurationFile(that.service, filename);
+            let configurationFile = new root.ConfigurationFile(that.service, filename);
 
             // 5. Load the file content
-            var fetchedFile = await configurationFile.fetchAsync();
+            let fetchedFile = await configurationFile.fetchAsync(response_timeout);
 
             return fetchedFile;
         },
@@ -5635,7 +4888,7 @@ var __exportName = 'splunkjs';
          */
         getStanza: async function(file, stanza) {
             // 1. check if the stanza exists
-            var fetchedStanza = file.item(stanza);
+            let fetchedStanza = file.item(stanza);
             
             if(fetchedStanza == undefined) {
                 return null;
@@ -5651,43 +4904,37 @@ var __exportName = 'splunkjs';
          * @param {String} filename A name for this configuration file to be created/updated.
          * @param {String} stanzaName A name for the stanza to be created/updated.
          * @param {String} keyValueMap A key-value map of properties to be put under the stanza.
-         * @param {Function} callback A function to call with the new configuration file.
+         * @param {Number} response_timeout A timeout period for aborting a request in milisecs (0 means no timeout).
          *
          * @endpoint properties
          * @method splunkjs.Service.Configurations
          */
-        createAsync: async function (filename, stanzaName, keyValueMap, callback) {
-            callback = callback || function() {};
-            var that = this;
+        createAsync: async function (filename, stanzaName, keyValueMap, response_timeout) {
+            let that = this;
 
             // 1. Check if the file exists
-            var configFile = await this.getConfFile(filename);
+            let configFile = await this.getConfFile(filename);
 
             // 2. If the file doesn't exist, create a new file
             if(configFile == undefined) {
 
-                that.create( { __conf: filename });
+                await that.create( { __conf: filename }, response_timeout);
 
                 configFile = new root.ConfigurationFile( that.service, filename );
-                configFile = await configFile.fetchAsync();
+                configFile = await configFile.fetchAsync(response_timeout);
             }
 
             // 3. Check if the stanza exists
-            var configStanza = await this.getStanza(configFile, stanzaName);
+            let configStanza = await this.getStanza(configFile, stanzaName);
 
             // 4. If the stanza doesn't exist, create a new stanza with given keyValueMap
             if(configStanza == undefined) {
-
-                configFile.create(stanzaName, keyValueMap, function (err, newStanza) {
-                    callback();
-                });
+                return await configFile.create(stanzaName, keyValueMap, response_timeout);
             }
 
             // 5. If the stanza exists, update it with the keyValueMap
             else {
-                configStanza.update(keyValueMap, (err, updatedStanza) => {
-                    callback();
-                });
+                return configStanza.update(keyValueMap, response_timeout);
             }
         },
     });
@@ -5739,8 +4986,7 @@ var __exportName = 'splunkjs';
             this._super(service, this.path(), namespace);
             this.sid = sid;
 
-            // We perform the bindings so that every function works 
-            // properly when it is passed as a callback.
+            // We perform the bindings so that every function works properly
             this.cancel         = utils.bind(this, this.cancel);
             this.disablePreview = utils.bind(this, this.disablePreview);
             this.enablePreview  = utils.bind(this, this.enablePreview);
@@ -5763,19 +5009,17 @@ var __exportName = 'splunkjs';
          *
          * @example
          *
-         *      var job = service.jobs().item("mysid");
-         *      job.cancel(function(err) {
-         *          console.log("CANCELLED");
-         *      });
+         *      let job = service.jobs().item("mysid");
+         *      await job.cancel();
+         *      console.log("CANCELLED");
          *
-         * @param {Function} callback A function to call when the search is done: `(err)`.
+         * @param {Number} response_timeout A timeout period for aborting a request in milisecs (0 means no timeout).
          *
          * @endpoint search/jobs/{search_id}/control
          * @method splunkjs.Service.Job
          */
-        cancel: function (callback) {
-            var req = this.post("control", {action: "cancel"}, callback);
-            
+        cancel: function (response_timeout) {
+            let req = this.post("control", {action: "cancel"}, response_timeout);
             return req;
         },
 
@@ -5784,22 +5028,19 @@ var __exportName = 'splunkjs';
          *
          * @example
          *
-         *      var job = service.jobs().item("mysid");
-         *      job.disablePreview(function(err, job) {
-         *          console.log("PREVIEW DISABLED");
-         *      });
+         *      let job = service.jobs().item("mysid");
+         *      let res = await job.disablePreview();
+         *      console.log("PREVIEW DISABLED");
          *
-         * @param {Function} callback A function to call with this search job: `(err, job)`.
+         * @param {Number} response_timeout A timeout period for aborting a request in milisecs (0 means no timeout).
          *
          * @endpoint search/jobs/{search_id}/control
          * @method splunkjs.Service.Job
          */
-        disablePreview: function(callback) {
-            callback = callback || function() {};
-            
+        disablePreview: function(response_timeout) {
             var that = this;
-            var req = this.post("control", {action: "disablepreview"}, function(err) {
-                callback(err, that);
+            let req = this.post("control", {action: "disablepreview"}, response_timeout).catch((err) => {
+                throw [err, that];
             });
             
             return req;
@@ -5810,24 +5051,21 @@ var __exportName = 'splunkjs';
          *
          * @example
          *
-         *      var job = service.jobs().item("mysid");
-         *      job.disablePreview(function(err, job) {
-         *          console.log("PREVIEW ENABLED");
-         *      });
+         *      let job = service.jobs().item("mysid");
+         *      let res = await job.disablePreview();
+         *      console.log("PREVIEW ENABLED");
          *
-         * @param {Function} callback A function to call with this search job: `(err, job)`.
+         * @param {Number} response_timeout A timeout period for aborting a request in milisecs (0 means no timeout).
          *
          * @endpoint search/jobs/{search_id}/control
          * @method splunkjs.Service.Job
          */
-        enablePreview: function(callback) {
-            callback = callback || function() {};
-            
+        enablePreview: function(response_timeout) {
             var that = this;
-            var req = this.post("control", {action: "enablepreview"}, function(err) {
-                callback(err, that);
+            let req = this.post("control", {action: "enablepreview"}, response_timeout).catch((err) => {
+                throw [err, that];
             });
-            
+
             return req;
         },
 
@@ -5836,47 +5074,40 @@ var __exportName = 'splunkjs';
          *
          * @example
          *
-         *      var job = service.jobs().item("mysid");
-         *      job.events({count: 10}, function(err, events, job) {
-         *          console.log("Fields: ", events.fields);
-         *      });
+         *      let job = service.jobs().item("mysid");
+         *      let events;
+         *      [events, job] = await job.events({count: 10});
+         *      console.log("Fields: ", events.fields);
          *
          * @param {Object} params The parameters for retrieving events. For a list of available parameters, see the <a href="http://docs.splunk.com/Documentation/Splunk/latest/RESTAPI/RESTsearch#GET_search.2Fjobs.2F.7Bsearch_id.7D.2Fevents" target="_blank">GET search/jobs/{search_id}/events</a> endpoint in the REST API documentation.
-         * @param {Function} callback A function to call when the events are retrieved: `(err, events, job)`.
+         * @param {Number} response_timeout A timeout period for aborting a request in milisecs (0 means no timeout).
          *
          * @endpoint search/jobs/{search_id}/events
          * @method splunkjs.Service.Job
          */
-        events: function(params, callback) {
-            callback = callback || function() {};
+        events: function(params, response_timeout) {
+            if (utils.isNumber(params) && !response_timeout) {
+                response_timeout = params;
+                params = {};
+            }
             params = params || {};
             params.output_mode = params.output_mode || "json_rows"; 
             
             var that = this;
 
             // Default path to v2
-            var eventsPath = Paths.jobsV2 + "/" + encodeURIComponent(this.name) + "/events";
+            let eventsPath = Paths.jobsV2 + "/" + encodeURIComponent(this.name) + "/events";
             // Splunk version pre-9.0 doesn't support v2
             // v1(GET), v2(POST)
             if (this.disableV2SearchApi()) {
                 eventsPath = Paths.jobs + "/" + encodeURIComponent(this.name) + "/events";
-                return this.get(eventsPath, params, function(err, response) {
-                    if (err) {
-                        callback(err);
-                    }
-                    else {
-                        callback(null, response.data, that);
-                    }
+                return this.get(eventsPath, params, response_timeout).then((response) => {
+                    return [response.data, that];
                 });
             }
 
-            return this.post(eventsPath, params, function(err, response) {
-                if (err) {
-                    callback(err);
-                }
-                else {
-                    callback(null, response.data, that);
-                }
+            return this.post(eventsPath, params, response_timeout).then((response) => {
+                return [response.data, that];
             });
         },
 
@@ -5885,22 +5116,19 @@ var __exportName = 'splunkjs';
          *
          * @example
          *
-         *      var job = service.jobs().item("mysid");
-         *      job.finalize(function(err, job) {
-         *          console.log("JOB FINALIZED");
-         *      });
+         *      let job = service.jobs().item("mysid");
+         *      let res = await job.finalize();
+         *      console.log("JOB FINALIZED");
          *
-         * @param {Function} callback A function to call with the job: `(err, job)`.
+         * @param {Number} response_timeout A timeout period for aborting a request in milisecs (0 means no timeout).
          *
          * @endpoint search/jobs/{search_id}/control
          * @method splunkjs.Service.Job
          */
-        finalize: function(callback) {
-            callback = callback || function() {};
-            
+        finalize: function(response_timeout) {
             var that = this;
-            var req = this.post("control", {action: "finalize"}, function(err) {
-                callback(err, that);
+            let req = this.post("control", {action: "finalize"}, response_timeout).catch((err) => {
+                throw [err, that];
             });
             
             return req;
@@ -5912,7 +5140,6 @@ var __exportName = 'splunkjs';
          * @param {String} type One of {"events", "preview", "results"}.
          * @param {Object} params A dictionary of optional parameters:
          *    - `pagesize` (_integer_): The number of items to return on each request. Defaults to as many as possible.
-         * @return {Object} An iterator object with a `next(callback)` method, where `callback` is of the form `(err, results, hasMoreResults)`.
          * 
          * @endpoint search/jobs/{search_id}/results
          * @method splunkjs.Service.Job
@@ -5926,125 +5153,107 @@ var __exportName = 'splunkjs';
          *
          * @example
          *
-         *      var job = service.jobs().item("mysid");
-         *      job.pause(function(err, job) {
-         *          console.log("JOB PAUSED");
-         *      });
+         *      let job = service.jobs().item("mysid");
+         *      let res = await job.pause();
+         *      console.log("JOB PAUSED");
          *
-         * @param {Function} callback A function to call with the job: `(err, job)`.
+         * @param {Number} response_timeout A timeout period for aborting a request in milisecs (0 means no timeout).
          *
          * @endpoint search/jobs/{search_id}/control
          * @method splunkjs.Service.Job
          */
-        pause: function(callback) {
-            callback = callback || function() {};
-            
+        pause: function(response_timeout) {  
             var that = this;
-            var req = this.post("control", {action: "pause"}, function(err) {
-                callback(err, that);
+            let req = this.post("control", {action: "pause"}, response_timeout).catch((err) => {
+                throw [err, that];
             });
             
             return req;
         },
 
-        /*
+        /**
          * Gets the preview results for a search job with given parameters.
          *
          * @example
          *
-         *      var job = service.jobs().item("mysid");
-         *      job.preview({count: 10}, function(err, results, job) {
-         *          console.log("Fields: ", results.fields);
-         *      });
+         *      let job = service.jobs().item("mysid");
+         *      let results;
+         *      [results, job] = await job.preview({count: 10});
+         *      console.log("Fields: ", results.fields);
          *
          * @param {Object} params The parameters for retrieving preview results. For a list of available parameters, see the <a href="http://docs.splunk.com/Documentation/Splunk/latest/RESTAPI/RESTsearch#GET_search.2Fjobs.2F.7Bsearch_id.7D.2Fresults_preview" target="_blank">GET search/jobs/{search_id}/results_preview</a> endpoint in the REST API documentation.
-         * @param {Function} callback A function to call when the preview results are retrieved : `(err, results, job)`.
+         * @param {Number} response_timeout A timeout period for aborting a request in milisecs (0 means no timeout).
          *
          * @endpoint search/jobs/{search_id}/results_preview
          * @method splunkjs.Service.Job
          */
-        preview: function(params, callback) {
-            callback = callback || function() {};
+        preview: function(params, response_timeout) {
+            if (utils.isNumber(params) && !response_timeout) {
+                response_timeout = params;
+                params = {};
+            }
             params = params || {};
             params.output_mode = params.output_mode || "json_rows"; 
             
             var that = this;
 
             // Default path to v2
-            var resultsPreviewPath = Paths.jobsV2 + "/" + encodeURIComponent(this.name) + "/results_preview";
+            let resultsPreviewPath = Paths.jobsV2 + "/" + encodeURIComponent(this.name) + "/results_preview";
             // Splunk version pre-9.0 doesn't support v2
             // v1(GET), v2(POST)
             if (this.disableV2SearchApi()) {
                 resultsPreviewPath = Paths.jobs + "/" + encodeURIComponent(this.name) + "/results_preview";
-                return this.get(resultsPreviewPath, params, function(err, response) {
-                    if (err) {
-                        callback(err);
-                    }
-                    else {
-                        callback(null, response.data, that);
-                    }
+                return this.get(resultsPreviewPath, params, response_timeout).then((response) => {
+                    return [response.data, that];
                 });
             }
-            return this.post(resultsPreviewPath, params, function(err, response) {
-                if (err) {
-                    callback(err);
-                }
-                else {
-                    callback(null, response.data, that);
-                }
+            return this.post(resultsPreviewPath, params, response_timeout).then((response) => {
+                return [response.data, that];
             });
         },
 
         /**
          * Gets the results for a search job with given parameters.
          * 
-         * The callback can get `undefined` for its `results` parameter if the
-         * job is not yet done. To avoid this, use the `Job.track()` method to
-         * wait until the job is complete prior to fetching the results with
-         * this method.
+         * The response can be `undefined` if the job is not yet done. To
+         * avoid this, use the `Job.track()` method to wait until the job
+         * is complete prior to fetching the results with this method.
          * 
          * @example
          *
-         *      var job = service.jobs().item("mysid");
-         *      job.results({count: 10}, function(err, results, job) {
-         *          console.log("Fields: ", results.results);
-         *      });
+         *      let job = service.jobs().item("mysid");
+         *      let results;
+         *      [results, job] = await job.results({count: 10});
+         *      console.log("Fields: ", results.results);
          *
          * @param {Object} params The parameters for retrieving search results. For a list of available parameters, see the <a href="http://docs.splunk.com/Documentation/Splunk/latest/RESTAPI/RESTsearch#GET_search.2Fjobs.2F.7Bsearch_id.7D.2Fresults" target="_blank">GET search/jobs/{search_id}/results</a> endpoint in the REST API documentation.
-         * @param {Function} callback A function to call when the results are retrieved: `(err, results, job)`.
+         * @param {Number} response_timeout A timeout period for aborting a request in milisecs (0 means no timeout).
          *
          * @endpoint search/jobs/{search_id}/results
          * @method splunkjs.Service.Job
          */
-        results: function(params, callback) {
-            callback = callback || function() {};
+        results: function(params, response_timeout) {
+            if (utils.isNumber(params) && !response_timeout) {
+                response_timeout = params;
+                params = {};
+            }
             params = params || {};
             params.output_mode = params.output_mode || "json_rows";
             
             var that = this;
 
             // Default path to v2
-            var resultsPath = Paths.jobsV2 + "/" + encodeURIComponent(this.name) + "/results";
+            let resultsPath = Paths.jobsV2 + "/" + encodeURIComponent(this.name) + "/results";
             // Splunk version pre-9.0 doesn't support v2
             // v1(GET), v2(POST)
             if (this.disableV2SearchApi()) {
                 resultsPath = Paths.jobs + "/" + encodeURIComponent(this.name) + "/results";
-                return this.get(resultsPath, params, function(err, response) {
-                    if (err) {
-                        callback(err);
-                    }
-                    else {
-                        callback(null, response.data, that);
-                    }
+                return this.get(resultsPath, params, response_timeout).then((response) => {
+                    return [response.data, that];
                 });
             }
-            return this.post(resultsPath, params, function(err, response) {
-                if (err) {
-                    callback(err);
-                }
-                else {
-                    callback(null, response.data, that);
-                }
+            return this.post(resultsPath, params, response_timeout).then((response) => {
+                return [response.data, that];
             });
         },
 
@@ -6053,27 +5262,20 @@ var __exportName = 'splunkjs';
          *
          * @example
          *
-         *      var job = service.jobs().item("mysid");
-         *      job.searchlog(function(err, searchlog, job) {
-         *          console.log(searchlog);
-         *      });
+         *      let job = service.jobs().item("mysid");
+         *      let searchlog;
+         *      [searchlog, job] = await job.searchlog();
+         *      console.log(searchlog);
          *
-         * @param {Function} callback A function to call with the search log and job: `(err, searchlog, job)`.
+         * @param {Number} response_timeout A timeout period for aborting a request in milisecs (0 means no timeout).
          *
          * @endpoint search/jobs/{search_id}/search.log
          * @method splunkjs.Service.Job
          */
-        searchlog: function(callback) {
-            callback = callback || function() {};
-            
+        searchlog: function(response_timeout) {
             var that = this;
-            return this.get("search.log", {}, function(err, response) {
-                if (err) {
-                    callback(err);
-                }
-                else {
-                    callback(null, response.data, that);
-                }
+            return this.get("search.log", {}, response_timeout).then((response) => {
+                return [response.data, that];
             });
         },
 
@@ -6082,25 +5284,22 @@ var __exportName = 'splunkjs';
          *
          * @example
          *
-         *      var job = service.jobs().item("mysid");
-         *      job.setPriority(6, function(err, job) {
-         *          console.log("JOB PRIORITY SET");
-         *      });
+         *      let job = service.jobs().item("mysid");
+         *      let res = await job.setPriority(6);
+         *      console.log("JOB PRIORITY SET");
          *
          * @param {Number} value The priority (an integer between 1-10). A higher value means a higher priority.
-         * @param {Function} callback A function to call with the search job: `(err, job)`.
+         * @param {Number} response_timeout A timeout period for aborting a request in milisecs (0 means no timeout).
          *
          * @endpoint search/jobs/{search_id}/control
          * @method splunkjs.Service.Job
          */
-        setPriority: function(value, callback) {
-            callback = callback || function() {};
-            
+        setPriority: function(value, response_timeout) {
             var that = this;
-            var req = this.post("control", {action: "setpriority", priority: value}, function(err) {
-                callback(err, that);
+            let req = this.post("control", {action: "setpriority", priority: value}, response_timeout).catch((err) => {
+                throw [err, that];
             });
-            
+
             return req;
         },
 
@@ -6110,23 +5309,20 @@ var __exportName = 'splunkjs';
          *
          * @example
          *
-         *      var job = service.jobs().item("mysid");
-         *      job.setTTL(1000, function(err, job) {
-         *          console.log("JOB TTL SET");
-         *      });
+         *      let job = service.jobs().item("mysid");
+         *      let res = await job.setTTL(1000);
+         *      console.log("JOB TTL SET");
          *
          * @param {Number} value The time to live, in seconds. 
-         * @param {Function} callback A function to call with the search job: `(err, job)`.
+         * @param {Number} response_timeout A timeout period for aborting a request in milisecs (0 means no timeout).
          *
          * @endpoint search/jobs/{search_id}/control
          * @method splunkjs.Service.Job
          */
-        setTTL: function(value, callback) {
-            callback = callback || function() {};
-            
+        setTTL: function(value, response_timeout) {
             var that = this;
-            var req = this.post("control", {action: "setttl", ttl: value}, function(err) {
-                callback(err, that);
+            let req = this.post("control", {action: "setttl", ttl: value}, response_timeout).catch((err) => {
+                throw [err, that];
             });
             
             return req;
@@ -6137,28 +5333,26 @@ var __exportName = 'splunkjs';
          *
          * @example
          *
-         *      var job = service.jobs().item("mysid");
-         *      job.summary({top_count: 5}, function(err, summary, job) {
-         *          console.log("Summary: ", summary);
-         *      });
+         *      let job = service.jobs().item("mysid");
+         *      let summary;
+         *      [summary, job] = await job.summary({top_count: 5});
+         *      console.log("Summary: ", summary);
          *
          * @param {Object} params The parameters for retrieving the summary. For a list of available parameters, see the <a href="http://docs.splunk.com/Documentation/Splunk/latest/RESTAPI/RESTsearch#GET_search.2Fjobs.2F.7Bsearch_id.7D.2Fsummary" target="_blank">GET search/jobs/{search_id}/summary</a> endpoint in the REST API documentation.
-         * @param {Function} callback A function to call with the summary and search job: `(err, summary, job)`.
+         * @param {Number} response_timeout A timeout period for aborting a request in milisecs (0 means no timeout).
          *
          * @endpoint search/jobs/{search_id}/summmary
          * @method splunkjs.Service.Job
          */
-        summary: function(params, callback) {
-            callback = callback || function() {};
-            
+        summary: function(params, response_timeout) {
+            if (utils.isNumber(params) && !response_timeout) {
+                response_timeout = params;
+                params = {};
+            }
+
             var that = this;
-            return this.get("summary", params, function(err, response) {
-                if (err) {
-                    callback(err);
-                }
-                else {
-                    callback(null, response.data, that);
-                }
+            return this.get("summary", params, response_timeout).then((response) => {
+                return [response.data, that];
             });
         },
 
@@ -6167,28 +5361,26 @@ var __exportName = 'splunkjs';
          *
          * @example
          *
-         *      var job = service.jobs().item("mysid");
-         *      job.timeline({time_format: "%c"}, function(err, job, timeline) {
-         *          console.log("Timeline: ", timeline);
-         *      });
+         *      let job = service.jobs().item("mysid");
+         *      let timeline;
+         *      [timeline, job] = await job.timeline({time_format: "%c"});
+         *      console.log("Timeline: ", timeline);
          *
          * @param {Object} params The parameters for retrieving the timeline. For a list of available parameters, see the <a href="http://docs.splunk.com/Documentation/Splunk/latest/RESTAPI/RESTsearch#GET_search.2Fjobs.2F.7Bsearch_id.7D.2Ftimeline" target="_blank">GET search/jobs/{search_id}/timeline </a> endpoint in the REST API documentation.
-         * @param {Function} callback A function to call with the timeline and search job: `(err, timeline, job)`.
+         * @param {Number} response_timeout A timeout period for aborting a request in milisecs (0 means no timeout).
          *
          * @endpoint search/jobs/{search_id}/timeline
          * @method splunkjs.Service.Job
          */
-        timeline: function(params, callback) {
-            callback = callback || function() {};
-            
+        timeline: function(params, response_timeout) {
+            if (utils.isNumber(params) && !response_timeout) {
+                response_timeout = params;
+                params = {};
+            }
+
             var that = this;
-            return this.get("timeline", params, function(err, response) {
-                if (err) {
-                    callback(err);
-                }
-                else {
-                    callback(null, response.data, that);
-                }
+            return this.get("timeline", params, response_timeout).then((response) => {
+                return [response.data, that];
             });
         },
 
@@ -6198,22 +5390,19 @@ var __exportName = 'splunkjs';
          *
          * @example
          *
-         *      var job = service.jobs().item("mysid");
-         *      job.touch(function(err) {
-         *          console.log("JOB TOUCHED");
-         *      });
+         *      let job = service.jobs().item("mysid");
+         *      await job.touch();
+         *      console.log("JOB TOUCHED");
          *
-         * @param {Function} callback A function to call with the search job: `(err, job)`.
+         * @param {Number} response_timeout A timeout period for aborting a request in milisecs (0 means no timeout).
          *
          * @endpoint search/jobs/{search_id}/control
          * @method splunkjs.Service.Job
          */
-        touch: function(callback) {
-            callback = callback || function() {};
-            
+        touch: function(response_timeout) {
             var that = this;
-            var req = this.post("control", {action: "touch"}, function(err) {
-                callback(err, that);
+            let req = this.post("control", {action: "touch"}, response_timeout).catch((err) => {
+                throw [err, that];
             });
             
             return req;
@@ -6235,16 +5424,15 @@ var __exportName = 'splunkjs';
          *
          * @method splunkjs.Service.Job
          */
-        track: function(options, callbacks) {
-            var period = options.period || 500; // ms
-            
+         track: async function(options, callbacks) {
+            let period = options.period || 500; // ms
             if (utils.isFunction(callbacks)) {
                 callbacks = {
                     done: callbacks
                 };
             }
             
-            var noCallbacksAfterReady = (
+            let noCallbacksAfterReady = (
                 !callbacks.progress &&
                 !callbacks.done &&
                 !callbacks.failed &&
@@ -6262,67 +5450,46 @@ var __exportName = 'splunkjs';
             callbacks._stoppedAfterReady = callbacks._stoppedAfterReady || function() {};
             
             var that = this;
-            var emittedReady = false;
-            var doneLooping = false;
-            Async.whilst(
-                function() { return !doneLooping; },
-                function(nextIteration) {
-                    that.fetch(function(err, job) {
-                        if (err) {
-                            nextIteration(err);
-                            return;
-                        }
-                        
-                        var dispatchState = job.properties().dispatchState;
-                        var notReady = dispatchState === "QUEUED" || dispatchState === "PARSING";
-                        if (notReady) {
-                            callbacks._preready(job);
-                        }
-                        else {
-                            if (!emittedReady) {
-                                callbacks.ready(job);
-                                emittedReady = true;
-                                
-                                // Optimization: Don't keep polling the job if the
-                                // caller only cares about the `ready` event.
-                                if (noCallbacksAfterReady) {
-                                    callbacks._stoppedAfterReady(job);
-                                    
-                                    doneLooping = true;
-                                    nextIteration();
-                                    return;
-                                }
-                            }
+            let emittedReady = false;
+            let doneLooping = false;
+            while(!doneLooping) {
+                try {
+                    let job = await that.fetch();
+                    let dispatchState = job.properties().dispatchState;
+                    let notReady = dispatchState === "QUEUED" || dispatchState === "PARSING";
+                    if (notReady) {
+                        callbacks._preready(job);
+                    } else {
+                        if (!emittedReady) {
+                            callbacks.ready(job);
+                            emittedReady = true;
                             
-                            callbacks.progress(job);
-                            
-                            var props = job.properties();
-                            
-                            if (dispatchState === "DONE" && props.isDone) {
-                                callbacks.done(job);
-                                
+                            // Optimization: Don't keep polling the job if the
+                            // caller only cares about the `ready` event.
+                            if (noCallbacksAfterReady) {
                                 doneLooping = true;
-                                nextIteration();
-                                return;
-                            }
-                            else if (dispatchState === "FAILED" && props.isFailed) {
-                                callbacks.failed(job);
-                                
-                                doneLooping = true;
-                                nextIteration();
-                                return;
+                                return callbacks._stoppedAfterReady(job);
                             }
                         }
                         
-                        Async.sleep(period, nextIteration);
-                    });
-                },
-                function(err) {
-                    if (err) {
-                        callbacks.error(err);
+                        callbacks.progress(job);
+                        
+                        let props = job.properties();
+                        
+                        if (dispatchState === "DONE" && props.isDone) {
+                            doneLooping = true;
+                            return callbacks.done(job);
+                        }
+                        else if (dispatchState === "FAILED" && props.isFailed) {
+                            doneLooping = true;
+                            return callbacks.failed(job);
+                        }
                     }
+                    await utils.sleep(period);
+                } catch (err) {
+                    return callbacks.error(err);
                 }
-            );
+            }
         },
 
         /**
@@ -6330,22 +5497,19 @@ var __exportName = 'splunkjs';
          *
          * @example
          *
-         *      var job = service.jobs().item("mysid");
-         *      job.unpause(function(err) {
-         *          console.log("JOB UNPAUSED");
-         *      });
+         *      let job = service.jobs().item("mysid");
+         *      let res = await job.unpause();
+         *      console.log("JOB UNPAUSED");
          *
-         * @param {Function} callback A function to call with the search job: `(err, job)`.
+         * @param {Number} response_timeout A timeout period for aborting a request in milisecs (0 means no timeout).
          *
          * @endpoint search/jobs/{search_id}/control
          * @method splunkjs.Service.Job
          */
-        unpause: function(callback) {
-            callback = callback || function() {};
-            
+        unpause: function(response_timeout) {
             var that = this;
-            var req = this.post("control", {action: "unpause"}, function(err) {
-                callback(err, that);
+            let req = this.post("control", {action: "unpause"}, response_timeout).catch((err)=>{
+                throw [err, that];
             });
             
             return req;
@@ -6384,8 +5548,8 @@ var __exportName = 'splunkjs';
          * @method splunkjs.Service.Jobs
          */
         instantiateEntity: function(props) {
-            var sid = props.content.sid;
-            var entityNamespace = utils.namespaceFromProperties(props);
+            let sid = props.content.sid;
+            let entityNamespace = utils.namespaceFromProperties(props);
             return new root.Job(this.service, sid, entityNamespace);
         },
         
@@ -6409,8 +5573,7 @@ var __exportName = 'splunkjs';
             this.disableV2SearchApi = service.disableV2SearchApi;
 
             this._super(service, this.path(), namespace);
-            // We perform the bindings so that every function works 
-            // properly when it is passed as a callback.
+            // We perform the bindings so that every function works properly
             this.create         = utils.bind(this, this.create);
             
         },
@@ -6427,41 +5590,31 @@ var __exportName = 'splunkjs';
          *
          * @param {String} query The search query.
          * @param {Object} params A dictionary of properties for the search job. For a list of available parameters, see <a href="http://dev.splunk.com/view/SP-CAAAEFA#searchjobparams" target="_blank">Search job parameters</a> on Splunk Developer Portal.
-         * @param {Function} callback A function to call with the created job: `(err, createdJob)`.
+         * @param {Number} response_timeout A timeout period for aborting a request in milisecs (0 means no timeout).
          *
          * @endpoint search/jobs
          * @method splunkjs.Service.Jobs
          */
-        create: function(query, params, callback) {
-            // If someone called us with the default style of (params, callback),
-            // lets make it work
-            if (utils.isObject(query) && utils.isFunction(params) && !callback) {
-                callback = params;
+        create: function(query, params, response_timeout) {
+            if (utils.isObject(query) && (utils.isNumber(params) || !params) && !response_timeout) {
+                response_timeout = params;
                 params = query;
                 query = params.search;
             }
             
-            callback = callback || function() {};
             params = params || {};
             params.search = query; 
-            
             if ((params.exec_mode || "").toLowerCase() === "oneshot") {
-                throw new Error("Please use splunkjs.Service.Jobs.oneshotSearch for exec_mode=oneshot");
+                return Promise.reject(new Error("Please use splunkjs.Service.Jobs.oneshotSearch for exec_mode=oneshot"));
             }
             
             if (!params.search) {
-                callback("Must provide a query to create a search job");
-                return;
+                return Promise.reject("Must provide a query to create a search job");
             } 
             var that = this;
-            return this.post("", params, function(err, response) {
-                if (err) {
-                    callback(err);
-                }
-                else {
-                    var job = new root.Job(that.service, response.data.sid, that.namespace);
-                    callback(null, job);
-                }
+            return this.post("", params, response_timeout).then((response) => {
+                let job = new root.Job(that.service, response.data.sid, that.namespace);
+                return job;
             });
         },
                 
@@ -6477,21 +5630,20 @@ var __exportName = 'splunkjs';
          *
          * @example
          *
-         *      var jobs = service.jobs();
-         *      jobs.search("search ERROR", {id: "myjob_123"}, function(err, newJob) {
-         *          console.log("CREATED": newJob.sid);
-         *      });
+         *      let jobs = service.jobs();
+         *      let newJob = await jobs.search("search ERROR", {id: "myjob_123"});
+         *      console.log("CREATED": newJob.sid);
          *
          * @param {String} query The search query.
          * @param {Object} params A dictionary of properties for the search job. For a list of available parameters, see <a href="http://dev.splunk.com/view/SP-CAAAEFA#searchjobparams" target="_blank">Search job parameters</a> on Splunk Developer Portal.
          *        **Note:** This method throws an error if the `exec_mode=oneshot` parameter is passed in with the properties dictionary.
-         * @param {Function} callback A function to call with the new search job: `(err, createdJob)`.
+         * @param {Number} response_timeout A timeout period for aborting a request in milisecs (0 means no timeout).
          *
          * @endpoint search/jobs
          * @method splunkjs.Service.Jobs
          */
-        search: function(query, params, callback) {
-            return this.create(query, params, callback);
+        search: function(query, params, response_timeout) {
+            return this.create(query, params, response_timeout);
         },
                 
         /**
@@ -6499,10 +5651,9 @@ var __exportName = 'splunkjs';
          *
          * @example
          *
-         *      var jobs = service.jobs();
-         *      jobs.oneshotSearch("search ERROR", {id: "myjob_123"}, function(err, results) {
-         *          console.log("RESULT FIELDS": results.fields);
-         *      });
+         *      let jobs = service.jobs();
+         *      let results = await jobs.oneshotSearch("search ERROR", {id: "myjob_123"});
+         *      console.log("RESULT FIELDS": results.fields);
          *
          * @param {String} query The search query. 
          * @param {Object} params A dictionary of properties for the search:
@@ -6510,54 +5661,45 @@ var __exportName = 'splunkjs';
          *    - `earliest_time` (_string_): Specifies the earliest time in the time range to search. The time string can be a UTC time (with fractional seconds), a relative time specifier (to now), or a formatted time string.
          *    - `latest_time` (_string_): Specifies the latest time in the time range to search. The time string can be a UTC time (with fractional seconds), a relative time specifier (to now), or a formatted time string.
          *    - `rf` (_string_): Specifies one or more fields to add to the search.
-         * @param {Function} callback A function to call with the results of the search: `(err, results)`.
+         * @param {Number} response_timeout A timeout period for aborting a request in milisecs (0 means no timeout).
          *
          * @endpoint search/jobs
          * @method splunkjs.Service.Jobs
          */
-        oneshotSearch: function(query, params, callback) {
-            // If someone called us with the default style of (params, callback),
-            // lets make it work
-            if (utils.isObject(query) && utils.isFunction(params) && !callback) {
-                callback = params;
+        oneshotSearch: function(query, params, response_timeout) {
+            if (utils.isObject(query) && utils.isNumber(params) && !response_timeout) {
+                response_timeout = params;
                 params = query;
                 query = params.search;
             }
             
-            callback = callback || function() {};
             params = params || {};
             params.search = query; 
             params.exec_mode = "oneshot";
             
             if (!params.search) {
-                callback("Must provide a query to create a search job");
+                return Promise.reject("Must provide a query to create a search job");
             }
             
-            var outputMode = params.output_mode || "json_rows";
+            let outputMode = params.output_mode || "json_rows";
             
-            var path = this.qualifiedPath;
-            var method = "POST";
-            var headers = {};
-            var post = params;
-            var get = {output_mode: outputMode};
-            var body = null;
+            let path = this.qualifiedPath;
+            let method = "POST";
+            let headers = {};
+            let post = params;
+            let get = {output_mode: outputMode};
+            let body = null;
             
-            var req = this.service.request(
+            let req = this.service.request(
                 path, 
                 method, 
                 get, 
                 post, 
                 body, 
-                headers, 
-                function(err, response) {
-                    if (err) {
-                        callback(err);
-                    } 
-                    else {
-                        callback(null, response.data);
-                    }
-                }
-            );
+                headers,
+                response_timeout).then((response) => {
+                    return response.data;
+                });
             
             return req;
         }
@@ -6815,7 +5957,7 @@ var __exportName = 'splunkjs';
             this.owner          = this.lineage[this.lineage.length - 1];
 
             this.outputFields = [];
-            for (var i = 0; i < props.outputFields.length; i++) {
+            for (let i = 0; i < props.outputFields.length; i++) {
                 this.outputFields[props.outputFields[i].fieldName] = new root.DataModelField(props.outputFields[i]);
             }
 
@@ -6944,12 +6086,12 @@ var __exportName = 'splunkjs';
          *
          * @param {Object} args A dictionary of properties for the search job (optional). For a list of available parameters, see <a href="http://dev.splunk.com/view/SP-CAAAEFA#searchjobparams" target="_blank">Search job parameters</a> on Splunk Developer Portal.
          *        **Note:** This method throws an error if the `exec_mode=oneshot` parameter is passed in with the properties dictionary.
-         * @param {Function} callback A function to call when done creating the search job: `(err, job)`.
+         * @param {Number} response_timeout A timeout period for aborting a request in milisecs (0 means no timeout).
          * @method splunkjs.Service.Pivot
          */
-        run: function(args, callback) {
-            if (utils.isUndefined(callback)) {
-                callback = args;
+        run: function(args, response_timeout) {
+            if (utils.isNumber(args) && !response_timeout) {
+                response_timeout = args;
                 args = {};
             }
             if (!args || Object.keys(args).length === 0) {
@@ -6957,7 +6099,7 @@ var __exportName = 'splunkjs';
             }
 
             // If tstats is undefined, use pivotSearch (try to run an accelerated search if possible)
-            this.service.search(this.tstatsSearch || this.pivotSearch, args, callback);
+            return this.service.search(this.tstatsSearch || this.pivotSearch, args, response_timeout);
         }
     });
 
@@ -6973,17 +6115,16 @@ var __exportName = 'splunkjs';
      * return the modified `splunkjs.Service.PivotSpecification` instance.
      *
      * @example
-     *     service.dataModels().fetch(function(err, dataModels) {
-     *         var searches = dataModels.item("internal_audit_logs").objectByName("searches");
-     *         var pivotSpecification = searches.createPivotSpecification();
-     *         pivotSpecification
-     *             .addRowSplit("user", "Executing user")
-     *             .addRangeColumnSplit("exec_time", {limit: 4})
-     *             .addCellValue("search", "Search Query", "values")
-     *             .pivot(function(err, pivot) {
-     *                 console.log("Got a Pivot object from the Splunk server!");
-     *             });
-     *     });
+     * 
+     *      let dataModels = await service.dataModels().fetch();
+     *      let searches = dataModels.item("internal_audit_logs").objectByName("searches");
+     *      let pivotSpecification = searches.createPivotSpecification();
+     *      let pivot = await pivotSpecification
+     *                              .addRowSplit("user", "Executing user")
+     *                              .addRangeColumnSplit("exec_time", {limit: 4})
+     *                              .addCellValue("search", "Search Query", "values")
+     *                              .pivot();
+     *      console.log("Got a Pivot object from the Splunk server!");
      *
      * Has these properties:
      *    - `dataModelObject` (_splunkjs.Service.DataModelObject_): The `DataModelObject` from which
@@ -7158,7 +6299,7 @@ var __exportName = 'splunkjs';
                     " is not a valid comparison operator");
             }
 
-            var ret = {
+            let ret = {
                 fieldName: fieldName,
                 owner: this.dataModelObject.fieldByName(fieldName).lineage.join("."),
                 type: comparisonType
@@ -7193,7 +6334,7 @@ var __exportName = 'splunkjs';
                 throw new Error("Cannot add limit filter on a nonexistent field.");
             }
 
-            var f = this.dataModelObject.fieldByName(fieldName);
+            let f = this.dataModelObject.fieldByName(fieldName);
 
             if (!utils.contains(["string", "number", "objectCount"], f.type)) {
                 throw new Error("Cannot add limit filter on " + fieldName + " because it is of type " + f.type);
@@ -7213,7 +6354,7 @@ var __exportName = 'splunkjs';
                 throw new Error("Stats function for fields of type object count must be COUNT; found " + statsFunction);
             }
 
-            var filter = {
+            let filter = {
                 fieldName: fieldName,
                 owner: f.lineage.join("."),
                 type: f.type,
@@ -7243,12 +6384,12 @@ var __exportName = 'splunkjs';
             if (!this.dataModelObject.hasField(fieldName)) {
                 throw new Error("Did not find field " + fieldName);
             }
-            var f = this.dataModelObject.fieldByName(fieldName);
+            let f = this.dataModelObject.fieldByName(fieldName);
             if (!utils.contains(["number", "string"], f.type)) {
                 throw new Error("Field was of type " + f.type + ", expected number or string.");
             }
 
-            var row = {
+            let row = {
                 fieldName: fieldName,
                 owner: f.owner,
                 type: f.type,
@@ -7287,11 +6428,11 @@ var __exportName = 'splunkjs';
             if (!this.dataModelObject.hasField(field)) {
                 throw new Error("Did not find field " + field);
             }
-            var f = this.dataModelObject.fieldByName(field);
+            let f = this.dataModelObject.fieldByName(field);
             if ("number" !== f.type) {
                 throw new Error("Field was of type " + f.type + ", expected number.");
             }
-            var updateRanges = {};
+            let updateRanges = {};
             if (!utils.isUndefined(ranges.start) && ranges.start !== null) {
                 updateRanges.start = ranges.start;
             }
@@ -7332,7 +6473,7 @@ var __exportName = 'splunkjs';
             if (!this.dataModelObject.fieldByName(field)) {
                 throw new Error("Did not find field " + field);
             }
-            var f = this.dataModelObject.fieldByName(field);
+            let f = this.dataModelObject.fieldByName(field);
             if ("boolean" !== f.type) {
                 throw new Error("Field was of type " + f.type + ", expected boolean.");
             }
@@ -7363,7 +6504,7 @@ var __exportName = 'splunkjs';
             if (!this.dataModelObject.hasField(field)) {
                 throw new Error("Did not find field " + field);
             }
-            var f = this.dataModelObject.fieldByName(field);
+            let f = this.dataModelObject.fieldByName(field);
             if ("timestamp" !== f.type) {
                 throw new Error("Field was of type " + f.type + ", expected timestamp.");
             }
@@ -7395,12 +6536,12 @@ var __exportName = 'splunkjs';
             if (!this.dataModelObject.hasField(fieldName)) {
                 throw new Error("Did not find field " + fieldName);
             }
-            var f = this.dataModelObject.fieldByName(fieldName);
+            let f = this.dataModelObject.fieldByName(fieldName);
             if (!utils.contains(["number", "string"], f.type)) {
                 throw new Error("Field was of type " + f.type + ", expected number or string.");
             }
 
-            var col = {
+            let col = {
                 fieldName: fieldName,
                 owner: f.owner,
                 type: f.type
@@ -7432,14 +6573,14 @@ var __exportName = 'splunkjs';
             if (!this.dataModelObject.hasField(fieldName)) {
                 throw new Error("Did not find field " + fieldName);
             }
-            var f = this.dataModelObject.fieldByName(fieldName);
+            let f = this.dataModelObject.fieldByName(fieldName);
             if ("number" !== f.type) {
                 throw new Error("Field was of type " + f.type + ", expected number.");
             }
 
             // In Splunk 6.0.1.1, data models incorrectly expect strings for these fields
             // instead of numbers. In 6.1, this is fixed and both are accepted.
-            var updatedRanges = {};
+            let updatedRanges = {};
             if (!utils.isUndefined(ranges.start) && ranges.start !== null) {
                 updatedRanges.start = ranges.start;
             }
@@ -7478,7 +6619,7 @@ var __exportName = 'splunkjs';
             if (!this.dataModelObject.fieldByName(fieldName)) {
                 throw new Error("Did not find field " + fieldName);
             }
-            var f = this.dataModelObject.fieldByName(fieldName);
+            let f = this.dataModelObject.fieldByName(fieldName);
             if ("boolean" !== f.type) {
                 throw new Error("Field was of type " + f.type + ", expected boolean.");
             }
@@ -7507,7 +6648,7 @@ var __exportName = 'splunkjs';
             if (!this.dataModelObject.hasField(field)) {
                 throw new Error("Did not find field " + field);
             }
-            var f = this.dataModelObject.fieldByName(field);
+            let f = this.dataModelObject.fieldByName(field);
             if ("timestamp" !== f.type) {
                 throw new Error("Field was of type " + f.type + ", expected timestamp.");
             }
@@ -7540,7 +6681,7 @@ var __exportName = 'splunkjs';
                 throw new Error("Did not find field " + fieldName);
             }
 
-            var f = this.dataModelObject.fieldByName(fieldName);
+            let f = this.dataModelObject.fieldByName(fieldName);
             if (utils.contains(["string", "ipv4"], f.type) &&
                 !utils.contains([
                     "list",
@@ -7631,26 +6772,24 @@ var __exportName = 'splunkjs';
          *
          * @example
          *
-         *      service.dataModels().fetch(function(err, dataModels) {
-         *          var searches = dataModels.item("internal_audit_logs").objectByName("searches");
-         *          var pivotSpec = searches.createPivotSpecification();
-         *          // Use of the fluent API
-         *          pivotSpec.addRowSplit("user", "Executing user")
-         *              .addRangeColumnSplit("exec_time", {start: 0, end: 12, step: 5, limit: 4})
-         *              .addCellValue("search", "Search Query", "values")
-         *              .pivot(function(pivotErr, pivot) {
-         *                  console.log("Pivot search is:", pivot.search);
-         *              });
-         *      });
-         *
-         * @param {Function} callback A function to call when done getting the pivot: `(err, pivot)`.
+         *      let dataModels = await service.dataModels().fetch();
+         *      let searches = dataModels.item("internal_audit_logs").objectByName("searches");
+         *      let pivotSpec = searches.createPivotSpecification();
+         *      // Use of the fluent API
+         *      let pivot = await pivotSpec.addRowSplit("user", "Executing user")
+         *          .addRangeColumnSplit("exec_time", {start: 0, end: 12, step: 5, limit: 4})
+         *          .addCellValue("search", "Search Query", "values")
+         *          .pivot();
+         *      console.log("Pivot search is:", pivot.search);
+         * 
+         * @param {Number} response_timeout A timeout period for aborting a request in milisecs (0 means no timeout).
          *
          * @method splunkjs.Service.PivotSpecification
          */
-        pivot: function(callback) {
-            var svc = this.dataModelObject.dataModel.service;
+        pivot: function(response_timeout) {
+            let svc = this.dataModelObject.dataModel.service;
 
-            var args = {
+            let args = {
                 pivot_json: JSON.stringify(this.toJsonObject())
             };
 
@@ -7658,19 +6797,18 @@ var __exportName = 'splunkjs';
                 args.namespace = this.accelerationNamespace;
             }
             
-            return svc.get(Paths.pivot + "/" + encodeURIComponent(this.dataModelObject.dataModel.name), args, function(err, response) {
-                if (err) {
-                    callback(new Error(err.data.messages[0].text), response);
-                    return;
-                }
-
-                if (response.data.entry && response.data.entry[0]) {
-                    callback(null, new root.Pivot(svc, response.data.entry[0].content));
-                }
-                else {
-                    callback(new Error("Didn't get a Pivot report back from Splunk"), response);
-                }
-            });
+            return svc.get(Paths.pivot + "/" + encodeURIComponent(this.dataModelObject.dataModel.name), args, response_timeout).
+                        then((response) => {
+                            if (response.data.entry && response.data.entry[0]) {
+                                return new root.Pivot(svc, response.data.entry[0].content);
+                            }
+                            else {
+                                return [new Error("Didn't get a Pivot report back from Splunk"), response];
+                            }
+                        }).catch((err) => {
+                            // TODO: analyze use of response argument and change accordingly
+                            throw new Error(err.data.messages[0].text);
+                        });
         },
 
         /**
@@ -7681,38 +6819,37 @@ var __exportName = 'splunkjs';
          * for this data model, defined by this `PivotSpecification`; then,
          * starts a search job running this pivot, accelerated if possible.
          *
-         *      service.dataModels().fetch(function(fetchErr, dataModels) {
-         *          var searches = dataModels.item("internal_audit_logs").objectByName("searches");
-         *          var pivotSpec = searches.createPivotSpecification();
-         *          // Use of the fluent API
-         *          pivotSpec.addRowSplit("user", "Executing user")
-         *              .addRangeColumnSplit("exec_time", {start: 0, end: 12, step: 5, limit: 4})
-         *              .addCellValue("search", "Search Query", "values")
-         *              .run(function(err, job, pivot) {
-         *                  console.log("Job SID is:", job.sid);
-         *                  console.log("Pivot search is:", pivot.search);
-         *              });
-         *      });
+         * @example
+         * 
+         *      let dataModels = await service.dataModels().fetch();
+         *      let searches = dataModels.item("internal_audit_logs").objectByName("searches");
+         *      let pivotSpec = searches.createPivotSpecification();
+         *      // Use of the fluent API
+         *      let [job, pivot] = await pivotSpec.addRowSplit("user", "Executing user")
+         *                          .addRangeColumnSplit("exec_time", {start: 0, end: 12, step: 5, limit: 4})
+         *                          .addCellValue("search", "Search Query", "values")
+         *                          .run();
+         *      console.log("Job SID is:", job.sid);
+         *      console.log("Pivot search is:", pivot.search);
+         * 
          * @param {Object} args A dictionary of properties for the search job (optional). For a list of available parameters, see <a href="http://dev.splunk.com/view/SP-CAAAEFA#searchjobparams" target="_blank">Search job parameters</a> on Splunk Developer Portal.
          *        **Note:** This method throws an error if the `exec_mode=oneshot` parameter is passed in with the properties dictionary.
-         * @param {Function} callback A function to call when done getting the pivot: `(err, job, pivot)`.
+         * @param {Number} response_timeout A timeout period for aborting a request in milisecs (0 means no timeout).
          *
          * @method splunkjs.Service.PivotSpecification
          */
-        run: function(args, callback) {
-            if (!callback) {
-                callback = args;
+        run: function(args, response_timeout) {
+            if (utils.isNumber(args) && !response_timeout) {
+                response_timeout = args;
                 args = {};
             }
             args = args || {};
 
-            this.pivot(function(err, pivot) {
-                if (err) {
-                    callback(err, null, null);
-                }
-                else {
-                    pivot.run(args, Async.augment(callback, pivot));
-                }
+            return this.pivot().then(async (pivot) => {
+                let response = await pivot.run(args);
+                return [response, pivot];
+            }).catch((err) => {
+                throw [err, null, null];
             });
         }
     });
@@ -7801,19 +6938,19 @@ var __exportName = 'splunkjs';
 
             // Parse fields
             this.fields = {};
-            for (var i = 0; i < props.fields.length; i++) {
+            for (let i = 0; i < props.fields.length; i++) {
                 this.fields[props.fields[i].fieldName] = new root.DataModelField(props.fields[i]);
             }
 
             // Parse constraints
             this.constraints = [];
-            for (var j = 0; j < props.constraints.length; j++) {
+            for (let j = 0; j < props.constraints.length; j++) {
                 this.constraints.push(new root.DataModelConstraint(props.constraints[j]));
             }
 
             // Parse calculations
             this.calculations = [];
-            for (var k = 0; k < props.calculations.length; k++) {
+            for (let k = 0; k < props.calculations.length; k++) {
                 this.calculations[props.calculations[k].calculationID] = new root.DataModelCalculation(props.calculations[k]);
             }
         },
@@ -7878,16 +7015,16 @@ var __exportName = 'splunkjs';
          */
         allFields: function() {
             // merge fields and calculatedFields()
-            var combinedFields = [];
+            let combinedFields = [];
 
-            for (var f in this.fields) {
+            for (let f in this.fields) {
                 if (this.fields.hasOwnProperty(f)) {
                     combinedFields[f] = this.fields[f];
                 }
             }
 
-            var calculatedFields = this.calculatedFields();
-            for (var cf in calculatedFields) {
+            let calculatedFields = this.calculatedFields();
+            for (let cf in calculatedFields) {
                 if (calculatedFields.hasOwnProperty(cf)) {
                     combinedFields[cf] = calculatedFields[cf];
                 }
@@ -7920,13 +7057,13 @@ var __exportName = 'splunkjs';
          * @method splunkjs.Service.DataModelObject
          */
         calculatedFields: function(){
-            var fields = {};
+            let fields = {};
             // Iterate over the calculations, get their fields
-            var keys = this.calculationIDs();
-            var calculations = this.calculations;
-            for (var i = 0; i < keys.length; i++) {
-                var calculation = calculations[keys[i]];
-                for (var f = 0; f < calculation.outputFieldNames().length; f++) {
+            let keys = this.calculationIDs();
+            let calculations = this.calculations;
+            for (let i = 0; i < keys.length; i++) {
+                let calculation = calculations[keys[i]];
+                for (let f = 0; f < calculation.outputFieldNames().length; f++) {
                     fields[calculation.outputFieldNames()[f]] = calculation.outputFields[calculation.outputFieldNames()[f]];
                 }
             }
@@ -7986,29 +7123,25 @@ var __exportName = 'splunkjs';
          *
          * @example
          *
-         *      service.dataModels().fetch(function(err, dataModels) {
-         *          var object = dataModels.item("some_data_model").objectByName("some_object");
-         *          object.createLocalAccelerationJob("-1d", function(err, accelerationJob) {
-         *              console.log("The job has name:", accelerationJob.name);
-         *          });
-         *      });
+         *      let dataModels = await service.dataModels().fetch();
+         *      let object = dataModels.item("some_data_model").objectByName("some_object");
+         *      let accelerationJob = await object.createLocalAccelerationJob("-1d");
+         *      console.log("The job has name:", accelerationJob.name);
          *
          * @param {String} earliestTime A time modifier (e.g., "-2w") setting the earliest time to index.
-         * @param {Function} callback A function to call with the search job: `(err, accelerationJob)`.
+         * @param {Number} response_timeout A timeout period for aborting a request in milisecs (0 means no timeout).
          *
          * @method splunkjs.Service.DataModelObject
          */
-        createLocalAccelerationJob: function(earliestTime, callback) {
-            // If earliestTime parameter is not specified, then set callback to its value
-            if (!callback && utils.isFunction(earliestTime)) {
-                callback = earliestTime;
+        createLocalAccelerationJob: function(earliestTime, response_timeout) {
+            if (utils.isNumber(earliestTime) && !response_timeout) {
+                response_timeout = earliestTime;
                 earliestTime = undefined;
             }
+            let query = "| datamodel \"" + this.dataModel.name + "\" " + this.name + " search | tscollect";
+            let args = earliestTime ? {earliest_time: earliestTime} : {};
 
-            var query = "| datamodel \"" + this.dataModel.name + "\" " + this.name + " search | tscollect";
-            var args = earliestTime ? {earliest_time: earliestTime} : {};
-
-            this.dataModel.service.search(query, args, callback);
+            return this.dataModel.service.search(query, args, response_timeout);
         },
 
         /**
@@ -8016,25 +7149,23 @@ var __exportName = 'splunkjs';
          *
          * @example
          *
-         *      service.dataModels().fetch(function(err, dataModels) {
-         *          var object = dataModels.item("internal_audit_logs").objectByName("searches");
-         *          object.startSearch({}, "| head 5", function(err, job) {
-         *              console.log("The job has name:", job.name);
-         *          });
-         *      });
+         *      let dataModels = await service.dataModels().fetch();
+         *      let object = dataModels.item("internal_audit_logs").objectByName("searches");
+         *      let job = await object.startSearch({}, "| head 5");
+         *      console.log("The job has name:", job.name);
          *
          * @param {Object} params A dictionary of properties for the search job. For a list of available parameters, see <a href="http://dev.splunk.com/view/SP-CAAAEFA#searchjobparams" target="_blank">Search job parameters</a> on Splunk Developer Portal.
          *        **Note:** This method throws an error if the `exec_mode=oneshot` parameter is passed in with the properties dictionary.
          * @param {String} querySuffix A search query, starting with a '|' that will be appended to the command to fetch the contents of this data model object (e.g., "| head 3").
-         * @param {Function} callback A function to call with the search job: `(err, job)`.
+         * @param {Number} response_timeout A timeout period for aborting a request in milisecs (0 means no timeout).
          *
          * @method splunkjs.Service.DataModelObject
          */
-        startSearch: function(params, querySuffix, callback) {
-            var query = "| datamodel " + this.dataModel.name + " " + this.name + " search";
+        startSearch: function(params, querySuffix, response_timeout) {
+            let query = "| datamodel " + this.dataModel.name + " " + this.name + " search";
             // Prepend a space to the querySuffix, or set it to an empty string if null or undefined
             querySuffix = (querySuffix) ? (" " + querySuffix) : ("");
-            this.dataModel.service.search(query + querySuffix, params, callback);
+            return this.dataModel.service.search(query + querySuffix, params, response_timeout);
         },
         
         /**
@@ -8122,16 +7253,16 @@ var __exportName = 'splunkjs';
                 this.concise = "0";
             }
 
-            var dataModelDefinition = JSON.parse(props.content.description);
+            let dataModelDefinition = JSON.parse(props.content.description);
 
             this.objectNames = dataModelDefinition.objectNameList;
             this.displayName = dataModelDefinition.displayName;
             this.description = dataModelDefinition.description;
 
             // Parse the objects for this data model           
-            var objs = dataModelDefinition.objects;
+            let objs = dataModelDefinition.objects;
             this.objects = [];
-            for (var i = 0; i < objs.length; i++) {
+            for (let i = 0; i < objs.length; i++) {
                 this.objects.push(new root.DataModelObject(objs[i], this));
             }
 
@@ -8159,7 +7290,7 @@ var __exportName = 'splunkjs';
          * @method splunkjs.Service.DataModel
          */
         objectByName: function(name) {
-            for (var i = 0; i < this.objects.length; i++) {
+            for (let i = 0; i < this.objects.length; i++) {
                 if (this.objects[i].name === name) {
                     return this.objects[i];
                 }
@@ -8186,27 +7317,27 @@ var __exportName = 'splunkjs';
          *         Valid keys are: `enabled`, `earliestTime`, `cronSchedule`.
          *         Any keys not set will be pulled from the acceleration settings already
          *         set on this data model.
-         * @param {Function} callback A function to call when the data model is updated: `(err, dataModel)`.
+         * @param {Number} response_timeout A timeout period for aborting a request in milisecs (0 means no timeout).
          *
          * @method splunkjs.Service.DataModel
          */
-        update: function(props, callback) {
-            if (utils.isUndefined(callback)) {
-                callback = props;
+        update: function(props, response_timeout) {
+            if (!response_timeout && utils.isNumber(props)) {
+                response_timeout = props;
                 props = {};
             }
-            callback = callback || function() {};
-
+            props = props||{};
+            
             if (!props) {
-                callback(new Error("Must specify a props argument to update a data model."));
-                return; // Exit if props isn't set, to avoid calling the callback twice.
+                // Exit if props isn't set
+                return Promise.reject("Must specify a props argument to update a data model.");
             }
             if (props.hasOwnProperty("name")) {
-                callback(new Error("Cannot set 'name' field in 'update'"), this);
-                return; // Exit if the name is set, to avoid calling the callback twice.
+                // Exit if the name is set
+                return Promise.reject(["Cannot set 'name' field in 'update'", this]);
             }
 
-            var updatedProps = {
+            let updatedProps = {
                 acceleration: JSON.stringify({
                     enabled: props.accceleration && props.acceleration.enabled || this.acceleration.enabled,
                     earliest_time: props.accceleration && props.acceleration.earliestTime || this.acceleration.earliestTime,
@@ -8215,14 +7346,11 @@ var __exportName = 'splunkjs';
             };
 
             var that = this;
-            return this.post("", updatedProps, function(err, response) {
-                if (err) {
-                    callback(err, that);
-                }
-                else {
-                    var dataModelNamespace = utils.namespaceFromProperties(response.data.entry[0]);
-                    callback(null, new root.DataModel(that.service, response.data.entry[0].name, dataModelNamespace, response.data.entry[0]));
-                }
+            return this.post("", updatedProps, response_timeout).then((response) => {
+                let dataModelNamespace = utils.namespaceFromProperties(response.data.entry[0]);
+                return new root.DataModel(that.service, response.data.entry[0].name, dataModelNamespace, response.data.entry[0]);
+            }).catch((err) => {
+                throw [err, that]
             });
         }
     });
@@ -8272,31 +7400,23 @@ var __exportName = 'splunkjs';
          * @param {String} name The name of the data model to create. If it contains spaces they will be replaced
          *     with underscores.
          * @param {Object} params A dictionary of properties.
-         * @param {Function} callback A function to call with the new `DataModel` object: `(err, createdDataModel)`.
+         * @param {Number} response_timeout A timeout period for aborting a request in milisecs (0 means no timeout).
          *
          * @method splunkjs.Service.DataModels
          */
-        create: function(name, params, callback) {
-            // If we get (name, callback) instead of (name, params, callback)
-            // do the necessary variable swap
-            if (utils.isFunction(params) && !callback) {
-                callback = params;
+        create: function(name, params, response_timeout) {
+            if (utils.isNumber(params) && !response_timeout) {
+                response_timeout = params;
                 params = {};
             }
 
             params = params || {};
-            callback = callback || function(){};
             name = name.replace(/ /g, "_");
 
             var that = this;
-            return this.post("", {name: name, description: JSON.stringify(params)}, function(err, response) {
-                if (err) {
-                    callback(err);
-                }
-                else {
-                    var dataModel = new root.DataModel(that.service, response.data.entry[0].name, that.namespace, response.data.entry[0]);
-                    callback(null, dataModel);
-                }
+            return this.post("", {name: name, description: JSON.stringify(params)}, response_timeout).then((response) => {
+                let dataModel = new root.DataModel(that.service, response.data.entry[0].name, that.namespace, response.data.entry[0]);
+                return dataModel;
             });
         },
 
@@ -8311,7 +7431,7 @@ var __exportName = 'splunkjs';
          * @method splunkjs.Service.DataModels
          */
         instantiateEntity: function(props) {
-            var entityNamespace = utils.namespaceFromProperties(props);
+            let entityNamespace = utils.namespaceFromProperties(props);
             return new root.DataModel(this.service, props.name, entityNamespace, props);
         }
     });
@@ -8327,30 +7447,29 @@ var __exportName = 'splunkjs';
             this._offset = 0;
         },
         
-        // Fetches the next page from the endpoint.
-        next: function(callback) {
-            callback = callback || function() {};
-            
-            var that = this;
-            var params = {
+        /**
+         * Fetches the next page from the endpoint.
+         *
+         * @param {Number} response_timeout A timeout period for aborting a request in milisecs (0 means no timeout).
+         *
+         * @method splunkjs.Service.PaginatedEndpointIterator
+         */
+        next: function(response_timeout) {
+            let that = this;
+            let params = {
                 count: this._pagesize,
                 offset: this._offset
             };
-            return this._endpoint(params, function(err, results) {
-                if (err) {
-                    callback(err);
-                }
-                else {                    
-                    var numResults = (results.rows ? results.rows.length : 0);
-                    that._offset += numResults;
-                    
-                    callback(null, results, numResults > 0);
-                }
+            return this._endpoint(params, response_timeout).then((response) => {
+                let [results, job] = response;
+                let numResults = results.rows ? results.rows.length : 0;
+                that._offset += numResults;
+                return [results, numResults > 0];
             });
         }
     });
 })();
-},{"./async":3,"./context":4,"./http":7,"./jquery.class":8,"./paths":10,"./utils":15}],15:[function(require,module,exports){
+},{"./context":3,"./http":6,"./jquery.class":7,"./paths":9,"./utils":14}],14:[function(require,module,exports){
 /*!*/
 // Copyright 2012 Splunk, Inc.
 //
@@ -8441,7 +7560,7 @@ var __exportName = 'splunkjs';
      * @function splunkjs.Utils
      */
     root.indexOf = function(arr, search) {
-        for(var i=0; i<arr.length; i++) {
+        for(let i=0; i<arr.length; i++) {
             if (arr[i] === search) {
                 return i;
             }
@@ -8483,7 +7602,7 @@ var __exportName = 'splunkjs';
      * @function splunkjs.Utils
      */
     root.startsWith = function(original, prefix) {
-        var matches = original.match("^" + prefix);
+        let matches = original.match("^" + prefix);
         return matches && matches.length > 0 && matches[0] === prefix;  
     };
 
@@ -8501,7 +7620,7 @@ var __exportName = 'splunkjs';
      * @function splunkjs.Utils
      */
     root.endsWith = function(original, suffix) {
-        var matches = original.match(suffix + "$");
+        let matches = original.match(suffix + "$");
         return matches && matches.length > 0 && matches[0] === suffix;  
     };
     
@@ -8642,7 +7761,7 @@ var __exportName = 'splunkjs';
             return obj.length === 0;
         }
         
-        for (var key in obj) {
+        for (let key in obj) {
             if (this.hasOwnProperty.call(obj, key)) {
                 return false;
             }
@@ -8672,14 +7791,14 @@ var __exportName = 'splunkjs';
             obj.forEach(iterator, context);
         } 
         else if (obj.length === +obj.length) {
-            for (var i = 0, l = obj.length; i < l; i++) {
+            for (let i = 0, l = obj.length; i < l; i++) {
                 if (i in obj && iterator.call(context, obj[i], i, obj) === {}) {
                     return;
                 }
             }
         } 
         else {
-            for (var key in obj) {
+            for (let key in obj) {
                 if (obj.hasOwnProperty(key)) {
                     if (iterator.call(context, obj[key], key, obj) === {}) {
                         return;
@@ -8706,7 +7825,7 @@ var __exportName = 'splunkjs';
      */
     root.extend = function(obj) {
         root.forEach(Array.prototype.slice.call(arguments, 1), function(source) {
-            for (var prop in source) {
+            for (let prop in source) {
                 obj[prop] = source[prop];
             }
         });
@@ -8768,7 +7887,7 @@ var __exportName = 'splunkjs';
       * @function splunkjs.Utils
       */
     root.keyOf = function(val, obj) {
-        for (var k in obj) {
+        for (let k in obj) {
             if (obj.hasOwnProperty(k) && obj[k] === val) {
                 return k;
             }
@@ -8787,7 +7906,7 @@ var __exportName = 'splunkjs';
      */
     root.getWithVersion = function(version, map) {
         map = map || {};
-        var currentVersion = (version + "") || "";
+        let currentVersion = (version + "") || "";
         while (currentVersion !== "") {
             if (map.hasOwnProperty(currentVersion)) {
                 return map[currentVersion];
@@ -8830,8 +7949,315 @@ var __exportName = 'splunkjs';
         return fs.readFileSync(path.resolve(filename, relativePath)).toString();
     };
 
+    /**
+     * can make a function to pause execution for a fixed amount of time
+     *
+     * @example
+     * 
+     *      await Utils.sleep(1000);
+     * 
+     * @param {Number} ms The timeout period, in milliseconds.
+     *
+     * @function splunkjs.Utils
+     */
+    root.sleep = function (ms) {
+        return new Promise(resolve => setTimeout(resolve, ms));
+    }
+
+    /**
+     * Runs an asynchronous `while` loop.
+     *
+     * @example
+     *      
+     *      let i = 0;
+     *      try {
+     *          await Utils.whilst(
+     *              function() { return i++ < 3; },
+     *              async function() {
+     *                  await Utils.sleep(0);
+     *              });
+     *      } catch(err) {
+     *          console.log(err);
+     *      }
+     *
+     * @param {Function} condition A function that returns a _boolean_ indicating whether the condition has been met.
+     * @param {Function} body A function that runs the body of the loop.
+     *
+     * @function splunkjs.Utils
+     */
+    root.whilst = async function(condition, body){
+        condition = condition || function() { return false; };
+        body = body || function() { return; };
+
+        let iterationDone = function(err) {
+            if (err) {
+                throw err;
+            }
+            else {
+                return root.whilst(condition, body);
+            }
+        };
+
+        if(condition()){
+            return iterationDone(await body())
+        }else{
+            return null;
+        }
+    }
+
+    /**
+     * Runs multiple functions (tasks) in parallel. 
+     * Each task takes the function as a parameter. 
+     * When all tasks have been completed or if an error occurs, the 
+     * function returns a combined results of all tasks. 
+     *
+     * **Note**: Tasks might not be run in the same order as they appear in the array,
+     * but the results will be returned in that order. 
+     *
+     * @example
+     *      
+     *      let [err, one, two] = await Utils.parallel([
+     *          function() {
+     *              return [null, 1];
+     *          },
+     *          function() {
+     *              return [null, 2, 3];
+     *          }]
+     *      );
+     *      console.log(err); // == null
+     *      console.log(one); // == 1
+     *      console.log(two); // == [1,2]
+     *
+     * @param {Function} tasks An array of functions.
+     * @param {Boolean} fromMap set to true when method call is made from parallerMap function. (optional)
+     *
+     * @function splunkjs.Utils
+     */
+    root.parallel = async function (tasks, fromMap) {
+        let res = [];
+        if(!root.isArray(tasks) && root.isFunction(fromMap)){
+            let taskList = [];
+            Object.keys(arguments).forEach(key => {
+                taskList.push(arguments[key]);
+            });
+            tasks = taskList;
+            fromMap = false;
+        }
+        for(let task of tasks) {
+            let result = task();
+            res.push(result);
+        }
+        let result = await Promise.all(res);
+        let response = [];
+        for(let resp of result){
+            if(resp){
+                if(resp[0]){
+                    return [resp[0], null];
+                }
+                if(resp.length > 2){
+                    response.push(resp.slice(1));
+                }else{
+                    response.push(resp[1]);
+                }
+            }
+        }
+        return fromMap ? [null, response] : [null, ...response];
+    }
+
+    /**
+     * Runs an asynchronous function (mapping it) over each element in an array, in parallel.
+     * When all tasks have been completed or if an error occurs, function
+     * returns the resulting array.
+     *
+     * @example
+     *      
+     *      let [err, vals] = await Utils.parallelMap(
+     *          [1, 2, 3],
+     *          async function(val, idx) { 
+     *              if (val === 2) {
+     *                  await Utils.sleep(100);
+     *                  return [null, val+1];
+     *               }
+     *              else {
+     *                  return [null, val + 1];
+     *              }
+     *          });
+     *      console.log(vals); // == [2,3,4]
+     *
+     * @param {Array} vals An array of values.
+     * @param {Function} fn A function (possibly asynchronous) to apply to each element. 
+     *
+     * @function splunkjs.Utils
+     */
+    root.parallelMap = async function (vals, fn) {
+        vals = vals || [];
+        let tasks = [];
+        let createTask = function(val, idx) {
+            return function() { return fn(val, idx); };
+        };
+        
+        for(let i = 0; i < vals.length; i++) {
+            tasks.push(createTask(vals[i], i));
+        }
+        return await root.parallel(tasks, true);
+    }
+
+    /**
+     * Applies an asynchronous function over each element in an array, in parallel.
+     * If an error occurs, the function returns an error.
+     *
+     * @example
+     *      
+     *      var total = 0;
+     *      let err = await Utils.parallelEach(
+     *          [1, 2, 3],
+     *          async function(val, idx) { 
+     *              var go = function() {
+     *                  total += val;
+     *              };
+     *              
+     *              if (idx === 1) {
+     *                  await Utils.sleep(100);
+     *                  go();
+     *              }
+     *              else {
+     *                  go();
+     *              }
+     *          });
+     *      console.log(total); // == 6
+     *
+     * @param {Array} vals An array of values.
+     * @param {Function} fn A function (possibly asynchronous) to apply to each element.
+     *
+     * @function splunkjs.Utils
+     */
+    root.parallelEach =  async function (vals, fn) {  
+        vals = vals || [];
+        let [err,res] = await root.parallelMap(vals, fn);
+        return err || null;
+    };
+
+    /**
+     * Runs multiple functions (tasks) in series. 
+     * Each task takes the function as a parameter. 
+     * When all tasks have been completed or if an error occurs, the 
+     * function returns the combined results of all tasks in the order
+     * they were run.
+     * 
+     * @example
+     *      
+     *      var keeper = 0;
+     *      let [err, one, two] = awiat Utils.series([
+     *          async function() {
+     *              await Utils.sleep(10);
+     *              console.log(keeper++); // == 0
+     *              return [null, 1];
+     *          },
+     *          function() {
+     *              console.log(keeper++); // == 1
+     *              return [null, 2, 3];
+     *          }]
+     *      );
+     *      console.log(err); // == null
+     *      console.log(one); // == 1
+     *      console.log(two); // == [2, 3]
+     *
+     * @param {Function} tasks An array of functions.
+     * @param {Boolean} fromMap set to true when method call is made from seriesMap function. (optional)
+     *
+     * @function splunkjs.Utils
+     */
+    root.series = async function (tasks, fromMap) {
+        let res = [];
+        if(!root.isArray(tasks)&& root.isFunction(fromMap)){
+            let taskList = [];
+            Object.keys(arguments).forEach(key => {
+                taskList.push(arguments[key]);
+            });
+            tasks = taskList;
+            fromMap = false;
+        }
+        for(let task of tasks) {
+            let result = await task();
+            if(result){
+                if(result[0]){
+                    return [result[0], null];
+                }
+                if(result.length > 2){
+                    res.push(result.slice(1));
+                }else{
+                    res.push(result[1]);
+                }
+            }
+        }
+        return fromMap ? [null, res] : [null, ...res];
+    }
+
+    /**
+     * Runs an asynchronous function (mapping it) over each element in an array, in series.
+     * When all tasks have been completed or if an error occurs, function
+     * returns the resulting array.
+     *
+     * @example
+     *      
+     *      var keeper = 1;
+     *      let [err, vals] = await Utils.seriesMap(
+     *          [1, 2, 3],
+     *          function(val, idx) { 
+     *              console.log(keeper++); // == 1, then 2, then 3
+     *              return [null, val + 1];
+     *          }
+     *      );
+     *      console.log(vals); // == [2,3,4];
+     *
+     * @param {Array} vals An array of values.
+     * @param {Function} fn A function (possibly asynchronous) to apply to each element.
+     *
+     * @function splunkjs.Utils
+     */
+    root.seriesMap = async function (vals, fn) {
+        vals = vals || [];
+        let tasks = [];
+        let createTask = function(val, idx) {
+            return function() { 
+                return fn(val, idx); 
+            };
+        };
+        for(let i = 0; i < vals.length; i++) {
+            tasks.push(createTask(vals[i], i));
+        }
+        return await root.series(tasks, true);
+    }
+
+    /**
+     * Applies an asynchronous function over each element in an array, in series.
+     * If an error occurs, the function returns an error.
+     *
+     * @example
+     *      
+     *      var results = [1, 3, 6];
+     *      var total = 0;
+     *      let err = await Utils.seriesEach(
+     *          [1, 2, 3],
+     *          function(val, idx) { 
+     *              total += val;
+     *              console.log(total === results[idx]); //== true
+     *          });
+     *      console.log(total); //== 6
+     *
+     * @param {Array} vals An array of values.
+     * @param {Function} fn A function (possibly asynchronous)to apply to each element.
+     *
+     * @function splunkjs.Utils
+     */
+    root.seriesEach = async function (vals, fn) {  
+        vals = vals || [];
+        let [err,res] = await root.seriesMap(vals, fn);
+        return err || null;
+    };
+
 })();
-},{"fs":69,"path":198}],16:[function(require,module,exports){
+},{"fs":68,"path":197}],15:[function(require,module,exports){
 'use strict';
 
 const asn1 = exports;
@@ -8844,7 +8270,7 @@ asn1.constants = require('./asn1/constants');
 asn1.decoders = require('./asn1/decoders');
 asn1.encoders = require('./asn1/encoders');
 
-},{"./asn1/api":17,"./asn1/base":19,"./asn1/constants":23,"./asn1/decoders":25,"./asn1/encoders":28,"bn.js":30}],17:[function(require,module,exports){
+},{"./asn1/api":16,"./asn1/base":18,"./asn1/constants":22,"./asn1/decoders":24,"./asn1/encoders":27,"bn.js":29}],16:[function(require,module,exports){
 'use strict';
 
 const encoders = require('./encoders');
@@ -8903,7 +8329,7 @@ Entity.prototype.encode = function encode(data, enc, /* internal */ reporter) {
   return this._getEncoder(enc).encode(data, reporter);
 };
 
-},{"./decoders":25,"./encoders":28,"inherits":161}],18:[function(require,module,exports){
+},{"./decoders":24,"./encoders":27,"inherits":160}],17:[function(require,module,exports){
 'use strict';
 
 const inherits = require('inherits');
@@ -9058,7 +8484,7 @@ EncoderBuffer.prototype.join = function join(out, offset) {
   return out;
 };
 
-},{"../base/reporter":21,"inherits":161,"safer-buffer":236}],19:[function(require,module,exports){
+},{"../base/reporter":20,"inherits":160,"safer-buffer":235}],18:[function(require,module,exports){
 'use strict';
 
 const base = exports;
@@ -9068,7 +8494,7 @@ base.DecoderBuffer = require('./buffer').DecoderBuffer;
 base.EncoderBuffer = require('./buffer').EncoderBuffer;
 base.Node = require('./node');
 
-},{"./buffer":18,"./node":20,"./reporter":21}],20:[function(require,module,exports){
+},{"./buffer":17,"./node":19,"./reporter":20}],19:[function(require,module,exports){
 'use strict';
 
 const Reporter = require('../base/reporter').Reporter;
@@ -9708,7 +9134,7 @@ Node.prototype._isPrintstr = function isPrintstr(str) {
   return /^[A-Za-z0-9 '()+,-./:=?]*$/.test(str);
 };
 
-},{"../base/buffer":18,"../base/reporter":21,"minimalistic-assert":168}],21:[function(require,module,exports){
+},{"../base/buffer":17,"../base/reporter":20,"minimalistic-assert":167}],20:[function(require,module,exports){
 'use strict';
 
 const inherits = require('inherits');
@@ -9833,7 +9259,7 @@ ReporterError.prototype.rethrow = function rethrow(msg) {
   return this;
 };
 
-},{"inherits":161}],22:[function(require,module,exports){
+},{"inherits":160}],21:[function(require,module,exports){
 'use strict';
 
 // Helper
@@ -9893,7 +9319,7 @@ exports.tag = {
 };
 exports.tagByName = reverse(exports.tag);
 
-},{}],23:[function(require,module,exports){
+},{}],22:[function(require,module,exports){
 'use strict';
 
 const constants = exports;
@@ -9916,7 +9342,7 @@ constants._reverse = function reverse(map) {
 
 constants.der = require('./der');
 
-},{"./der":22}],24:[function(require,module,exports){
+},{"./der":21}],23:[function(require,module,exports){
 'use strict';
 
 const inherits = require('inherits');
@@ -10253,7 +9679,7 @@ function derDecodeLen(buf, primitive, fail) {
   return len;
 }
 
-},{"../base/buffer":18,"../base/node":20,"../constants/der":22,"bn.js":30,"inherits":161}],25:[function(require,module,exports){
+},{"../base/buffer":17,"../base/node":19,"../constants/der":21,"bn.js":29,"inherits":160}],24:[function(require,module,exports){
 'use strict';
 
 const decoders = exports;
@@ -10261,7 +9687,7 @@ const decoders = exports;
 decoders.der = require('./der');
 decoders.pem = require('./pem');
 
-},{"./der":24,"./pem":26}],26:[function(require,module,exports){
+},{"./der":23,"./pem":25}],25:[function(require,module,exports){
 'use strict';
 
 const inherits = require('inherits');
@@ -10314,7 +9740,7 @@ PEMDecoder.prototype.decode = function decode(data, options) {
   return DERDecoder.prototype.decode.call(this, input, options);
 };
 
-},{"./der":24,"inherits":161,"safer-buffer":236}],27:[function(require,module,exports){
+},{"./der":23,"inherits":160,"safer-buffer":235}],26:[function(require,module,exports){
 'use strict';
 
 const inherits = require('inherits');
@@ -10611,7 +10037,7 @@ function encodeTag(tag, primitive, cls, reporter) {
   return res;
 }
 
-},{"../base/node":20,"../constants/der":22,"inherits":161,"safer-buffer":236}],28:[function(require,module,exports){
+},{"../base/node":19,"../constants/der":21,"inherits":160,"safer-buffer":235}],27:[function(require,module,exports){
 'use strict';
 
 const encoders = exports;
@@ -10619,7 +10045,7 @@ const encoders = exports;
 encoders.der = require('./der');
 encoders.pem = require('./pem');
 
-},{"./der":27,"./pem":29}],29:[function(require,module,exports){
+},{"./der":26,"./pem":28}],28:[function(require,module,exports){
 'use strict';
 
 const inherits = require('inherits');
@@ -10644,7 +10070,7 @@ PEMEncoder.prototype.encode = function encode(data, options) {
   return out.join('\n');
 };
 
-},{"./der":27,"inherits":161}],30:[function(require,module,exports){
+},{"./der":26,"inherits":160}],29:[function(require,module,exports){
 (function (module, exports) {
   'use strict';
 
@@ -14092,7 +13518,7 @@ PEMEncoder.prototype.encode = function encode(data, options) {
   };
 })(typeof module === 'undefined' || module, this);
 
-},{"buffer":39}],31:[function(require,module,exports){
+},{"buffer":38}],30:[function(require,module,exports){
 (function (global){(function (){
 'use strict';
 
@@ -14602,7 +14028,7 @@ var objectKeys = Object.keys || function (obj) {
 };
 
 }).call(this)}).call(this,typeof global !== "undefined" ? global : typeof self !== "undefined" ? self : typeof window !== "undefined" ? window : {})
-},{"object-assign":180,"util/":34}],32:[function(require,module,exports){
+},{"object-assign":179,"util/":33}],31:[function(require,module,exports){
 if (typeof Object.create === 'function') {
   // implementation from standard node.js 'util' module
   module.exports = function inherits(ctor, superCtor) {
@@ -14627,14 +14053,14 @@ if (typeof Object.create === 'function') {
   }
 }
 
-},{}],33:[function(require,module,exports){
+},{}],32:[function(require,module,exports){
 module.exports = function isBuffer(arg) {
   return arg && typeof arg === 'object'
     && typeof arg.copy === 'function'
     && typeof arg.fill === 'function'
     && typeof arg.readUInt8 === 'function';
 }
-},{}],34:[function(require,module,exports){
+},{}],33:[function(require,module,exports){
 (function (process,global){(function (){
 // Copyright Joyent, Inc. and other Node contributors.
 //
@@ -15224,7 +14650,7 @@ function hasOwnProperty(obj, prop) {
 }
 
 }).call(this)}).call(this,require('_process'),typeof global !== "undefined" ? global : typeof self !== "undefined" ? self : typeof window !== "undefined" ? window : {})
-},{"./support/isBuffer":33,"_process":205,"inherits":32}],35:[function(require,module,exports){
+},{"./support/isBuffer":32,"_process":204,"inherits":31}],34:[function(require,module,exports){
 (function (global){(function (){
 'use strict';
 
@@ -15253,7 +14679,7 @@ module.exports = function availableTypedArrays() {
 };
 
 }).call(this)}).call(this,typeof global !== "undefined" ? global : typeof self !== "undefined" ? self : typeof window !== "undefined" ? window : {})
-},{}],36:[function(require,module,exports){
+},{}],35:[function(require,module,exports){
 'use strict'
 
 exports.byteLength = byteLength
@@ -15405,7 +14831,7 @@ function fromByteArray (uint8) {
   return parts.join('')
 }
 
-},{}],37:[function(require,module,exports){
+},{}],36:[function(require,module,exports){
 (function (module, exports) {
   'use strict';
 
@@ -18954,7 +18380,7 @@ function fromByteArray (uint8) {
   };
 })(typeof module === 'undefined' || module, this);
 
-},{"buffer":39}],38:[function(require,module,exports){
+},{"buffer":38}],37:[function(require,module,exports){
 var r;
 
 module.exports = function rand(len) {
@@ -19021,9 +18447,9 @@ if (typeof self === 'object') {
   }
 }
 
-},{"crypto":39}],39:[function(require,module,exports){
+},{"crypto":38}],38:[function(require,module,exports){
 
-},{}],40:[function(require,module,exports){
+},{}],39:[function(require,module,exports){
 // based on the aes implimentation in triple sec
 // https://github.com/keybase/triplesec
 // which is in turn based on the one from crypto-js
@@ -19253,7 +18679,7 @@ AES.prototype.scrub = function () {
 
 module.exports.AES = AES
 
-},{"safe-buffer":235}],41:[function(require,module,exports){
+},{"safe-buffer":234}],40:[function(require,module,exports){
 var aes = require('./aes')
 var Buffer = require('safe-buffer').Buffer
 var Transform = require('cipher-base')
@@ -19372,7 +18798,7 @@ StreamCipher.prototype.setAAD = function setAAD (buf) {
 
 module.exports = StreamCipher
 
-},{"./aes":40,"./ghash":45,"./incr32":46,"buffer-xor":70,"cipher-base":75,"inherits":161,"safe-buffer":235}],42:[function(require,module,exports){
+},{"./aes":39,"./ghash":44,"./incr32":45,"buffer-xor":69,"cipher-base":74,"inherits":160,"safe-buffer":234}],41:[function(require,module,exports){
 var ciphers = require('./encrypter')
 var deciphers = require('./decrypter')
 var modes = require('./modes/list.json')
@@ -19387,7 +18813,7 @@ exports.createDecipher = exports.Decipher = deciphers.createDecipher
 exports.createDecipheriv = exports.Decipheriv = deciphers.createDecipheriv
 exports.listCiphers = exports.getCiphers = getCiphers
 
-},{"./decrypter":43,"./encrypter":44,"./modes/list.json":54}],43:[function(require,module,exports){
+},{"./decrypter":42,"./encrypter":43,"./modes/list.json":53}],42:[function(require,module,exports){
 var AuthCipher = require('./authCipher')
 var Buffer = require('safe-buffer').Buffer
 var MODES = require('./modes')
@@ -19513,7 +18939,7 @@ function createDecipher (suite, password) {
 exports.createDecipher = createDecipher
 exports.createDecipheriv = createDecipheriv
 
-},{"./aes":40,"./authCipher":41,"./modes":53,"./streamCipher":56,"cipher-base":75,"evp_bytestokey":117,"inherits":161,"safe-buffer":235}],44:[function(require,module,exports){
+},{"./aes":39,"./authCipher":40,"./modes":52,"./streamCipher":55,"cipher-base":74,"evp_bytestokey":116,"inherits":160,"safe-buffer":234}],43:[function(require,module,exports){
 var MODES = require('./modes')
 var AuthCipher = require('./authCipher')
 var Buffer = require('safe-buffer').Buffer
@@ -19629,7 +19055,7 @@ function createCipher (suite, password) {
 exports.createCipheriv = createCipheriv
 exports.createCipher = createCipher
 
-},{"./aes":40,"./authCipher":41,"./modes":53,"./streamCipher":56,"cipher-base":75,"evp_bytestokey":117,"inherits":161,"safe-buffer":235}],45:[function(require,module,exports){
+},{"./aes":39,"./authCipher":40,"./modes":52,"./streamCipher":55,"cipher-base":74,"evp_bytestokey":116,"inherits":160,"safe-buffer":234}],44:[function(require,module,exports){
 var Buffer = require('safe-buffer').Buffer
 var ZEROES = Buffer.alloc(16, 0)
 
@@ -19720,7 +19146,7 @@ GHASH.prototype.final = function (abl, bl) {
 
 module.exports = GHASH
 
-},{"safe-buffer":235}],46:[function(require,module,exports){
+},{"safe-buffer":234}],45:[function(require,module,exports){
 function incr32 (iv) {
   var len = iv.length
   var item
@@ -19737,7 +19163,7 @@ function incr32 (iv) {
 }
 module.exports = incr32
 
-},{}],47:[function(require,module,exports){
+},{}],46:[function(require,module,exports){
 var xor = require('buffer-xor')
 
 exports.encrypt = function (self, block) {
@@ -19756,7 +19182,7 @@ exports.decrypt = function (self, block) {
   return xor(out, pad)
 }
 
-},{"buffer-xor":70}],48:[function(require,module,exports){
+},{"buffer-xor":69}],47:[function(require,module,exports){
 var Buffer = require('safe-buffer').Buffer
 var xor = require('buffer-xor')
 
@@ -19791,7 +19217,7 @@ exports.encrypt = function (self, data, decrypt) {
   return out
 }
 
-},{"buffer-xor":70,"safe-buffer":235}],49:[function(require,module,exports){
+},{"buffer-xor":69,"safe-buffer":234}],48:[function(require,module,exports){
 var Buffer = require('safe-buffer').Buffer
 
 function encryptByte (self, byteParam, decrypt) {
@@ -19835,7 +19261,7 @@ exports.encrypt = function (self, chunk, decrypt) {
   return out
 }
 
-},{"safe-buffer":235}],50:[function(require,module,exports){
+},{"safe-buffer":234}],49:[function(require,module,exports){
 var Buffer = require('safe-buffer').Buffer
 
 function encryptByte (self, byteParam, decrypt) {
@@ -19862,7 +19288,7 @@ exports.encrypt = function (self, chunk, decrypt) {
   return out
 }
 
-},{"safe-buffer":235}],51:[function(require,module,exports){
+},{"safe-buffer":234}],50:[function(require,module,exports){
 var xor = require('buffer-xor')
 var Buffer = require('safe-buffer').Buffer
 var incr32 = require('../incr32')
@@ -19894,7 +19320,7 @@ exports.encrypt = function (self, chunk) {
   return xor(chunk, pad)
 }
 
-},{"../incr32":46,"buffer-xor":70,"safe-buffer":235}],52:[function(require,module,exports){
+},{"../incr32":45,"buffer-xor":69,"safe-buffer":234}],51:[function(require,module,exports){
 exports.encrypt = function (self, block) {
   return self._cipher.encryptBlock(block)
 }
@@ -19903,7 +19329,7 @@ exports.decrypt = function (self, block) {
   return self._cipher.decryptBlock(block)
 }
 
-},{}],53:[function(require,module,exports){
+},{}],52:[function(require,module,exports){
 var modeModules = {
   ECB: require('./ecb'),
   CBC: require('./cbc'),
@@ -19923,7 +19349,7 @@ for (var key in modes) {
 
 module.exports = modes
 
-},{"./cbc":47,"./cfb":48,"./cfb1":49,"./cfb8":50,"./ctr":51,"./ecb":52,"./list.json":54,"./ofb":55}],54:[function(require,module,exports){
+},{"./cbc":46,"./cfb":47,"./cfb1":48,"./cfb8":49,"./ctr":50,"./ecb":51,"./list.json":53,"./ofb":54}],53:[function(require,module,exports){
 module.exports={
   "aes-128-ecb": {
     "cipher": "AES",
@@ -20116,7 +19542,7 @@ module.exports={
   }
 }
 
-},{}],55:[function(require,module,exports){
+},{}],54:[function(require,module,exports){
 (function (Buffer){(function (){
 var xor = require('buffer-xor')
 
@@ -20136,7 +19562,7 @@ exports.encrypt = function (self, chunk) {
 }
 
 }).call(this)}).call(this,require("buffer").Buffer)
-},{"buffer":71,"buffer-xor":70}],56:[function(require,module,exports){
+},{"buffer":70,"buffer-xor":69}],55:[function(require,module,exports){
 var aes = require('./aes')
 var Buffer = require('safe-buffer').Buffer
 var Transform = require('cipher-base')
@@ -20165,7 +19591,7 @@ StreamCipher.prototype._final = function () {
 
 module.exports = StreamCipher
 
-},{"./aes":40,"cipher-base":75,"inherits":161,"safe-buffer":235}],57:[function(require,module,exports){
+},{"./aes":39,"cipher-base":74,"inherits":160,"safe-buffer":234}],56:[function(require,module,exports){
 var DES = require('browserify-des')
 var aes = require('browserify-aes/browser')
 var aesModes = require('browserify-aes/modes')
@@ -20234,7 +19660,7 @@ exports.createDecipher = exports.Decipher = createDecipher
 exports.createDecipheriv = exports.Decipheriv = createDecipheriv
 exports.listCiphers = exports.getCiphers = getCiphers
 
-},{"browserify-aes/browser":42,"browserify-aes/modes":53,"browserify-des":58,"browserify-des/modes":59,"evp_bytestokey":117}],58:[function(require,module,exports){
+},{"browserify-aes/browser":41,"browserify-aes/modes":52,"browserify-des":57,"browserify-des/modes":58,"evp_bytestokey":116}],57:[function(require,module,exports){
 var CipherBase = require('cipher-base')
 var des = require('des.js')
 var inherits = require('inherits')
@@ -20286,7 +19712,7 @@ DES.prototype._final = function () {
   return Buffer.from(this._des.final())
 }
 
-},{"cipher-base":75,"des.js":86,"inherits":161,"safe-buffer":235}],59:[function(require,module,exports){
+},{"cipher-base":74,"des.js":85,"inherits":160,"safe-buffer":234}],58:[function(require,module,exports){
 exports['des-ecb'] = {
   key: 8,
   iv: 0
@@ -20312,7 +19738,7 @@ exports['des-ede'] = {
   iv: 0
 }
 
-},{}],60:[function(require,module,exports){
+},{}],59:[function(require,module,exports){
 (function (Buffer){(function (){
 var BN = require('bn.js')
 var randomBytes = require('randombytes')
@@ -20351,10 +19777,10 @@ crt.getr = getr
 module.exports = crt
 
 }).call(this)}).call(this,require("buffer").Buffer)
-},{"bn.js":37,"buffer":71,"randombytes":217}],61:[function(require,module,exports){
+},{"bn.js":36,"buffer":70,"randombytes":216}],60:[function(require,module,exports){
 module.exports = require('./browser/algorithms.json')
 
-},{"./browser/algorithms.json":62}],62:[function(require,module,exports){
+},{"./browser/algorithms.json":61}],61:[function(require,module,exports){
 module.exports={
   "sha224WithRSAEncryption": {
     "sign": "rsa",
@@ -20508,7 +19934,7 @@ module.exports={
   }
 }
 
-},{}],63:[function(require,module,exports){
+},{}],62:[function(require,module,exports){
 module.exports={
   "1.3.132.0.10": "secp256k1",
   "1.3.132.0.33": "p224",
@@ -20518,7 +19944,7 @@ module.exports={
   "1.3.132.0.35": "p521"
 }
 
-},{}],64:[function(require,module,exports){
+},{}],63:[function(require,module,exports){
 var Buffer = require('safe-buffer').Buffer
 var createHash = require('create-hash')
 var stream = require('readable-stream')
@@ -20612,7 +20038,7 @@ module.exports = {
   createVerify: createVerify
 }
 
-},{"./algorithms.json":62,"./sign":65,"./verify":66,"create-hash":79,"inherits":161,"readable-stream":233,"safe-buffer":235}],65:[function(require,module,exports){
+},{"./algorithms.json":61,"./sign":64,"./verify":65,"create-hash":78,"inherits":160,"readable-stream":232,"safe-buffer":234}],64:[function(require,module,exports){
 // much of this based on https://github.com/indutny/self-signed/blob/gh-pages/lib/rsa.js
 var Buffer = require('safe-buffer').Buffer
 var createHmac = require('create-hmac')
@@ -20757,7 +20183,7 @@ module.exports = sign
 module.exports.getKey = getKey
 module.exports.makeKey = makeKey
 
-},{"./curves.json":63,"bn.js":37,"browserify-rsa":60,"create-hmac":81,"elliptic":98,"parse-asn1":197,"safe-buffer":235}],66:[function(require,module,exports){
+},{"./curves.json":62,"bn.js":36,"browserify-rsa":59,"create-hmac":80,"elliptic":97,"parse-asn1":196,"safe-buffer":234}],65:[function(require,module,exports){
 // much of this based on https://github.com/indutny/self-signed/blob/gh-pages/lib/rsa.js
 var Buffer = require('safe-buffer').Buffer
 var BN = require('bn.js')
@@ -20843,7 +20269,7 @@ function checkValue (b, q) {
 
 module.exports = verify
 
-},{"./curves.json":63,"bn.js":37,"elliptic":98,"parse-asn1":197,"safe-buffer":235}],67:[function(require,module,exports){
+},{"./curves.json":62,"bn.js":36,"elliptic":97,"parse-asn1":196,"safe-buffer":234}],66:[function(require,module,exports){
 (function (process,Buffer){(function (){
 'use strict';
 /* eslint camelcase: "off" */
@@ -21255,7 +20681,7 @@ Zlib.prototype._reset = function () {
 
 exports.Zlib = Zlib;
 }).call(this)}).call(this,require('_process'),require("buffer").Buffer)
-},{"_process":205,"assert":31,"buffer":71,"pako/lib/zlib/constants":184,"pako/lib/zlib/deflate.js":186,"pako/lib/zlib/inflate.js":188,"pako/lib/zlib/zstream":192}],68:[function(require,module,exports){
+},{"_process":204,"assert":30,"buffer":70,"pako/lib/zlib/constants":183,"pako/lib/zlib/deflate.js":185,"pako/lib/zlib/inflate.js":187,"pako/lib/zlib/zstream":191}],67:[function(require,module,exports){
 (function (process){(function (){
 'use strict';
 
@@ -21867,9 +21293,9 @@ util.inherits(DeflateRaw, Zlib);
 util.inherits(InflateRaw, Zlib);
 util.inherits(Unzip, Zlib);
 }).call(this)}).call(this,require('_process'))
-},{"./binding":67,"_process":205,"assert":31,"buffer":71,"stream":245,"util":256}],69:[function(require,module,exports){
-arguments[4][39][0].apply(exports,arguments)
-},{"dup":39}],70:[function(require,module,exports){
+},{"./binding":66,"_process":204,"assert":30,"buffer":70,"stream":244,"util":255}],68:[function(require,module,exports){
+arguments[4][38][0].apply(exports,arguments)
+},{"dup":38}],69:[function(require,module,exports){
 (function (Buffer){(function (){
 module.exports = function xor (a, b) {
   var length = Math.min(a.length, b.length)
@@ -21883,7 +21309,7 @@ module.exports = function xor (a, b) {
 }
 
 }).call(this)}).call(this,require("buffer").Buffer)
-},{"buffer":71}],71:[function(require,module,exports){
+},{"buffer":70}],70:[function(require,module,exports){
 (function (Buffer){(function (){
 /*!
  * The buffer module from node.js, for the browser.
@@ -23664,7 +23090,7 @@ function numberIsNaN (obj) {
 }
 
 }).call(this)}).call(this,require("buffer").Buffer)
-},{"base64-js":36,"buffer":71,"ieee754":160}],72:[function(require,module,exports){
+},{"base64-js":35,"buffer":70,"ieee754":159}],71:[function(require,module,exports){
 module.exports = {
   "100": "Continue",
   "101": "Switching Protocols",
@@ -23730,7 +23156,7 @@ module.exports = {
   "511": "Network Authentication Required"
 }
 
-},{}],73:[function(require,module,exports){
+},{}],72:[function(require,module,exports){
 'use strict';
 
 var GetIntrinsic = require('get-intrinsic');
@@ -23747,7 +23173,7 @@ module.exports = function callBoundIntrinsic(name, allowMissing) {
 	return intrinsic;
 };
 
-},{"./":74,"get-intrinsic":121}],74:[function(require,module,exports){
+},{"./":73,"get-intrinsic":120}],73:[function(require,module,exports){
 'use strict';
 
 var bind = require('function-bind');
@@ -23796,7 +23222,7 @@ if ($defineProperty) {
 	module.exports.apply = applyBind;
 }
 
-},{"function-bind":120,"get-intrinsic":121}],75:[function(require,module,exports){
+},{"function-bind":119,"get-intrinsic":120}],74:[function(require,module,exports){
 var Buffer = require('safe-buffer').Buffer
 var Transform = require('stream').Transform
 var StringDecoder = require('string_decoder').StringDecoder
@@ -23897,7 +23323,7 @@ CipherBase.prototype._toString = function (value, enc, fin) {
 
 module.exports = CipherBase
 
-},{"inherits":161,"safe-buffer":235,"stream":245,"string_decoder":250}],76:[function(require,module,exports){
+},{"inherits":160,"safe-buffer":234,"stream":244,"string_decoder":249}],75:[function(require,module,exports){
 /*!
  * cookie
  * Copyright(c) 2012-2014 Roman Shtylman
@@ -24101,7 +23527,7 @@ function tryDecode(str, decode) {
   }
 }
 
-},{}],77:[function(require,module,exports){
+},{}],76:[function(require,module,exports){
 (function (Buffer){(function (){
 var elliptic = require('elliptic')
 var BN = require('bn.js')
@@ -24229,9 +23655,9 @@ function formatReturnValue (bn, enc, len) {
 }
 
 }).call(this)}).call(this,require("buffer").Buffer)
-},{"bn.js":78,"buffer":71,"elliptic":98}],78:[function(require,module,exports){
-arguments[4][30][0].apply(exports,arguments)
-},{"buffer":39,"dup":30}],79:[function(require,module,exports){
+},{"bn.js":77,"buffer":70,"elliptic":97}],77:[function(require,module,exports){
+arguments[4][29][0].apply(exports,arguments)
+},{"buffer":38,"dup":29}],78:[function(require,module,exports){
 'use strict'
 var inherits = require('inherits')
 var MD5 = require('md5.js')
@@ -24263,14 +23689,14 @@ module.exports = function createHash (alg) {
   return new Hash(sha(alg))
 }
 
-},{"cipher-base":75,"inherits":161,"md5.js":165,"ripemd160":234,"sha.js":238}],80:[function(require,module,exports){
+},{"cipher-base":74,"inherits":160,"md5.js":164,"ripemd160":233,"sha.js":237}],79:[function(require,module,exports){
 var MD5 = require('md5.js')
 
 module.exports = function (buffer) {
   return new MD5().update(buffer).digest()
 }
 
-},{"md5.js":165}],81:[function(require,module,exports){
+},{"md5.js":164}],80:[function(require,module,exports){
 'use strict'
 var inherits = require('inherits')
 var Legacy = require('./legacy')
@@ -24334,7 +23760,7 @@ module.exports = function createHmac (alg, key) {
   return new Hmac(alg, key)
 }
 
-},{"./legacy":82,"cipher-base":75,"create-hash/md5":80,"inherits":161,"ripemd160":234,"safe-buffer":235,"sha.js":238}],82:[function(require,module,exports){
+},{"./legacy":81,"cipher-base":74,"create-hash/md5":79,"inherits":160,"ripemd160":233,"safe-buffer":234,"sha.js":237}],81:[function(require,module,exports){
 'use strict'
 var inherits = require('inherits')
 var Buffer = require('safe-buffer').Buffer
@@ -24382,7 +23808,7 @@ Hmac.prototype._final = function () {
 }
 module.exports = Hmac
 
-},{"cipher-base":75,"inherits":161,"safe-buffer":235}],83:[function(require,module,exports){
+},{"cipher-base":74,"inherits":160,"safe-buffer":234}],82:[function(require,module,exports){
 'use strict'
 
 exports.randomBytes = exports.rng = exports.pseudoRandomBytes = exports.prng = require('randombytes')
@@ -24481,7 +23907,7 @@ exports.constants = {
   'POINT_CONVERSION_HYBRID': 6
 }
 
-},{"browserify-cipher":57,"browserify-sign":64,"browserify-sign/algos":61,"create-ecdh":77,"create-hash":79,"create-hmac":81,"diffie-hellman":92,"pbkdf2":199,"public-encrypt":206,"randombytes":217,"randomfill":218}],84:[function(require,module,exports){
+},{"browserify-cipher":56,"browserify-sign":63,"browserify-sign/algos":60,"create-ecdh":76,"create-hash":78,"create-hmac":80,"diffie-hellman":91,"pbkdf2":198,"public-encrypt":205,"randombytes":216,"randomfill":217}],83:[function(require,module,exports){
 (function (process){(function (){
 "use strict";
 
@@ -24665,7 +24091,7 @@ formatters.j = function (v) {
 
 
 }).call(this)}).call(this,require('_process'))
-},{"./common":85,"_process":205}],85:[function(require,module,exports){
+},{"./common":84,"_process":204}],84:[function(require,module,exports){
 "use strict";
 
 /**
@@ -24916,7 +24342,7 @@ function setup(env) {
 module.exports = setup;
 
 
-},{"ms":170}],86:[function(require,module,exports){
+},{"ms":169}],85:[function(require,module,exports){
 'use strict';
 
 exports.utils = require('./des/utils');
@@ -24925,7 +24351,7 @@ exports.DES = require('./des/des');
 exports.CBC = require('./des/cbc');
 exports.EDE = require('./des/ede');
 
-},{"./des/cbc":87,"./des/cipher":88,"./des/des":89,"./des/ede":90,"./des/utils":91}],87:[function(require,module,exports){
+},{"./des/cbc":86,"./des/cipher":87,"./des/des":88,"./des/ede":89,"./des/utils":90}],86:[function(require,module,exports){
 'use strict';
 
 var assert = require('minimalistic-assert');
@@ -24992,7 +24418,7 @@ proto._update = function _update(inp, inOff, out, outOff) {
   }
 };
 
-},{"inherits":161,"minimalistic-assert":168}],88:[function(require,module,exports){
+},{"inherits":160,"minimalistic-assert":167}],87:[function(require,module,exports){
 'use strict';
 
 var assert = require('minimalistic-assert');
@@ -25135,7 +24561,7 @@ Cipher.prototype._finalDecrypt = function _finalDecrypt() {
   return this._unpad(out);
 };
 
-},{"minimalistic-assert":168}],89:[function(require,module,exports){
+},{"minimalistic-assert":167}],88:[function(require,module,exports){
 'use strict';
 
 var assert = require('minimalistic-assert');
@@ -25279,7 +24705,7 @@ DES.prototype._decrypt = function _decrypt(state, lStart, rStart, out, off) {
   utils.rip(l, r, out, off);
 };
 
-},{"./cipher":88,"./utils":91,"inherits":161,"minimalistic-assert":168}],90:[function(require,module,exports){
+},{"./cipher":87,"./utils":90,"inherits":160,"minimalistic-assert":167}],89:[function(require,module,exports){
 'use strict';
 
 var assert = require('minimalistic-assert');
@@ -25335,7 +24761,7 @@ EDE.prototype._update = function _update(inp, inOff, out, outOff) {
 EDE.prototype._pad = DES.prototype._pad;
 EDE.prototype._unpad = DES.prototype._unpad;
 
-},{"./cipher":88,"./des":89,"inherits":161,"minimalistic-assert":168}],91:[function(require,module,exports){
+},{"./cipher":87,"./des":88,"inherits":160,"minimalistic-assert":167}],90:[function(require,module,exports){
 'use strict';
 
 exports.readUInt32BE = function readUInt32BE(bytes, off) {
@@ -25593,7 +25019,7 @@ exports.padSplit = function padSplit(num, size, group) {
   return out.join(' ');
 };
 
-},{}],92:[function(require,module,exports){
+},{}],91:[function(require,module,exports){
 (function (Buffer){(function (){
 var generatePrime = require('./lib/generatePrime')
 var primes = require('./lib/primes.json')
@@ -25639,7 +25065,7 @@ exports.DiffieHellmanGroup = exports.createDiffieHellmanGroup = exports.getDiffi
 exports.createDiffieHellman = exports.DiffieHellman = createDiffieHellman
 
 }).call(this)}).call(this,require("buffer").Buffer)
-},{"./lib/dh":93,"./lib/generatePrime":94,"./lib/primes.json":95,"buffer":71}],93:[function(require,module,exports){
+},{"./lib/dh":92,"./lib/generatePrime":93,"./lib/primes.json":94,"buffer":70}],92:[function(require,module,exports){
 (function (Buffer){(function (){
 var BN = require('bn.js');
 var MillerRabin = require('miller-rabin');
@@ -25807,7 +25233,7 @@ function formatReturnValue(bn, enc) {
 }
 
 }).call(this)}).call(this,require("buffer").Buffer)
-},{"./generatePrime":94,"bn.js":96,"buffer":71,"miller-rabin":166,"randombytes":217}],94:[function(require,module,exports){
+},{"./generatePrime":93,"bn.js":95,"buffer":70,"miller-rabin":165,"randombytes":216}],93:[function(require,module,exports){
 var randomBytes = require('randombytes');
 module.exports = findPrime;
 findPrime.simpleSieve = simpleSieve;
@@ -25914,7 +25340,7 @@ function findPrime(bits, gen) {
 
 }
 
-},{"bn.js":96,"miller-rabin":166,"randombytes":217}],95:[function(require,module,exports){
+},{"bn.js":95,"miller-rabin":165,"randombytes":216}],94:[function(require,module,exports){
 module.exports={
     "modp1": {
         "gen": "02",
@@ -25949,9 +25375,9 @@ module.exports={
         "prime": "ffffffffffffffffc90fdaa22168c234c4c6628b80dc1cd129024e088a67cc74020bbea63b139b22514a08798e3404ddef9519b3cd3a431b302b0a6df25f14374fe1356d6d51c245e485b576625e7ec6f44c42e9a637ed6b0bff5cb6f406b7edee386bfb5a899fa5ae9f24117c4b1fe649286651ece45b3dc2007cb8a163bf0598da48361c55d39a69163fa8fd24cf5f83655d23dca3ad961c62f356208552bb9ed529077096966d670c354e4abc9804f1746c08ca18217c32905e462e36ce3be39e772c180e86039b2783a2ec07a28fb5c55df06f4c52c9de2bcbf6955817183995497cea956ae515d2261898fa051015728e5a8aaac42dad33170d04507a33a85521abdf1cba64ecfb850458dbef0a8aea71575d060c7db3970f85a6e1e4c7abf5ae8cdb0933d71e8c94e04a25619dcee3d2261ad2ee6bf12ffa06d98a0864d87602733ec86a64521f2b18177b200cbbe117577a615d6c770988c0bad946e208e24fa074e5ab3143db5bfce0fd108e4b82d120a92108011a723c12a787e6d788719a10bdba5b2699c327186af4e23c1a946834b6150bda2583e9ca2ad44ce8dbbbc2db04de8ef92e8efc141fbecaa6287c59474e6bc05d99b2964fa090c3a2233ba186515be7ed1f612970cee2d7afb81bdd762170481cd0069127d5b05aa993b4ea988d8fddc186ffb7dc90a6c08f4df435c93402849236c3fab4d27c7026c1d4dcb2602646dec9751e763dba37bdf8ff9406ad9e530ee5db382f413001aeb06a53ed9027d831179727b0865a8918da3edbebcf9b14ed44ce6cbaced4bb1bdb7f1447e6cc254b332051512bd7af426fb8f401378cd2bf5983ca01c64b92ecf032ea15d1721d03f482d7ce6e74fef6d55e702f46980c82b5a84031900b1c9e59e7c97fbec7e8f323a97a7e36cc88be0f1d45b7ff585ac54bd407b22b4154aacc8f6d7ebf48e1d814cc5ed20f8037e0a79715eef29be32806a1d58bb7c5da76f550aa3d8a1fbff0eb19ccb1a313d55cda56c9ec2ef29632387fe8d76e3c0468043e8f663f4860ee12bf2d5b0b7474d6e694f91e6dbe115974a3926f12fee5e438777cb6a932df8cd8bec4d073b931ba3bc832b68d9dd300741fa7bf8afc47ed2576f6936ba424663aab639c5ae4f5683423b4742bf1c978238f16cbe39d652de3fdb8befc848ad922222e04a4037c0713eb57a81a23f0c73473fc646cea306b4bcbc8862f8385ddfa9d4b7fa2c087e879683303ed5bdd3a062b3cf5b3a278a66d2a13f83f44f82ddf310ee074ab6a364597e899a0255dc164f31cc50846851df9ab48195ded7ea1b1d510bd7ee74d73faf36bc31ecfa268359046f4eb879f924009438b481c6cd7889a002ed5ee382bc9190da6fc026e479558e4475677e9aa9e3050e2765694dfc81f56e880b96e7160c980dd98edd3dfffffffffffffffff"
     }
 }
-},{}],96:[function(require,module,exports){
-arguments[4][30][0].apply(exports,arguments)
-},{"buffer":39,"dup":30}],97:[function(require,module,exports){
+},{}],95:[function(require,module,exports){
+arguments[4][29][0].apply(exports,arguments)
+},{"buffer":38,"dup":29}],96:[function(require,module,exports){
 (function (process){(function (){
 const fs = require('fs')
 const path = require('path')
@@ -26064,7 +25490,7 @@ module.exports.parse = DotenvModule.parse
 module.exports = DotenvModule
 
 }).call(this)}).call(this,require('_process'))
-},{"_process":205,"fs":69,"os":181,"path":198}],98:[function(require,module,exports){
+},{"_process":204,"fs":68,"os":180,"path":197}],97:[function(require,module,exports){
 'use strict';
 
 var elliptic = exports;
@@ -26079,7 +25505,7 @@ elliptic.curves = require('./elliptic/curves');
 elliptic.ec = require('./elliptic/ec');
 elliptic.eddsa = require('./elliptic/eddsa');
 
-},{"../package.json":114,"./elliptic/curve":101,"./elliptic/curves":104,"./elliptic/ec":105,"./elliptic/eddsa":108,"./elliptic/utils":112,"brorand":38}],99:[function(require,module,exports){
+},{"../package.json":113,"./elliptic/curve":100,"./elliptic/curves":103,"./elliptic/ec":104,"./elliptic/eddsa":107,"./elliptic/utils":111,"brorand":37}],98:[function(require,module,exports){
 'use strict';
 
 var BN = require('bn.js');
@@ -26462,7 +25888,7 @@ BasePoint.prototype.dblp = function dblp(k) {
   return r;
 };
 
-},{"../utils":112,"bn.js":113}],100:[function(require,module,exports){
+},{"../utils":111,"bn.js":112}],99:[function(require,module,exports){
 'use strict';
 
 var utils = require('../utils');
@@ -26899,7 +26325,7 @@ Point.prototype.eqXToP = function eqXToP(x) {
 Point.prototype.toP = Point.prototype.normalize;
 Point.prototype.mixedAdd = Point.prototype.add;
 
-},{"../utils":112,"./base":99,"bn.js":113,"inherits":161}],101:[function(require,module,exports){
+},{"../utils":111,"./base":98,"bn.js":112,"inherits":160}],100:[function(require,module,exports){
 'use strict';
 
 var curve = exports;
@@ -26909,7 +26335,7 @@ curve.short = require('./short');
 curve.mont = require('./mont');
 curve.edwards = require('./edwards');
 
-},{"./base":99,"./edwards":100,"./mont":102,"./short":103}],102:[function(require,module,exports){
+},{"./base":98,"./edwards":99,"./mont":101,"./short":102}],101:[function(require,module,exports){
 'use strict';
 
 var BN = require('bn.js');
@@ -27089,7 +26515,7 @@ Point.prototype.getX = function getX() {
   return this.x.fromRed();
 };
 
-},{"../utils":112,"./base":99,"bn.js":113,"inherits":161}],103:[function(require,module,exports){
+},{"../utils":111,"./base":98,"bn.js":112,"inherits":160}],102:[function(require,module,exports){
 'use strict';
 
 var utils = require('../utils');
@@ -28029,7 +27455,7 @@ JPoint.prototype.isInfinity = function isInfinity() {
   return this.z.cmpn(0) === 0;
 };
 
-},{"../utils":112,"./base":99,"bn.js":113,"inherits":161}],104:[function(require,module,exports){
+},{"../utils":111,"./base":98,"bn.js":112,"inherits":160}],103:[function(require,module,exports){
 'use strict';
 
 var curves = exports;
@@ -28237,7 +27663,7 @@ defineCurve('secp256k1', {
   ],
 });
 
-},{"./curve":101,"./precomputed/secp256k1":111,"./utils":112,"hash.js":127}],105:[function(require,module,exports){
+},{"./curve":100,"./precomputed/secp256k1":110,"./utils":111,"hash.js":126}],104:[function(require,module,exports){
 'use strict';
 
 var BN = require('bn.js');
@@ -28482,7 +27908,7 @@ EC.prototype.getKeyRecoveryParam = function(e, signature, Q, enc) {
   throw new Error('Unable to find valid recovery factor');
 };
 
-},{"../curves":104,"../utils":112,"./key":106,"./signature":107,"bn.js":113,"brorand":38,"hmac-drbg":139}],106:[function(require,module,exports){
+},{"../curves":103,"../utils":111,"./key":105,"./signature":106,"bn.js":112,"brorand":37,"hmac-drbg":138}],105:[function(require,module,exports){
 'use strict';
 
 var BN = require('bn.js');
@@ -28605,7 +28031,7 @@ KeyPair.prototype.inspect = function inspect() {
          ' pub: ' + (this.pub && this.pub.inspect()) + ' >';
 };
 
-},{"../utils":112,"bn.js":113}],107:[function(require,module,exports){
+},{"../utils":111,"bn.js":112}],106:[function(require,module,exports){
 'use strict';
 
 var BN = require('bn.js');
@@ -28773,7 +28199,7 @@ Signature.prototype.toDER = function toDER(enc) {
   return utils.encode(res, enc);
 };
 
-},{"../utils":112,"bn.js":113}],108:[function(require,module,exports){
+},{"../utils":111,"bn.js":112}],107:[function(require,module,exports){
 'use strict';
 
 var hash = require('hash.js');
@@ -28893,7 +28319,7 @@ EDDSA.prototype.isPoint = function isPoint(val) {
   return val instanceof this.pointClass;
 };
 
-},{"../curves":104,"../utils":112,"./key":109,"./signature":110,"hash.js":127}],109:[function(require,module,exports){
+},{"../curves":103,"../utils":111,"./key":108,"./signature":109,"hash.js":126}],108:[function(require,module,exports){
 'use strict';
 
 var utils = require('../utils');
@@ -28990,7 +28416,7 @@ KeyPair.prototype.getPublic = function getPublic(enc) {
 
 module.exports = KeyPair;
 
-},{"../utils":112}],110:[function(require,module,exports){
+},{"../utils":111}],109:[function(require,module,exports){
 'use strict';
 
 var BN = require('bn.js');
@@ -29057,7 +28483,7 @@ Signature.prototype.toHex = function toHex() {
 
 module.exports = Signature;
 
-},{"../utils":112,"bn.js":113}],111:[function(require,module,exports){
+},{"../utils":111,"bn.js":112}],110:[function(require,module,exports){
 module.exports = {
   doubles: {
     step: 4,
@@ -29839,7 +29265,7 @@ module.exports = {
   },
 };
 
-},{}],112:[function(require,module,exports){
+},{}],111:[function(require,module,exports){
 'use strict';
 
 var utils = exports;
@@ -29960,14 +29386,14 @@ function intFromLE(bytes) {
 utils.intFromLE = intFromLE;
 
 
-},{"bn.js":113,"minimalistic-assert":168,"minimalistic-crypto-utils":169}],113:[function(require,module,exports){
-arguments[4][30][0].apply(exports,arguments)
-},{"buffer":39,"dup":30}],114:[function(require,module,exports){
+},{"bn.js":112,"minimalistic-assert":167,"minimalistic-crypto-utils":168}],112:[function(require,module,exports){
+arguments[4][29][0].apply(exports,arguments)
+},{"buffer":38,"dup":29}],113:[function(require,module,exports){
 module.exports={
   "_args": [
     [
       "elliptic@6.5.4",
-      "/Users/abhis/Documents/JS/splunk-sdk-javascript"
+      "/Users/abhis/Documents/GitHub/splunk-sdk-javascript"
     ]
   ],
   "_development": true,
@@ -29993,7 +29419,7 @@ module.exports={
   ],
   "_resolved": "https://registry.npmjs.org/elliptic/-/elliptic-6.5.4.tgz",
   "_spec": "6.5.4",
-  "_where": "/Users/abhis/Documents/JS/splunk-sdk-javascript",
+  "_where": "/Users/abhis/Documents/GitHub/splunk-sdk-javascript",
   "author": {
     "name": "Fedor Indutny",
     "email": "fedor@indutny.com"
@@ -30053,7 +29479,7 @@ module.exports={
   "version": "6.5.4"
 }
 
-},{}],115:[function(require,module,exports){
+},{}],114:[function(require,module,exports){
 'use strict';
 
 var GetIntrinsic = require('get-intrinsic');
@@ -30070,7 +29496,7 @@ if ($gOPD) {
 
 module.exports = $gOPD;
 
-},{"get-intrinsic":121}],116:[function(require,module,exports){
+},{"get-intrinsic":120}],115:[function(require,module,exports){
 // Copyright Joyent, Inc. and other Node contributors.
 //
 // Permission is hereby granted, free of charge, to any person obtaining a
@@ -30569,7 +29995,7 @@ function eventTargetAgnosticAddListener(emitter, name, listener, flags) {
   }
 }
 
-},{}],117:[function(require,module,exports){
+},{}],116:[function(require,module,exports){
 var Buffer = require('safe-buffer').Buffer
 var MD5 = require('md5.js')
 
@@ -30616,7 +30042,7 @@ function EVP_BytesToKey (password, salt, keyBits, ivLen) {
 
 module.exports = EVP_BytesToKey
 
-},{"md5.js":165,"safe-buffer":235}],118:[function(require,module,exports){
+},{"md5.js":164,"safe-buffer":234}],117:[function(require,module,exports){
 
 var hasOwn = Object.prototype.hasOwnProperty;
 var toString = Object.prototype.toString;
@@ -30640,7 +30066,7 @@ module.exports = function forEach (obj, fn, ctx) {
 };
 
 
-},{}],119:[function(require,module,exports){
+},{}],118:[function(require,module,exports){
 'use strict';
 
 /* eslint no-invalid-this: 1 */
@@ -30694,14 +30120,14 @@ module.exports = function bind(that) {
     return bound;
 };
 
-},{}],120:[function(require,module,exports){
+},{}],119:[function(require,module,exports){
 'use strict';
 
 var implementation = require('./implementation');
 
 module.exports = Function.prototype.bind || implementation;
 
-},{"./implementation":119}],121:[function(require,module,exports){
+},{"./implementation":118}],120:[function(require,module,exports){
 'use strict';
 
 var undefined;
@@ -31033,7 +30459,7 @@ module.exports = function GetIntrinsic(name, allowMissing) {
 	return value;
 };
 
-},{"function-bind":120,"has":125,"has-symbols":122}],122:[function(require,module,exports){
+},{"function-bind":119,"has":124,"has-symbols":121}],121:[function(require,module,exports){
 'use strict';
 
 var origSymbol = typeof Symbol !== 'undefined' && Symbol;
@@ -31048,7 +30474,7 @@ module.exports = function hasNativeSymbols() {
 	return hasSymbolSham();
 };
 
-},{"./shams":123}],123:[function(require,module,exports){
+},{"./shams":122}],122:[function(require,module,exports){
 'use strict';
 
 /* eslint complexity: [2, 18], max-statements: [2, 33] */
@@ -31092,7 +30518,7 @@ module.exports = function hasSymbols() {
 	return true;
 };
 
-},{}],124:[function(require,module,exports){
+},{}],123:[function(require,module,exports){
 'use strict';
 
 var hasSymbols = require('has-symbols/shams');
@@ -31101,14 +30527,14 @@ module.exports = function hasToStringTagShams() {
 	return hasSymbols() && !!Symbol.toStringTag;
 };
 
-},{"has-symbols/shams":123}],125:[function(require,module,exports){
+},{"has-symbols/shams":122}],124:[function(require,module,exports){
 'use strict';
 
 var bind = require('function-bind');
 
 module.exports = bind.call(Function.call, Object.prototype.hasOwnProperty);
 
-},{"function-bind":120}],126:[function(require,module,exports){
+},{"function-bind":119}],125:[function(require,module,exports){
 'use strict'
 var Buffer = require('safe-buffer').Buffer
 var Transform = require('readable-stream').Transform
@@ -31205,7 +30631,7 @@ HashBase.prototype._digest = function () {
 
 module.exports = HashBase
 
-},{"inherits":161,"readable-stream":233,"safe-buffer":235}],127:[function(require,module,exports){
+},{"inherits":160,"readable-stream":232,"safe-buffer":234}],126:[function(require,module,exports){
 var hash = exports;
 
 hash.utils = require('./hash/utils');
@@ -31222,7 +30648,7 @@ hash.sha384 = hash.sha.sha384;
 hash.sha512 = hash.sha.sha512;
 hash.ripemd160 = hash.ripemd.ripemd160;
 
-},{"./hash/common":128,"./hash/hmac":129,"./hash/ripemd":130,"./hash/sha":131,"./hash/utils":138}],128:[function(require,module,exports){
+},{"./hash/common":127,"./hash/hmac":128,"./hash/ripemd":129,"./hash/sha":130,"./hash/utils":137}],127:[function(require,module,exports){
 'use strict';
 
 var utils = require('./utils');
@@ -31316,7 +30742,7 @@ BlockHash.prototype._pad = function pad() {
   return res;
 };
 
-},{"./utils":138,"minimalistic-assert":168}],129:[function(require,module,exports){
+},{"./utils":137,"minimalistic-assert":167}],128:[function(require,module,exports){
 'use strict';
 
 var utils = require('./utils');
@@ -31365,7 +30791,7 @@ Hmac.prototype.digest = function digest(enc) {
   return this.outer.digest(enc);
 };
 
-},{"./utils":138,"minimalistic-assert":168}],130:[function(require,module,exports){
+},{"./utils":137,"minimalistic-assert":167}],129:[function(require,module,exports){
 'use strict';
 
 var utils = require('./utils');
@@ -31513,7 +30939,7 @@ var sh = [
   8, 5, 12, 9, 12, 5, 14, 6, 8, 13, 6, 5, 15, 13, 11, 11
 ];
 
-},{"./common":128,"./utils":138}],131:[function(require,module,exports){
+},{"./common":127,"./utils":137}],130:[function(require,module,exports){
 'use strict';
 
 exports.sha1 = require('./sha/1');
@@ -31522,7 +30948,7 @@ exports.sha256 = require('./sha/256');
 exports.sha384 = require('./sha/384');
 exports.sha512 = require('./sha/512');
 
-},{"./sha/1":132,"./sha/224":133,"./sha/256":134,"./sha/384":135,"./sha/512":136}],132:[function(require,module,exports){
+},{"./sha/1":131,"./sha/224":132,"./sha/256":133,"./sha/384":134,"./sha/512":135}],131:[function(require,module,exports){
 'use strict';
 
 var utils = require('../utils');
@@ -31598,7 +31024,7 @@ SHA1.prototype._digest = function digest(enc) {
     return utils.split32(this.h, 'big');
 };
 
-},{"../common":128,"../utils":138,"./common":137}],133:[function(require,module,exports){
+},{"../common":127,"../utils":137,"./common":136}],132:[function(require,module,exports){
 'use strict';
 
 var utils = require('../utils');
@@ -31630,7 +31056,7 @@ SHA224.prototype._digest = function digest(enc) {
 };
 
 
-},{"../utils":138,"./256":134}],134:[function(require,module,exports){
+},{"../utils":137,"./256":133}],133:[function(require,module,exports){
 'use strict';
 
 var utils = require('../utils');
@@ -31737,7 +31163,7 @@ SHA256.prototype._digest = function digest(enc) {
     return utils.split32(this.h, 'big');
 };
 
-},{"../common":128,"../utils":138,"./common":137,"minimalistic-assert":168}],135:[function(require,module,exports){
+},{"../common":127,"../utils":137,"./common":136,"minimalistic-assert":167}],134:[function(require,module,exports){
 'use strict';
 
 var utils = require('../utils');
@@ -31774,7 +31200,7 @@ SHA384.prototype._digest = function digest(enc) {
     return utils.split32(this.h.slice(0, 12), 'big');
 };
 
-},{"../utils":138,"./512":136}],136:[function(require,module,exports){
+},{"../utils":137,"./512":135}],135:[function(require,module,exports){
 'use strict';
 
 var utils = require('../utils');
@@ -32106,7 +31532,7 @@ function g1_512_lo(xh, xl) {
   return r;
 }
 
-},{"../common":128,"../utils":138,"minimalistic-assert":168}],137:[function(require,module,exports){
+},{"../common":127,"../utils":137,"minimalistic-assert":167}],136:[function(require,module,exports){
 'use strict';
 
 var utils = require('../utils');
@@ -32157,7 +31583,7 @@ function g1_256(x) {
 }
 exports.g1_256 = g1_256;
 
-},{"../utils":138}],138:[function(require,module,exports){
+},{"../utils":137}],137:[function(require,module,exports){
 'use strict';
 
 var assert = require('minimalistic-assert');
@@ -32437,7 +31863,7 @@ function shr64_lo(ah, al, num) {
 }
 exports.shr64_lo = shr64_lo;
 
-},{"inherits":161,"minimalistic-assert":168}],139:[function(require,module,exports){
+},{"inherits":160,"minimalistic-assert":167}],138:[function(require,module,exports){
 'use strict';
 
 var hash = require('hash.js');
@@ -32552,7 +31978,7 @@ HmacDRBG.prototype.generate = function generate(len, enc, add, addEnc) {
   return utils.encode(res, enc);
 };
 
-},{"hash.js":127,"minimalistic-assert":168,"minimalistic-crypto-utils":169}],140:[function(require,module,exports){
+},{"hash.js":126,"minimalistic-assert":167,"minimalistic-crypto-utils":168}],139:[function(require,module,exports){
 var http = require('http')
 var url = require('url')
 
@@ -32585,7 +32011,7 @@ function validateParams (params) {
   return params
 }
 
-},{"http":246,"url":251}],141:[function(require,module,exports){
+},{"http":245,"url":250}],140:[function(require,module,exports){
 "use strict";
 var Buffer = require("safer-buffer").Buffer;
 
@@ -33142,7 +32568,7 @@ function findIdx(table, val) {
 }
 
 
-},{"safer-buffer":236}],142:[function(require,module,exports){
+},{"safer-buffer":235}],141:[function(require,module,exports){
 "use strict";
 
 // Description of supported double byte encodings and aliases.
@@ -33320,7 +32746,7 @@ module.exports = {
     'xxbig5': 'big5hkscs',
 };
 
-},{"./tables/big5-added.json":148,"./tables/cp936.json":149,"./tables/cp949.json":150,"./tables/cp950.json":151,"./tables/eucjp.json":152,"./tables/gb18030-ranges.json":153,"./tables/gbk-added.json":154,"./tables/shiftjis.json":155}],143:[function(require,module,exports){
+},{"./tables/big5-added.json":147,"./tables/cp936.json":148,"./tables/cp949.json":149,"./tables/cp950.json":150,"./tables/eucjp.json":151,"./tables/gb18030-ranges.json":152,"./tables/gbk-added.json":153,"./tables/shiftjis.json":154}],142:[function(require,module,exports){
 "use strict";
 
 // Update this array if you add/rename/remove files in this directory.
@@ -33344,7 +32770,7 @@ for (var i = 0; i < modules.length; i++) {
             exports[enc] = module[enc];
 }
 
-},{"./dbcs-codec":141,"./dbcs-data":142,"./internal":144,"./sbcs-codec":145,"./sbcs-data":147,"./sbcs-data-generated":146,"./utf16":156,"./utf7":157}],144:[function(require,module,exports){
+},{"./dbcs-codec":140,"./dbcs-data":141,"./internal":143,"./sbcs-codec":144,"./sbcs-data":146,"./sbcs-data-generated":145,"./utf16":155,"./utf7":156}],143:[function(require,module,exports){
 "use strict";
 var Buffer = require("safer-buffer").Buffer;
 
@@ -33534,7 +32960,7 @@ InternalDecoderCesu8.prototype.end = function() {
     return res;
 }
 
-},{"safer-buffer":236,"string_decoder":250}],145:[function(require,module,exports){
+},{"safer-buffer":235,"string_decoder":249}],144:[function(require,module,exports){
 "use strict";
 var Buffer = require("safer-buffer").Buffer;
 
@@ -33608,7 +33034,7 @@ SBCSDecoder.prototype.write = function(buf) {
 SBCSDecoder.prototype.end = function() {
 }
 
-},{"safer-buffer":236}],146:[function(require,module,exports){
+},{"safer-buffer":235}],145:[function(require,module,exports){
 "use strict";
 
 // Generated data for sbcs codec. Don't edit manually. Regenerate using generation/gen-sbcs.js script.
@@ -34060,7 +33486,7 @@ module.exports = {
     "chars": "���������������������������������กขฃคฅฆงจฉชซฌญฎฏฐฑฒณดตถทธนบปผฝพฟภมยรฤลฦวศษสหฬอฮฯะัาำิีึืฺุู����฿เแโใไๅๆ็่้๊๋์ํ๎๏๐๑๒๓๔๕๖๗๘๙๚๛����"
   }
 }
-},{}],147:[function(require,module,exports){
+},{}],146:[function(require,module,exports){
 "use strict";
 
 // Manually added data to be used by sbcs codec in addition to generated one.
@@ -34236,7 +33662,7 @@ module.exports = {
 };
 
 
-},{}],148:[function(require,module,exports){
+},{}],147:[function(require,module,exports){
 module.exports=[
 ["8740","䏰䰲䘃䖦䕸𧉧䵷䖳𧲱䳢𧳅㮕䜶䝄䱇䱀𤊿𣘗𧍒𦺋𧃒䱗𪍑䝏䗚䲅𧱬䴇䪤䚡𦬣爥𥩔𡩣𣸆𣽡晍囻"],
 ["8767","綕夝𨮹㷴霴𧯯寛𡵞媤㘥𩺰嫑宷峼杮薓𩥅瑡璝㡵𡵓𣚞𦀡㻬"],
@@ -34360,7 +33786,7 @@ module.exports=[
 ["fea1","𤅟𤩹𨮏孆𨰃𡢞瓈𡦈甎瓩甞𨻙𡩋寗𨺬鎅畍畊畧畮𤾂㼄𤴓疎瑝疞疴瘂瘬癑癏癯癶𦏵皐臯㟸𦤑𦤎皡皥皷盌𦾟葢𥂝𥅽𡸜眞眦着撯𥈠睘𣊬瞯𨥤𨥨𡛁矴砉𡍶𤨒棊碯磇磓隥礮𥗠磗礴碱𧘌辸袄𨬫𦂃𢘜禆褀椂禀𥡗禝𧬹礼禩渪𧄦㺨秆𩄍秔"]
 ]
 
-},{}],149:[function(require,module,exports){
+},{}],148:[function(require,module,exports){
 module.exports=[
 ["0","\u0000",127,"€"],
 ["8140","丂丄丅丆丏丒丗丟丠両丣並丩丮丯丱丳丵丷丼乀乁乂乄乆乊乑乕乗乚乛乢乣乤乥乧乨乪",5,"乲乴",9,"乿",6,"亇亊"],
@@ -34626,7 +34052,7 @@ module.exports=[
 ["fe40","兀嗀﨎﨏﨑﨓﨔礼﨟蘒﨡﨣﨤﨧﨨﨩"]
 ]
 
-},{}],150:[function(require,module,exports){
+},{}],149:[function(require,module,exports){
 module.exports=[
 ["0","\u0000",127],
 ["8141","갂갃갅갆갋",4,"갘갞갟갡갢갣갥",6,"갮갲갳갴"],
@@ -34901,7 +34327,7 @@ module.exports=[
 ["fda1","爻肴酵驍侯候厚后吼喉嗅帿後朽煦珝逅勛勳塤壎焄熏燻薰訓暈薨喧暄煊萱卉喙毁彙徽揮暉煇諱輝麾休携烋畦虧恤譎鷸兇凶匈洶胸黑昕欣炘痕吃屹紇訖欠欽歆吸恰洽翕興僖凞喜噫囍姬嬉希憙憘戱晞曦熙熹熺犧禧稀羲詰"]
 ]
 
-},{}],151:[function(require,module,exports){
+},{}],150:[function(require,module,exports){
 module.exports=[
 ["0","\u0000",127],
 ["a140","　，、。．‧；：？！︰…‥﹐﹑﹒·﹔﹕﹖﹗｜–︱—︳╴︴﹏（）︵︶｛｝︷︸〔〕︹︺【】︻︼《》︽︾〈〉︿﹀「」﹁﹂『』﹃﹄﹙﹚"],
@@ -35080,7 +34506,7 @@ module.exports=[
 ["f9a1","龤灨灥糷虪蠾蠽蠿讞貜躩軉靋顳顴飌饡馫驤驦驧鬤鸕鸗齈戇欞爧虌躨钂钀钁驩驨鬮鸙爩虋讟钃鱹麷癵驫鱺鸝灩灪麤齾齉龘碁銹裏墻恒粧嫺╔╦╗╠╬╣╚╩╝╒╤╕╞╪╡╘╧╛╓╥╖╟╫╢╙╨╜║═╭╮╰╯▓"]
 ]
 
-},{}],152:[function(require,module,exports){
+},{}],151:[function(require,module,exports){
 module.exports=[
 ["0","\u0000",127],
 ["8ea1","｡",62],
@@ -35264,9 +34690,9 @@ module.exports=[
 ["8feda1","黸黿鼂鼃鼉鼏鼐鼑鼒鼔鼖鼗鼙鼚鼛鼟鼢鼦鼪鼫鼯鼱鼲鼴鼷鼹鼺鼼鼽鼿齁齃",4,"齓齕齖齗齘齚齝齞齨齩齭",4,"齳齵齺齽龏龐龑龒龔龖龗龞龡龢龣龥"]
 ]
 
-},{}],153:[function(require,module,exports){
+},{}],152:[function(require,module,exports){
 module.exports={"uChars":[128,165,169,178,184,216,226,235,238,244,248,251,253,258,276,284,300,325,329,334,364,463,465,467,469,471,473,475,477,506,594,610,712,716,730,930,938,962,970,1026,1104,1106,8209,8215,8218,8222,8231,8241,8244,8246,8252,8365,8452,8454,8458,8471,8482,8556,8570,8596,8602,8713,8720,8722,8726,8731,8737,8740,8742,8748,8751,8760,8766,8777,8781,8787,8802,8808,8816,8854,8858,8870,8896,8979,9322,9372,9548,9588,9616,9622,9634,9652,9662,9672,9676,9680,9702,9735,9738,9793,9795,11906,11909,11913,11917,11928,11944,11947,11951,11956,11960,11964,11979,12284,12292,12312,12319,12330,12351,12436,12447,12535,12543,12586,12842,12850,12964,13200,13215,13218,13253,13263,13267,13270,13384,13428,13727,13839,13851,14617,14703,14801,14816,14964,15183,15471,15585,16471,16736,17208,17325,17330,17374,17623,17997,18018,18212,18218,18301,18318,18760,18811,18814,18820,18823,18844,18848,18872,19576,19620,19738,19887,40870,59244,59336,59367,59413,59417,59423,59431,59437,59443,59452,59460,59478,59493,63789,63866,63894,63976,63986,64016,64018,64021,64025,64034,64037,64042,65074,65093,65107,65112,65127,65132,65375,65510,65536],"gbChars":[0,36,38,45,50,81,89,95,96,100,103,104,105,109,126,133,148,172,175,179,208,306,307,308,309,310,311,312,313,341,428,443,544,545,558,741,742,749,750,805,819,820,7922,7924,7925,7927,7934,7943,7944,7945,7950,8062,8148,8149,8152,8164,8174,8236,8240,8262,8264,8374,8380,8381,8384,8388,8390,8392,8393,8394,8396,8401,8406,8416,8419,8424,8437,8439,8445,8482,8485,8496,8521,8603,8936,8946,9046,9050,9063,9066,9076,9092,9100,9108,9111,9113,9131,9162,9164,9218,9219,11329,11331,11334,11336,11346,11361,11363,11366,11370,11372,11375,11389,11682,11686,11687,11692,11694,11714,11716,11723,11725,11730,11736,11982,11989,12102,12336,12348,12350,12384,12393,12395,12397,12510,12553,12851,12962,12973,13738,13823,13919,13933,14080,14298,14585,14698,15583,15847,16318,16434,16438,16481,16729,17102,17122,17315,17320,17402,17418,17859,17909,17911,17915,17916,17936,17939,17961,18664,18703,18814,18962,19043,33469,33470,33471,33484,33485,33490,33497,33501,33505,33513,33520,33536,33550,37845,37921,37948,38029,38038,38064,38065,38066,38069,38075,38076,38078,39108,39109,39113,39114,39115,39116,39265,39394,189000]}
-},{}],154:[function(require,module,exports){
+},{}],153:[function(require,module,exports){
 module.exports=[
 ["a140","",62],
 ["a180","",32],
@@ -35323,7 +34749,7 @@ module.exports=[
 ["fe80","䜣䜩䝼䞍⻊䥇䥺䥽䦂䦃䦅䦆䦟䦛䦷䦶䲣䲟䲠䲡䱷䲢䴓",6,"䶮",93]
 ]
 
-},{}],155:[function(require,module,exports){
+},{}],154:[function(require,module,exports){
 module.exports=[
 ["0","\u0000",128],
 ["a1","｡",62],
@@ -35450,7 +34876,7 @@ module.exports=[
 ["fc40","髜魵魲鮏鮱鮻鰀鵰鵫鶴鸙黑"]
 ]
 
-},{}],156:[function(require,module,exports){
+},{}],155:[function(require,module,exports){
 "use strict";
 var Buffer = require("safer-buffer").Buffer;
 
@@ -35629,7 +35055,7 @@ function detectEncoding(buf, defaultEncoding) {
 
 
 
-},{"safer-buffer":236}],157:[function(require,module,exports){
+},{"safer-buffer":235}],156:[function(require,module,exports){
 "use strict";
 var Buffer = require("safer-buffer").Buffer;
 
@@ -35921,7 +35347,7 @@ Utf7IMAPDecoder.prototype.end = function() {
 
 
 
-},{"safer-buffer":236}],158:[function(require,module,exports){
+},{"safer-buffer":235}],157:[function(require,module,exports){
 "use strict";
 
 var BOMChar = '\uFEFF';
@@ -35975,7 +35401,7 @@ StripBOMWrapper.prototype.end = function() {
 }
 
 
-},{}],159:[function(require,module,exports){
+},{}],158:[function(require,module,exports){
 (function (process){(function (){
 "use strict";
 
@@ -36132,7 +35558,7 @@ if ("Ā" != "\u0100") {
 }
 
 }).call(this)}).call(this,require('_process'))
-},{"../encodings":143,"./bom-handling":158,"./extend-node":39,"./streams":39,"_process":205,"safer-buffer":236}],160:[function(require,module,exports){
+},{"../encodings":142,"./bom-handling":157,"./extend-node":38,"./streams":38,"_process":204,"safer-buffer":235}],159:[function(require,module,exports){
 /*! ieee754. BSD-3-Clause License. Feross Aboukhadijeh <https://feross.org/opensource> */
 exports.read = function (buffer, offset, isLE, mLen, nBytes) {
   var e, m
@@ -36219,7 +35645,7 @@ exports.write = function (buffer, value, offset, isLE, mLen, nBytes) {
   buffer[offset + i - d] |= s * 128
 }
 
-},{}],161:[function(require,module,exports){
+},{}],160:[function(require,module,exports){
 if (typeof Object.create === 'function') {
   // implementation from standard node.js 'util' module
   module.exports = function inherits(ctor, superCtor) {
@@ -36248,7 +35674,7 @@ if (typeof Object.create === 'function') {
   }
 }
 
-},{}],162:[function(require,module,exports){
+},{}],161:[function(require,module,exports){
 'use strict';
 
 var hasToStringTag = require('has-tostringtag/shams')();
@@ -36283,7 +35709,7 @@ isStandardArguments.isLegacyArguments = isLegacyArguments; // for tests
 
 module.exports = supportsStandardArguments ? isStandardArguments : isLegacyArguments;
 
-},{"call-bind/callBound":73,"has-tostringtag/shams":124}],163:[function(require,module,exports){
+},{"call-bind/callBound":72,"has-tostringtag/shams":123}],162:[function(require,module,exports){
 'use strict';
 
 var toStr = Object.prototype.toString;
@@ -36323,7 +35749,7 @@ module.exports = function isGeneratorFunction(fn) {
 	return getProto(fn) === GeneratorFunction;
 };
 
-},{"has-tostringtag/shams":124}],164:[function(require,module,exports){
+},{"has-tostringtag/shams":123}],163:[function(require,module,exports){
 (function (global){(function (){
 'use strict';
 
@@ -36386,7 +35812,7 @@ module.exports = function isTypedArray(value) {
 };
 
 }).call(this)}).call(this,typeof global !== "undefined" ? global : typeof self !== "undefined" ? self : typeof window !== "undefined" ? window : {})
-},{"available-typed-arrays":35,"call-bind/callBound":73,"es-abstract/helpers/getOwnPropertyDescriptor":115,"foreach":118,"has-tostringtag/shams":124}],165:[function(require,module,exports){
+},{"available-typed-arrays":34,"call-bind/callBound":72,"es-abstract/helpers/getOwnPropertyDescriptor":114,"foreach":117,"has-tostringtag/shams":123}],164:[function(require,module,exports){
 'use strict'
 var inherits = require('inherits')
 var HashBase = require('hash-base')
@@ -36534,7 +35960,7 @@ function fnI (a, b, c, d, m, k, s) {
 
 module.exports = MD5
 
-},{"hash-base":126,"inherits":161,"safe-buffer":235}],166:[function(require,module,exports){
+},{"hash-base":125,"inherits":160,"safe-buffer":234}],165:[function(require,module,exports){
 var bn = require('bn.js');
 var brorand = require('brorand');
 
@@ -36651,9 +36077,9 @@ MillerRabin.prototype.getDivisor = function getDivisor(n, k) {
   return false;
 };
 
-},{"bn.js":167,"brorand":38}],167:[function(require,module,exports){
-arguments[4][30][0].apply(exports,arguments)
-},{"buffer":39,"dup":30}],168:[function(require,module,exports){
+},{"bn.js":166,"brorand":37}],166:[function(require,module,exports){
+arguments[4][29][0].apply(exports,arguments)
+},{"buffer":38,"dup":29}],167:[function(require,module,exports){
 module.exports = assert;
 
 function assert(val, msg) {
@@ -36666,7 +36092,7 @@ assert.equal = function assertEqual(l, r, msg) {
     throw new Error(msg || ('Assertion failed: ' + l + ' != ' + r));
 };
 
-},{}],169:[function(require,module,exports){
+},{}],168:[function(require,module,exports){
 'use strict';
 
 var utils = exports;
@@ -36726,7 +36152,7 @@ utils.encode = function encode(arr, enc) {
     return arr;
 };
 
-},{}],170:[function(require,module,exports){
+},{}],169:[function(require,module,exports){
 /**
  * Helpers.
  */
@@ -36890,7 +36316,7 @@ function plural(ms, msAbs, n, name) {
   return Math.round(ms / n) + ' ' + name + (isPlural ? 's' : '');
 }
 
-},{}],171:[function(require,module,exports){
+},{}],170:[function(require,module,exports){
 (function (Buffer){(function (){
 var createHash = require('crypto').createHash;
 
@@ -37006,7 +36432,7 @@ module.exports = {
 }
 
 }).call(this)}).call(this,require("buffer").Buffer)
-},{"buffer":71,"crypto":83}],172:[function(require,module,exports){
+},{"buffer":70,"crypto":82}],171:[function(require,module,exports){
 
 //  Simple cookie handling implementation based on the standard RFC 6265.
 //
@@ -37087,7 +36513,7 @@ exports.read = parseSetCookieHeader;
 // writes a cookie string header
 exports.write = writeCookieString;
 
-},{"querystring":216}],173:[function(require,module,exports){
+},{"querystring":215}],172:[function(require,module,exports){
 var iconv,
     inherits  = require('util').inherits,
     stream    = require('stream');
@@ -37142,7 +36568,7 @@ module.exports = function(charset) {
     return new stream.PassThrough;
 }
 
-},{"iconv-lite":159,"stream":245,"util":256}],174:[function(require,module,exports){
+},{"iconv-lite":158,"stream":244,"util":255}],173:[function(require,module,exports){
 (function (Buffer){(function (){
 var readFile = require('fs').readFile,
     basename = require('path').basename;
@@ -37244,7 +36670,7 @@ function flatten(object, into, prefix) {
 }
 
 }).call(this)}).call(this,require("buffer").Buffer)
-},{"buffer":71,"fs":69,"path":198}],175:[function(require,module,exports){
+},{"buffer":70,"fs":68,"path":197}],174:[function(require,module,exports){
 (function (process,Buffer){(function (){
 //////////////////////////////////////////
 // Needle -- HTTP Client for Node.js
@@ -38127,7 +37553,7 @@ module.exports.request = function(method, uri, data, opts, callback) {
 };
 
 }).call(this)}).call(this,require('_process'),require("buffer").Buffer)
-},{"../package.json":179,"./auth":171,"./cookies":172,"./decoder":173,"./multipart":174,"./parsers":176,"./querystring":177,"_process":205,"buffer":71,"debug":84,"fs":69,"http":246,"https":140,"stream":245,"url":251,"util":256,"zlib":68}],176:[function(require,module,exports){
+},{"../package.json":178,"./auth":170,"./cookies":171,"./decoder":172,"./multipart":173,"./parsers":175,"./querystring":176,"_process":204,"buffer":70,"debug":83,"fs":68,"http":245,"https":139,"stream":244,"url":250,"util":255,"zlib":67}],175:[function(require,module,exports){
 (function (Buffer){(function (){
 //////////////////////////////////////////
 // Defines mappings between content-type
@@ -38252,7 +37678,7 @@ module.exports = parsers;
 module.exports.use = buildParser;
 
 }).call(this)}).call(this,require("buffer").Buffer)
-},{"buffer":71,"sax":178,"stream":245}],177:[function(require,module,exports){
+},{"buffer":70,"sax":177,"stream":244}],176:[function(require,module,exports){
 // based on the qs module, but handles null objects as expected
 // fixes by Tomas Pollak.
 
@@ -38303,7 +37729,7 @@ function stringifyObject(obj, prefix) {
 
 exports.build = stringify;
 
-},{}],178:[function(require,module,exports){
+},{}],177:[function(require,module,exports){
 (function (Buffer){(function (){
 ;(function (sax) { // wrapper for non-node envs
   sax.parser = function (strict, opt) { return new SAXParser(strict, opt) }
@@ -39872,12 +39298,12 @@ exports.build = stringify;
 })(typeof exports === 'undefined' ? this.sax = {} : exports)
 
 }).call(this)}).call(this,require("buffer").Buffer)
-},{"buffer":71,"stream":245,"string_decoder":250}],179:[function(require,module,exports){
+},{"buffer":70,"stream":244,"string_decoder":249}],178:[function(require,module,exports){
 module.exports={
   "_args": [
     [
       "needle@3.0.0",
-      "/Users/abhis/Documents/JS/splunk-sdk-javascript"
+      "/Users/abhis/Documents/GitHub/splunk-sdk-javascript"
     ]
   ],
   "_from": "needle@3.0.0",
@@ -39901,7 +39327,7 @@ module.exports={
   ],
   "_resolved": "https://registry.npmjs.org/needle/-/needle-3.0.0.tgz",
   "_spec": "3.0.0",
-  "_where": "/Users/abhis/Documents/JS/splunk-sdk-javascript",
+  "_where": "/Users/abhis/Documents/GitHub/splunk-sdk-javascript",
   "author": {
     "name": "Tomás Pollak",
     "email": "tomas@forkhq.com"
@@ -39980,7 +39406,7 @@ module.exports={
   "version": "3.0.0"
 }
 
-},{}],180:[function(require,module,exports){
+},{}],179:[function(require,module,exports){
 /*
 object-assign
 (c) Sindre Sorhus
@@ -40072,7 +39498,7 @@ module.exports = shouldUseNative() ? Object.assign : function (target, source) {
 	return to;
 };
 
-},{}],181:[function(require,module,exports){
+},{}],180:[function(require,module,exports){
 exports.endianness = function () { return 'LE' };
 
 exports.hostname = function () {
@@ -40123,7 +39549,7 @@ exports.homedir = function () {
 	return '/'
 };
 
-},{}],182:[function(require,module,exports){
+},{}],181:[function(require,module,exports){
 'use strict';
 
 
@@ -40230,7 +39656,7 @@ exports.setTyped = function (on) {
 
 exports.setTyped(TYPED_OK);
 
-},{}],183:[function(require,module,exports){
+},{}],182:[function(require,module,exports){
 'use strict';
 
 // Note: adler32 takes 12% for level 0 and 2% for level 6.
@@ -40283,7 +39709,7 @@ function adler32(adler, buf, len, pos) {
 
 module.exports = adler32;
 
-},{}],184:[function(require,module,exports){
+},{}],183:[function(require,module,exports){
 'use strict';
 
 // (C) 1995-2013 Jean-loup Gailly and Mark Adler
@@ -40353,7 +39779,7 @@ module.exports = {
   //Z_NULL:                 null // Use -1 or null inline, depending on var type
 };
 
-},{}],185:[function(require,module,exports){
+},{}],184:[function(require,module,exports){
 'use strict';
 
 // Note: we can't get significant speed boost here.
@@ -40414,7 +39840,7 @@ function crc32(crc, buf, len, pos) {
 
 module.exports = crc32;
 
-},{}],186:[function(require,module,exports){
+},{}],185:[function(require,module,exports){
 'use strict';
 
 // (C) 1995-2013 Jean-loup Gailly and Mark Adler
@@ -42290,7 +41716,7 @@ exports.deflatePrime = deflatePrime;
 exports.deflateTune = deflateTune;
 */
 
-},{"../utils/common":182,"./adler32":183,"./crc32":185,"./messages":190,"./trees":191}],187:[function(require,module,exports){
+},{"../utils/common":181,"./adler32":182,"./crc32":184,"./messages":189,"./trees":190}],186:[function(require,module,exports){
 'use strict';
 
 // (C) 1995-2013 Jean-loup Gailly and Mark Adler
@@ -42637,7 +42063,7 @@ module.exports = function inflate_fast(strm, start) {
   return;
 };
 
-},{}],188:[function(require,module,exports){
+},{}],187:[function(require,module,exports){
 'use strict';
 
 // (C) 1995-2013 Jean-loup Gailly and Mark Adler
@@ -44195,7 +43621,7 @@ exports.inflateSyncPoint = inflateSyncPoint;
 exports.inflateUndermine = inflateUndermine;
 */
 
-},{"../utils/common":182,"./adler32":183,"./crc32":185,"./inffast":187,"./inftrees":189}],189:[function(require,module,exports){
+},{"../utils/common":181,"./adler32":182,"./crc32":184,"./inffast":186,"./inftrees":188}],188:[function(require,module,exports){
 'use strict';
 
 // (C) 1995-2013 Jean-loup Gailly and Mark Adler
@@ -44540,7 +43966,7 @@ module.exports = function inflate_table(type, lens, lens_index, codes, table, ta
   return 0;
 };
 
-},{"../utils/common":182}],190:[function(require,module,exports){
+},{"../utils/common":181}],189:[function(require,module,exports){
 'use strict';
 
 // (C) 1995-2013 Jean-loup Gailly and Mark Adler
@@ -44574,7 +44000,7 @@ module.exports = {
   '-6':   'incompatible version' /* Z_VERSION_ERROR (-6) */
 };
 
-},{}],191:[function(require,module,exports){
+},{}],190:[function(require,module,exports){
 'use strict';
 
 // (C) 1995-2013 Jean-loup Gailly and Mark Adler
@@ -45798,7 +45224,7 @@ exports._tr_flush_block  = _tr_flush_block;
 exports._tr_tally = _tr_tally;
 exports._tr_align = _tr_align;
 
-},{"../utils/common":182}],192:[function(require,module,exports){
+},{"../utils/common":181}],191:[function(require,module,exports){
 'use strict';
 
 // (C) 1995-2013 Jean-loup Gailly and Mark Adler
@@ -45847,7 +45273,7 @@ function ZStream() {
 
 module.exports = ZStream;
 
-},{}],193:[function(require,module,exports){
+},{}],192:[function(require,module,exports){
 module.exports={"2.16.840.1.101.3.4.1.1": "aes-128-ecb",
 "2.16.840.1.101.3.4.1.2": "aes-128-cbc",
 "2.16.840.1.101.3.4.1.3": "aes-128-ofb",
@@ -45861,7 +45287,7 @@ module.exports={"2.16.840.1.101.3.4.1.1": "aes-128-ecb",
 "2.16.840.1.101.3.4.1.43": "aes-256-ofb",
 "2.16.840.1.101.3.4.1.44": "aes-256-cfb"
 }
-},{}],194:[function(require,module,exports){
+},{}],193:[function(require,module,exports){
 // from https://github.com/indutny/self-signed/blob/gh-pages/lib/asn1.js
 // Fedor, you are amazing.
 'use strict'
@@ -45985,7 +45411,7 @@ exports.signature = asn1.define('signature', function () {
   )
 })
 
-},{"./certificate":195,"asn1.js":16}],195:[function(require,module,exports){
+},{"./certificate":194,"asn1.js":15}],194:[function(require,module,exports){
 // from https://github.com/Rantanen/node-dtls/blob/25a7dc861bda38cfeac93a723500eea4f0ac2e86/Certificate.js
 // thanks to @Rantanen
 
@@ -46076,7 +45502,7 @@ var X509Certificate = asn.define('X509Certificate', function () {
 
 module.exports = X509Certificate
 
-},{"asn1.js":16}],196:[function(require,module,exports){
+},{"asn1.js":15}],195:[function(require,module,exports){
 // adapted from https://github.com/apatil/pemstrip
 var findProc = /Proc-Type: 4,ENCRYPTED[\n\r]+DEK-Info: AES-((?:128)|(?:192)|(?:256))-CBC,([0-9A-H]+)[\n\r]+([0-9A-z\n\r+/=]+)[\n\r]+/m
 var startRegex = /^-----BEGIN ((?:.*? KEY)|CERTIFICATE)-----/m
@@ -46109,7 +45535,7 @@ module.exports = function (okey, password) {
   }
 }
 
-},{"browserify-aes":42,"evp_bytestokey":117,"safe-buffer":235}],197:[function(require,module,exports){
+},{"browserify-aes":41,"evp_bytestokey":116,"safe-buffer":234}],196:[function(require,module,exports){
 var asn1 = require('./asn1')
 var aesid = require('./aesid.json')
 var fixProc = require('./fixProc')
@@ -46218,7 +45644,7 @@ function decrypt (data, password) {
   return Buffer.concat(out)
 }
 
-},{"./aesid.json":193,"./asn1":194,"./fixProc":196,"browserify-aes":42,"pbkdf2":199,"safe-buffer":235}],198:[function(require,module,exports){
+},{"./aesid.json":192,"./asn1":193,"./fixProc":195,"browserify-aes":41,"pbkdf2":198,"safe-buffer":234}],197:[function(require,module,exports){
 (function (process){(function (){
 // 'path' module extracted from Node.js v8.11.1 (only the posix part)
 // transplited with Babel
@@ -46751,11 +46177,11 @@ posix.posix = posix;
 module.exports = posix;
 
 }).call(this)}).call(this,require('_process'))
-},{"_process":205}],199:[function(require,module,exports){
+},{"_process":204}],198:[function(require,module,exports){
 exports.pbkdf2 = require('./lib/async')
 exports.pbkdf2Sync = require('./lib/sync')
 
-},{"./lib/async":200,"./lib/sync":203}],200:[function(require,module,exports){
+},{"./lib/async":199,"./lib/sync":202}],199:[function(require,module,exports){
 (function (global){(function (){
 var Buffer = require('safe-buffer').Buffer
 
@@ -46877,7 +46303,7 @@ module.exports = function (password, salt, iterations, keylen, digest, callback)
 }
 
 }).call(this)}).call(this,typeof global !== "undefined" ? global : typeof self !== "undefined" ? self : typeof window !== "undefined" ? window : {})
-},{"./default-encoding":201,"./precondition":202,"./sync":203,"./to-buffer":204,"safe-buffer":235}],201:[function(require,module,exports){
+},{"./default-encoding":200,"./precondition":201,"./sync":202,"./to-buffer":203,"safe-buffer":234}],200:[function(require,module,exports){
 (function (process,global){(function (){
 var defaultEncoding
 /* istanbul ignore next */
@@ -46893,7 +46319,7 @@ if (global.process && global.process.browser) {
 module.exports = defaultEncoding
 
 }).call(this)}).call(this,require('_process'),typeof global !== "undefined" ? global : typeof self !== "undefined" ? self : typeof window !== "undefined" ? window : {})
-},{"_process":205}],202:[function(require,module,exports){
+},{"_process":204}],201:[function(require,module,exports){
 var MAX_ALLOC = Math.pow(2, 30) - 1 // default in iojs
 
 module.exports = function (iterations, keylen) {
@@ -46914,7 +46340,7 @@ module.exports = function (iterations, keylen) {
   }
 }
 
-},{}],203:[function(require,module,exports){
+},{}],202:[function(require,module,exports){
 var md5 = require('create-hash/md5')
 var RIPEMD160 = require('ripemd160')
 var sha = require('sha.js')
@@ -47021,7 +46447,7 @@ function pbkdf2 (password, salt, iterations, keylen, digest) {
 
 module.exports = pbkdf2
 
-},{"./default-encoding":201,"./precondition":202,"./to-buffer":204,"create-hash/md5":80,"ripemd160":234,"safe-buffer":235,"sha.js":238}],204:[function(require,module,exports){
+},{"./default-encoding":200,"./precondition":201,"./to-buffer":203,"create-hash/md5":79,"ripemd160":233,"safe-buffer":234,"sha.js":237}],203:[function(require,module,exports){
 var Buffer = require('safe-buffer').Buffer
 
 module.exports = function (thing, encoding, name) {
@@ -47036,7 +46462,7 @@ module.exports = function (thing, encoding, name) {
   }
 }
 
-},{"safe-buffer":235}],205:[function(require,module,exports){
+},{"safe-buffer":234}],204:[function(require,module,exports){
 // shim for using process in browser
 var process = module.exports = {};
 
@@ -47222,7 +46648,7 @@ process.chdir = function (dir) {
 };
 process.umask = function() { return 0; };
 
-},{}],206:[function(require,module,exports){
+},{}],205:[function(require,module,exports){
 exports.publicEncrypt = require('./publicEncrypt')
 exports.privateDecrypt = require('./privateDecrypt')
 
@@ -47234,7 +46660,7 @@ exports.publicDecrypt = function publicDecrypt (key, buf) {
   return exports.privateDecrypt(key, buf, true)
 }
 
-},{"./privateDecrypt":209,"./publicEncrypt":210}],207:[function(require,module,exports){
+},{"./privateDecrypt":208,"./publicEncrypt":209}],206:[function(require,module,exports){
 var createHash = require('create-hash')
 var Buffer = require('safe-buffer').Buffer
 
@@ -47255,9 +46681,9 @@ function i2ops (c) {
   return out
 }
 
-},{"create-hash":79,"safe-buffer":235}],208:[function(require,module,exports){
-arguments[4][30][0].apply(exports,arguments)
-},{"buffer":39,"dup":30}],209:[function(require,module,exports){
+},{"create-hash":78,"safe-buffer":234}],207:[function(require,module,exports){
+arguments[4][29][0].apply(exports,arguments)
+},{"buffer":38,"dup":29}],208:[function(require,module,exports){
 var parseKeys = require('parse-asn1')
 var mgf = require('./mgf')
 var xor = require('./xor')
@@ -47364,7 +46790,7 @@ function compare (a, b) {
   return dif
 }
 
-},{"./mgf":207,"./withPublic":211,"./xor":212,"bn.js":208,"browserify-rsa":60,"create-hash":79,"parse-asn1":197,"safe-buffer":235}],210:[function(require,module,exports){
+},{"./mgf":206,"./withPublic":210,"./xor":211,"bn.js":207,"browserify-rsa":59,"create-hash":78,"parse-asn1":196,"safe-buffer":234}],209:[function(require,module,exports){
 var parseKeys = require('parse-asn1')
 var randomBytes = require('randombytes')
 var createHash = require('create-hash')
@@ -47454,7 +46880,7 @@ function nonZero (len) {
   return out
 }
 
-},{"./mgf":207,"./withPublic":211,"./xor":212,"bn.js":208,"browserify-rsa":60,"create-hash":79,"parse-asn1":197,"randombytes":217,"safe-buffer":235}],211:[function(require,module,exports){
+},{"./mgf":206,"./withPublic":210,"./xor":211,"bn.js":207,"browserify-rsa":59,"create-hash":78,"parse-asn1":196,"randombytes":216,"safe-buffer":234}],210:[function(require,module,exports){
 var BN = require('bn.js')
 var Buffer = require('safe-buffer').Buffer
 
@@ -47468,7 +46894,7 @@ function withPublic (paddedMsg, key) {
 
 module.exports = withPublic
 
-},{"bn.js":208,"safe-buffer":235}],212:[function(require,module,exports){
+},{"bn.js":207,"safe-buffer":234}],211:[function(require,module,exports){
 module.exports = function xor (a, b) {
   var len = a.length
   var i = -1
@@ -47478,7 +46904,7 @@ module.exports = function xor (a, b) {
   return a
 }
 
-},{}],213:[function(require,module,exports){
+},{}],212:[function(require,module,exports){
 (function (global){(function (){
 /*! https://mths.be/punycode v1.4.1 by @mathias */
 ;(function(root) {
@@ -48015,7 +47441,7 @@ module.exports = function xor (a, b) {
 }(this));
 
 }).call(this)}).call(this,typeof global !== "undefined" ? global : typeof self !== "undefined" ? self : typeof window !== "undefined" ? window : {})
-},{}],214:[function(require,module,exports){
+},{}],213:[function(require,module,exports){
 // Copyright Joyent, Inc. and other Node contributors.
 //
 // Permission is hereby granted, free of charge, to any person obtaining a
@@ -48101,7 +47527,7 @@ var isArray = Array.isArray || function (xs) {
   return Object.prototype.toString.call(xs) === '[object Array]';
 };
 
-},{}],215:[function(require,module,exports){
+},{}],214:[function(require,module,exports){
 // Copyright Joyent, Inc. and other Node contributors.
 //
 // Permission is hereby granted, free of charge, to any person obtaining a
@@ -48188,13 +47614,13 @@ var objectKeys = Object.keys || function (obj) {
   return res;
 };
 
-},{}],216:[function(require,module,exports){
+},{}],215:[function(require,module,exports){
 'use strict';
 
 exports.decode = exports.parse = require('./decode');
 exports.encode = exports.stringify = require('./encode');
 
-},{"./decode":214,"./encode":215}],217:[function(require,module,exports){
+},{"./decode":213,"./encode":214}],216:[function(require,module,exports){
 (function (process,global){(function (){
 'use strict'
 
@@ -48248,7 +47674,7 @@ function randomBytes (size, cb) {
 }
 
 }).call(this)}).call(this,require('_process'),typeof global !== "undefined" ? global : typeof self !== "undefined" ? self : typeof window !== "undefined" ? window : {})
-},{"_process":205,"safe-buffer":235}],218:[function(require,module,exports){
+},{"_process":204,"safe-buffer":234}],217:[function(require,module,exports){
 (function (process,global){(function (){
 'use strict'
 
@@ -48360,7 +47786,7 @@ function randomFillSync (buf, offset, size) {
 }
 
 }).call(this)}).call(this,require('_process'),typeof global !== "undefined" ? global : typeof self !== "undefined" ? self : typeof window !== "undefined" ? window : {})
-},{"_process":205,"randombytes":217,"safe-buffer":235}],219:[function(require,module,exports){
+},{"_process":204,"randombytes":216,"safe-buffer":234}],218:[function(require,module,exports){
 'use strict';
 
 function _inheritsLoose(subClass, superClass) { subClass.prototype = Object.create(superClass.prototype); subClass.prototype.constructor = subClass; subClass.__proto__ = superClass; }
@@ -48489,7 +47915,7 @@ createErrorType('ERR_UNKNOWN_ENCODING', function (arg) {
 createErrorType('ERR_STREAM_UNSHIFT_AFTER_END_EVENT', 'stream.unshift() after end event');
 module.exports.codes = codes;
 
-},{}],220:[function(require,module,exports){
+},{}],219:[function(require,module,exports){
 (function (process){(function (){
 // Copyright Joyent, Inc. and other Node contributors.
 //
@@ -48631,7 +48057,7 @@ Object.defineProperty(Duplex.prototype, 'destroyed', {
   }
 });
 }).call(this)}).call(this,require('_process'))
-},{"./_stream_readable":222,"./_stream_writable":224,"_process":205,"inherits":161}],221:[function(require,module,exports){
+},{"./_stream_readable":221,"./_stream_writable":223,"_process":204,"inherits":160}],220:[function(require,module,exports){
 // Copyright Joyent, Inc. and other Node contributors.
 //
 // Permission is hereby granted, free of charge, to any person obtaining a
@@ -48671,7 +48097,7 @@ function PassThrough(options) {
 PassThrough.prototype._transform = function (chunk, encoding, cb) {
   cb(null, chunk);
 };
-},{"./_stream_transform":223,"inherits":161}],222:[function(require,module,exports){
+},{"./_stream_transform":222,"inherits":160}],221:[function(require,module,exports){
 (function (process,global){(function (){
 // Copyright Joyent, Inc. and other Node contributors.
 //
@@ -49798,7 +49224,7 @@ function indexOf(xs, x) {
   return -1;
 }
 }).call(this)}).call(this,require('_process'),typeof global !== "undefined" ? global : typeof self !== "undefined" ? self : typeof window !== "undefined" ? window : {})
-},{"../errors":219,"./_stream_duplex":220,"./internal/streams/async_iterator":225,"./internal/streams/buffer_list":226,"./internal/streams/destroy":227,"./internal/streams/from":229,"./internal/streams/state":231,"./internal/streams/stream":232,"_process":205,"buffer":71,"events":116,"inherits":161,"string_decoder/":250,"util":39}],223:[function(require,module,exports){
+},{"../errors":218,"./_stream_duplex":219,"./internal/streams/async_iterator":224,"./internal/streams/buffer_list":225,"./internal/streams/destroy":226,"./internal/streams/from":228,"./internal/streams/state":230,"./internal/streams/stream":231,"_process":204,"buffer":70,"events":115,"inherits":160,"string_decoder/":249,"util":38}],222:[function(require,module,exports){
 // Copyright Joyent, Inc. and other Node contributors.
 //
 // Permission is hereby granted, free of charge, to any person obtaining a
@@ -50000,7 +49426,7 @@ function done(stream, er, data) {
   if (stream._transformState.transforming) throw new ERR_TRANSFORM_ALREADY_TRANSFORMING();
   return stream.push(null);
 }
-},{"../errors":219,"./_stream_duplex":220,"inherits":161}],224:[function(require,module,exports){
+},{"../errors":218,"./_stream_duplex":219,"inherits":160}],223:[function(require,module,exports){
 (function (process,global){(function (){
 // Copyright Joyent, Inc. and other Node contributors.
 //
@@ -50700,7 +50126,7 @@ Writable.prototype._destroy = function (err, cb) {
   cb(err);
 };
 }).call(this)}).call(this,require('_process'),typeof global !== "undefined" ? global : typeof self !== "undefined" ? self : typeof window !== "undefined" ? window : {})
-},{"../errors":219,"./_stream_duplex":220,"./internal/streams/destroy":227,"./internal/streams/state":231,"./internal/streams/stream":232,"_process":205,"buffer":71,"inherits":161,"util-deprecate":253}],225:[function(require,module,exports){
+},{"../errors":218,"./_stream_duplex":219,"./internal/streams/destroy":226,"./internal/streams/state":230,"./internal/streams/stream":231,"_process":204,"buffer":70,"inherits":160,"util-deprecate":252}],224:[function(require,module,exports){
 (function (process){(function (){
 'use strict';
 
@@ -50910,7 +50336,7 @@ var createReadableStreamAsyncIterator = function createReadableStreamAsyncIterat
 
 module.exports = createReadableStreamAsyncIterator;
 }).call(this)}).call(this,require('_process'))
-},{"./end-of-stream":228,"_process":205}],226:[function(require,module,exports){
+},{"./end-of-stream":227,"_process":204}],225:[function(require,module,exports){
 'use strict';
 
 function ownKeys(object, enumerableOnly) { var keys = Object.keys(object); if (Object.getOwnPropertySymbols) { var symbols = Object.getOwnPropertySymbols(object); if (enumerableOnly) symbols = symbols.filter(function (sym) { return Object.getOwnPropertyDescriptor(object, sym).enumerable; }); keys.push.apply(keys, symbols); } return keys; }
@@ -51121,7 +50547,7 @@ function () {
 
   return BufferList;
 }();
-},{"buffer":71,"util":39}],227:[function(require,module,exports){
+},{"buffer":70,"util":38}],226:[function(require,module,exports){
 (function (process){(function (){
 'use strict'; // undocumented cb() API, needed for core, not for public API
 
@@ -51229,7 +50655,7 @@ module.exports = {
   errorOrDestroy: errorOrDestroy
 };
 }).call(this)}).call(this,require('_process'))
-},{"_process":205}],228:[function(require,module,exports){
+},{"_process":204}],227:[function(require,module,exports){
 // Ported from https://github.com/mafintosh/end-of-stream with
 // permission from the author, Mathias Buus (@mafintosh).
 'use strict';
@@ -51334,12 +50760,12 @@ function eos(stream, opts, callback) {
 }
 
 module.exports = eos;
-},{"../../../errors":219}],229:[function(require,module,exports){
+},{"../../../errors":218}],228:[function(require,module,exports){
 module.exports = function () {
   throw new Error('Readable.from is not available in the browser')
 };
 
-},{}],230:[function(require,module,exports){
+},{}],229:[function(require,module,exports){
 // Ported from https://github.com/mafintosh/pump with
 // permission from the author, Mathias Buus (@mafintosh).
 'use strict';
@@ -51437,7 +50863,7 @@ function pipeline() {
 }
 
 module.exports = pipeline;
-},{"../../../errors":219,"./end-of-stream":228}],231:[function(require,module,exports){
+},{"../../../errors":218,"./end-of-stream":227}],230:[function(require,module,exports){
 'use strict';
 
 var ERR_INVALID_OPT_VALUE = require('../../../errors').codes.ERR_INVALID_OPT_VALUE;
@@ -51465,10 +50891,10 @@ function getHighWaterMark(state, options, duplexKey, isDuplex) {
 module.exports = {
   getHighWaterMark: getHighWaterMark
 };
-},{"../../../errors":219}],232:[function(require,module,exports){
+},{"../../../errors":218}],231:[function(require,module,exports){
 module.exports = require('events').EventEmitter;
 
-},{"events":116}],233:[function(require,module,exports){
+},{"events":115}],232:[function(require,module,exports){
 exports = module.exports = require('./lib/_stream_readable.js');
 exports.Stream = exports;
 exports.Readable = exports;
@@ -51479,7 +50905,7 @@ exports.PassThrough = require('./lib/_stream_passthrough.js');
 exports.finished = require('./lib/internal/streams/end-of-stream.js');
 exports.pipeline = require('./lib/internal/streams/pipeline.js');
 
-},{"./lib/_stream_duplex.js":220,"./lib/_stream_passthrough.js":221,"./lib/_stream_readable.js":222,"./lib/_stream_transform.js":223,"./lib/_stream_writable.js":224,"./lib/internal/streams/end-of-stream.js":228,"./lib/internal/streams/pipeline.js":230}],234:[function(require,module,exports){
+},{"./lib/_stream_duplex.js":219,"./lib/_stream_passthrough.js":220,"./lib/_stream_readable.js":221,"./lib/_stream_transform.js":222,"./lib/_stream_writable.js":223,"./lib/internal/streams/end-of-stream.js":227,"./lib/internal/streams/pipeline.js":229}],233:[function(require,module,exports){
 'use strict'
 var Buffer = require('buffer').Buffer
 var inherits = require('inherits')
@@ -51644,7 +51070,7 @@ function fn5 (a, b, c, d, e, m, k, s) {
 
 module.exports = RIPEMD160
 
-},{"buffer":71,"hash-base":126,"inherits":161}],235:[function(require,module,exports){
+},{"buffer":70,"hash-base":125,"inherits":160}],234:[function(require,module,exports){
 /*! safe-buffer. MIT License. Feross Aboukhadijeh <https://feross.org/opensource> */
 /* eslint-disable node/no-deprecated-api */
 var buffer = require('buffer')
@@ -51711,7 +51137,7 @@ SafeBuffer.allocUnsafeSlow = function (size) {
   return buffer.SlowBuffer(size)
 }
 
-},{"buffer":71}],236:[function(require,module,exports){
+},{"buffer":70}],235:[function(require,module,exports){
 (function (process){(function (){
 /* eslint-disable node/no-deprecated-api */
 
@@ -51792,7 +51218,7 @@ if (!safer.constants) {
 module.exports = safer
 
 }).call(this)}).call(this,require('_process'))
-},{"_process":205,"buffer":71}],237:[function(require,module,exports){
+},{"_process":204,"buffer":70}],236:[function(require,module,exports){
 var Buffer = require('safe-buffer').Buffer
 
 // prototype class for hash functions
@@ -51875,7 +51301,7 @@ Hash.prototype._update = function () {
 
 module.exports = Hash
 
-},{"safe-buffer":235}],238:[function(require,module,exports){
+},{"safe-buffer":234}],237:[function(require,module,exports){
 var exports = module.exports = function SHA (algorithm) {
   algorithm = algorithm.toLowerCase()
 
@@ -51892,7 +51318,7 @@ exports.sha256 = require('./sha256')
 exports.sha384 = require('./sha384')
 exports.sha512 = require('./sha512')
 
-},{"./sha":239,"./sha1":240,"./sha224":241,"./sha256":242,"./sha384":243,"./sha512":244}],239:[function(require,module,exports){
+},{"./sha":238,"./sha1":239,"./sha224":240,"./sha256":241,"./sha384":242,"./sha512":243}],238:[function(require,module,exports){
 /*
  * A JavaScript implementation of the Secure Hash Algorithm, SHA-0, as defined
  * in FIPS PUB 180-1
@@ -51988,7 +51414,7 @@ Sha.prototype._hash = function () {
 
 module.exports = Sha
 
-},{"./hash":237,"inherits":161,"safe-buffer":235}],240:[function(require,module,exports){
+},{"./hash":236,"inherits":160,"safe-buffer":234}],239:[function(require,module,exports){
 /*
  * A JavaScript implementation of the Secure Hash Algorithm, SHA-1, as defined
  * in FIPS PUB 180-1
@@ -52089,7 +51515,7 @@ Sha1.prototype._hash = function () {
 
 module.exports = Sha1
 
-},{"./hash":237,"inherits":161,"safe-buffer":235}],241:[function(require,module,exports){
+},{"./hash":236,"inherits":160,"safe-buffer":234}],240:[function(require,module,exports){
 /**
  * A JavaScript implementation of the Secure Hash Algorithm, SHA-256, as defined
  * in FIPS 180-2
@@ -52144,7 +51570,7 @@ Sha224.prototype._hash = function () {
 
 module.exports = Sha224
 
-},{"./hash":237,"./sha256":242,"inherits":161,"safe-buffer":235}],242:[function(require,module,exports){
+},{"./hash":236,"./sha256":241,"inherits":160,"safe-buffer":234}],241:[function(require,module,exports){
 /**
  * A JavaScript implementation of the Secure Hash Algorithm, SHA-256, as defined
  * in FIPS 180-2
@@ -52281,7 +51707,7 @@ Sha256.prototype._hash = function () {
 
 module.exports = Sha256
 
-},{"./hash":237,"inherits":161,"safe-buffer":235}],243:[function(require,module,exports){
+},{"./hash":236,"inherits":160,"safe-buffer":234}],242:[function(require,module,exports){
 var inherits = require('inherits')
 var SHA512 = require('./sha512')
 var Hash = require('./hash')
@@ -52340,7 +51766,7 @@ Sha384.prototype._hash = function () {
 
 module.exports = Sha384
 
-},{"./hash":237,"./sha512":244,"inherits":161,"safe-buffer":235}],244:[function(require,module,exports){
+},{"./hash":236,"./sha512":243,"inherits":160,"safe-buffer":234}],243:[function(require,module,exports){
 var inherits = require('inherits')
 var Hash = require('./hash')
 var Buffer = require('safe-buffer').Buffer
@@ -52602,7 +52028,7 @@ Sha512.prototype._hash = function () {
 
 module.exports = Sha512
 
-},{"./hash":237,"inherits":161,"safe-buffer":235}],245:[function(require,module,exports){
+},{"./hash":236,"inherits":160,"safe-buffer":234}],244:[function(require,module,exports){
 // Copyright Joyent, Inc. and other Node contributors.
 //
 // Permission is hereby granted, free of charge, to any person obtaining a
@@ -52733,7 +52159,7 @@ Stream.prototype.pipe = function(dest, options) {
   return dest;
 };
 
-},{"events":116,"inherits":161,"readable-stream/lib/_stream_duplex.js":220,"readable-stream/lib/_stream_passthrough.js":221,"readable-stream/lib/_stream_readable.js":222,"readable-stream/lib/_stream_transform.js":223,"readable-stream/lib/_stream_writable.js":224,"readable-stream/lib/internal/streams/end-of-stream.js":228,"readable-stream/lib/internal/streams/pipeline.js":230}],246:[function(require,module,exports){
+},{"events":115,"inherits":160,"readable-stream/lib/_stream_duplex.js":219,"readable-stream/lib/_stream_passthrough.js":220,"readable-stream/lib/_stream_readable.js":221,"readable-stream/lib/_stream_transform.js":222,"readable-stream/lib/_stream_writable.js":223,"readable-stream/lib/internal/streams/end-of-stream.js":227,"readable-stream/lib/internal/streams/pipeline.js":229}],245:[function(require,module,exports){
 (function (global){(function (){
 var ClientRequest = require('./lib/request')
 var response = require('./lib/response')
@@ -52821,7 +52247,7 @@ http.METHODS = [
 	'UNSUBSCRIBE'
 ]
 }).call(this)}).call(this,typeof global !== "undefined" ? global : typeof self !== "undefined" ? self : typeof window !== "undefined" ? window : {})
-},{"./lib/request":248,"./lib/response":249,"builtin-status-codes":72,"url":251,"xtend":258}],247:[function(require,module,exports){
+},{"./lib/request":247,"./lib/response":248,"builtin-status-codes":71,"url":250,"xtend":257}],246:[function(require,module,exports){
 (function (global){(function (){
 exports.fetch = isFunction(global.fetch) && isFunction(global.ReadableStream)
 
@@ -52884,7 +52310,7 @@ function isFunction (value) {
 xhr = null // Help gc
 
 }).call(this)}).call(this,typeof global !== "undefined" ? global : typeof self !== "undefined" ? self : typeof window !== "undefined" ? window : {})
-},{}],248:[function(require,module,exports){
+},{}],247:[function(require,module,exports){
 (function (process,global,Buffer){(function (){
 var capability = require('./capability')
 var inherits = require('inherits')
@@ -53240,7 +52666,7 @@ var unsafeHeaders = [
 ]
 
 }).call(this)}).call(this,require('_process'),typeof global !== "undefined" ? global : typeof self !== "undefined" ? self : typeof window !== "undefined" ? window : {},require("buffer").Buffer)
-},{"./capability":247,"./response":249,"_process":205,"buffer":71,"inherits":161,"readable-stream":233}],249:[function(require,module,exports){
+},{"./capability":246,"./response":248,"_process":204,"buffer":70,"inherits":160,"readable-stream":232}],248:[function(require,module,exports){
 (function (process,global,Buffer){(function (){
 var capability = require('./capability')
 var inherits = require('inherits')
@@ -53455,7 +52881,7 @@ IncomingMessage.prototype._onXHRProgress = function (resetTimers) {
 }
 
 }).call(this)}).call(this,require('_process'),typeof global !== "undefined" ? global : typeof self !== "undefined" ? self : typeof window !== "undefined" ? window : {},require("buffer").Buffer)
-},{"./capability":247,"_process":205,"buffer":71,"inherits":161,"readable-stream":233}],250:[function(require,module,exports){
+},{"./capability":246,"_process":204,"buffer":70,"inherits":160,"readable-stream":232}],249:[function(require,module,exports){
 // Copyright Joyent, Inc. and other Node contributors.
 //
 // Permission is hereby granted, free of charge, to any person obtaining a
@@ -53752,7 +53178,7 @@ function simpleWrite(buf) {
 function simpleEnd(buf) {
   return buf && buf.length ? this.write(buf) : '';
 }
-},{"safe-buffer":235}],251:[function(require,module,exports){
+},{"safe-buffer":234}],250:[function(require,module,exports){
 // Copyright Joyent, Inc. and other Node contributors.
 //
 // Permission is hereby granted, free of charge, to any person obtaining a
@@ -54486,7 +53912,7 @@ Url.prototype.parseHost = function() {
   if (host) this.hostname = host;
 };
 
-},{"./util":252,"punycode":213,"querystring":216}],252:[function(require,module,exports){
+},{"./util":251,"punycode":212,"querystring":215}],251:[function(require,module,exports){
 'use strict';
 
 module.exports = {
@@ -54504,7 +53930,7 @@ module.exports = {
   }
 };
 
-},{}],253:[function(require,module,exports){
+},{}],252:[function(require,module,exports){
 (function (global){(function (){
 
 /**
@@ -54575,9 +54001,9 @@ function config (name) {
 }
 
 }).call(this)}).call(this,typeof global !== "undefined" ? global : typeof self !== "undefined" ? self : typeof window !== "undefined" ? window : {})
-},{}],254:[function(require,module,exports){
-arguments[4][33][0].apply(exports,arguments)
-},{"dup":33}],255:[function(require,module,exports){
+},{}],253:[function(require,module,exports){
+arguments[4][32][0].apply(exports,arguments)
+},{"dup":32}],254:[function(require,module,exports){
 // Currently in sync with Node.js lib/internal/util/types.js
 // https://github.com/nodejs/node/commit/112cc7c27551254aa2b17098fb774867f05ed0d9
 
@@ -54913,7 +54339,7 @@ exports.isAnyArrayBuffer = isAnyArrayBuffer;
   });
 });
 
-},{"is-arguments":162,"is-generator-function":163,"is-typed-array":164,"which-typed-array":257}],256:[function(require,module,exports){
+},{"is-arguments":161,"is-generator-function":162,"is-typed-array":163,"which-typed-array":256}],255:[function(require,module,exports){
 (function (process){(function (){
 // Copyright Joyent, Inc. and other Node contributors.
 //
@@ -55632,7 +55058,7 @@ function callbackify(original) {
 exports.callbackify = callbackify;
 
 }).call(this)}).call(this,require('_process'))
-},{"./support/isBuffer":254,"./support/types":255,"_process":205,"inherits":161}],257:[function(require,module,exports){
+},{"./support/isBuffer":253,"./support/types":254,"_process":204,"inherits":160}],256:[function(require,module,exports){
 (function (global){(function (){
 'use strict';
 
@@ -55690,7 +55116,7 @@ module.exports = function whichTypedArray(value) {
 };
 
 }).call(this)}).call(this,typeof global !== "undefined" ? global : typeof self !== "undefined" ? self : typeof window !== "undefined" ? window : {})
-},{"available-typed-arrays":35,"call-bind/callBound":73,"es-abstract/helpers/getOwnPropertyDescriptor":115,"foreach":118,"has-tostringtag/shams":124,"is-typed-array":164}],258:[function(require,module,exports){
+},{"available-typed-arrays":34,"call-bind/callBound":72,"es-abstract/helpers/getOwnPropertyDescriptor":114,"foreach":117,"has-tostringtag/shams":123,"is-typed-array":163}],257:[function(require,module,exports){
 module.exports = extend
 
 var hasOwnProperty = Object.prototype.hasOwnProperty;
@@ -55711,7 +55137,7 @@ function extend() {
     return target
 }
 
-},{}],259:[function(require,module,exports){
+},{}],258:[function(require,module,exports){
 module.exports={
     "name": "splunk-sdk",
     "version": "1.12.0",
@@ -55764,7 +55190,7 @@ module.exports={
     }
 }
 
-},{}]},{},[5]);
+},{}]},{},[4]);
 
 
 })();

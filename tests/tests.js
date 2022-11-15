@@ -62,16 +62,14 @@ var loggedOutSvc = new splunkjs.Service({
 
 describe("Server tests", function () {
 
-    this.beforeAll(function (done) {
-        svc.login(function (err, success) {
-            if (err || !success) {
-                throw new Error("Login failed - not running tests", err || "");
-            }
-        });
-        done();
+    this.beforeAll(async function () {
+        try {
+            await svc.login();
+        } catch (error) {
+            throw new Error("Login failed - not running tests", error || "");
+        }
     })
 
-    require('./test_async').setup();
     require('./test_context').setup(svc);
     require('./test_http').setup(nonSplunkHttp);
     require('./test_log').setup();
