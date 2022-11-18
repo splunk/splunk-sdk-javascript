@@ -55140,7 +55140,7 @@ function extend() {
 },{}],258:[function(require,module,exports){
 module.exports={
     "name": "splunk-sdk",
-    "version": "1.12.0",
+    "version": "1.12.1",
     "description": "SDK for usage with the Splunk REST API",
     "homepage": "http://dev.splunk.com",
     "main": "index.js",

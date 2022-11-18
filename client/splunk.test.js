@@ -1114,7 +1114,7 @@ function outputHelpIfNecessary(cmd, options) {
 }
 
 }).call(this)}).call(this,require('_process'),require("buffer").Buffer)
-},{"_process":239,"buffer":68,"events":147,"fs":66,"path":231,"tty":285,"util":292}],2:[function(require,module,exports){
+},{"_process":240,"buffer":69,"events":148,"fs":67,"path":232,"tty":286,"util":293}],2:[function(require,module,exports){
 (function (process){(function (){
 
 // Copyright 2011 Splunk, Inc.
@@ -1150,6 +1150,7 @@ function outputHelpIfNecessary(cmd, options) {
         Service         : require('./lib/service'),
         Http            : require('./lib/http'),
         Utils           : require('./lib/utils'),
+        Async           : require('./lib/async'),
         Paths           : require('./lib/paths').Paths,
         Class           : require('./lib/jquery.class').Class
     };
@@ -1159,7 +1160,550 @@ function outputHelpIfNecessary(cmd, options) {
     }
 })();
 }).call(this)}).call(this,require('_process'))
-},{"./lib/context":3,"./lib/http":5,"./lib/jquery.class":6,"./lib/log":7,"./lib/paths":8,"./lib/platform/node/node_http":9,"./lib/service":10,"./lib/utils":11,"_process":239,"dotenv":128}],3:[function(require,module,exports){
+},{"./lib/async":3,"./lib/context":4,"./lib/http":6,"./lib/jquery.class":7,"./lib/log":8,"./lib/paths":9,"./lib/platform/node/node_http":10,"./lib/service":11,"./lib/utils":12,"_process":240,"dotenv":129}],3:[function(require,module,exports){
+/*!*/
+// Copyright 2012 Splunk, Inc.
+//
+// Licensed under the Apache License, Version 2.0 (the "License"): you may
+// not use this file except in compliance with the License. You may obtain
+// a copy of the License at
+//
+//     http://www.apache.org/licenses/LICENSE-2.0
+//
+// Unless required by applicable law or agreed to in writing, software
+// distributed under the License is distributed on an "AS IS" BASIS, WITHOUT
+// WARRANTIES OR CONDITIONS OF ANY KIND, either express or implied. See the
+// License for the specific language governing permissions and limitations
+// under the License.
+
+(function() {
+    "use strict";
+    
+    var utils = require('./utils');
+    var root = exports || this;
+
+    /**
+     * Provides utilities for asynchronous control flow and collection handling.
+     *
+     * @module splunkjs.Async
+     */
+
+    /**
+     * Runs an asynchronous `while` loop.
+     *
+     * @example
+     *      
+     *      var i = 0;
+     *      Async.whilst(
+     *          function() { return i++ < 3; },
+     *          function(done) {
+     *              Async.sleep(0, function() { done(); });
+     *          },
+     *          function(err) {
+     *              console.log(i) // == 3;
+     *          }
+     *      );
+     *
+     * @param {Function} condition A function that returns a _boolean_ indicating whether the condition has been met.
+     * @param {Function} body A function that runs the body of the loop: `(done)`.
+     * @param {Function} callback The function to call when the loop is complete: `(err)`.
+     *
+     * @function splunkjs.Async
+     */
+    root.whilst = function(condition, body, callback) {  
+        condition = condition || function() { return false; };
+        body = body || function(done) { done(); };
+        callback = callback || function() {};
+        
+        var iterationDone = function(err) {
+            if (err) {
+                callback(err);
+            }
+            else {
+                root.whilst(condition, body, callback);
+            }
+        };
+        
+        if (condition()) {
+            body(iterationDone);
+        }
+        else {
+            callback(null);
+        }
+    };
+    
+    /**
+     * Runs multiple functions (tasks) in parallel. 
+     * Each task takes the callback function as a parameter. 
+     * When all tasks have been completed or if an error occurs, the callback 
+     * function is called with the combined results of all tasks. 
+     *
+     * **Note**: Tasks might not be run in the same order as they appear in the array,
+     * but the results will be returned in that order. 
+     *
+     * @example
+     *      
+     *      Async.parallel([
+     *          function(done) {
+     *              done(null, 1);
+     *          },
+     *          function(done) {
+     *              done(null, 2, 3);
+     *          }],
+     *          function(err, one, two) {
+     *              console.log(err); // == null
+     *              console.log(one); // == 1
+     *              console.log(two); // == [1,2]
+     *          }
+     *      );
+     *
+     * @param {Function} tasks An array of functions: `(done)`.
+     * @param {Function} callback The function to call when all tasks are done or if an error occurred: `(err, ...)`.
+     *
+     * @function splunkjs.Async
+     */
+    root.parallel = function(tasks, callback) {
+        // Allow for just a list of functions
+        if (arguments.length > 1 && utils.isFunction(arguments[0])) {
+            var args = utils.toArray(arguments);
+            tasks = args.slice(0, args.length - 1);
+            callback = args[args.length - 1];
+        }
+        
+        tasks = tasks || [];
+        callback = callback || function() {};
+        
+        if (tasks.length === 0) {
+            callback();
+        }
+        
+        var tasksLeft = tasks.length;
+        var results = [];
+        var doneCallback = function(idx) {
+            return function(err) {
+                
+                if (err) {
+                    if (callback) {
+                        callback(err);
+                    }
+                    callback = null;
+                }
+                else {
+                    var args = utils.toArray(arguments);  
+                    args.shift();
+                    
+                    if (args.length === 1) {
+                        args = args[0];
+                    }
+                    results[idx] = args;
+                    
+                    if ((--tasksLeft) === 0) {
+                        results.unshift(null);
+                        if (callback) {
+                            callback.apply(null, results);
+                        }
+                    }
+                }
+            };
+        };
+        
+        for(var i = 0; i < tasks.length; i++) {
+            var task = tasks[i];
+            task(doneCallback(i));
+        }
+    };
+    
+    /**
+     * Runs multiple functions (tasks) in series. 
+     * Each task takes the callback function as a parameter. 
+     * When all tasks have been completed or if an error occurs, the callback 
+     * function is called with the combined results of all tasks in the order
+     * they were run. 
+     *
+     * @example
+     *      
+     *      var keeper = 0;
+     *      Async.series([
+     *          function(done) {
+     *              Async.sleep(10, function() {
+     *                  console.log(keeper++); // == 0
+     *                  done(null, 1);
+     *              });
+     *          },
+     *          function(done) {
+     *              console.log(keeper++); // == 1
+     *              done(null, 2, 3);
+     *          }],
+     *          function(err, one, two) {
+     *              console.log(err); // == null
+     *              console.log(one); // == 1
+     *              console.log(two); // == [1,2]
+     *          }
+     *      );
+     *
+     * @param {Function} tasks An array of functions: `(done)`.
+     * @param {Function} callback The function to call when all tasks are done or if an error occurred: `(err, ...)`.
+     *
+     * @function splunkjs.Async
+     */
+    root.series = function(tasks, callback) {
+        // Allow for just a list of functions
+        if (arguments.length > 1 && utils.isFunction(arguments[0])) {
+            var args = utils.toArray(arguments);
+            tasks = args.slice(0, args.length - 1);
+            callback = args[args.length - 1];
+        }
+        
+        tasks = tasks || [];
+        callback = callback || function() {};
+        
+        var innerSeries = function(task, restOfTasks, resultsSoFar, callback) {
+            if (!task) {
+                resultsSoFar.unshift(null);
+                callback.apply(null, resultsSoFar);
+                return;
+            }
+            
+            task(function(err) {
+                if (err) {
+                    if (callback) {
+                        callback(err);
+                    }
+                    callback = null;
+                }
+                else {
+                    var args = utils.toArray(arguments);
+                    args.shift();
+                    if (args.length === 1) {
+                        args = args[0];
+                    }
+                    resultsSoFar.push(args);
+                    
+                    innerSeries(restOfTasks[0], restOfTasks.slice(1), resultsSoFar, callback);
+                }
+            });
+        };
+        
+        innerSeries(tasks[0], tasks.slice(1), [], callback);
+    };
+    
+    /**
+     * Runs an asynchronous function (mapping it) over each element in an array, in parallel.
+     * When all tasks have been completed or if an error occurs, a callback
+     * function is called with the resulting array.
+     *
+     * @example
+     *      
+     *      Async.parallelMap(
+     *          [1, 2, 3],
+     *          function(val, idx, done) { 
+     *              if (val === 2) {
+     *                  Async.sleep(100, function() { done(null, val+1); });   
+     *              }
+     *              else {
+     *                  done(null, val + 1);
+     *              }
+     *          },
+     *          function(err, vals) {
+     *              console.log(vals); // == [2,3,4]
+     *          }
+     *      );
+     *
+     * @param {Array} vals An array of values.
+     * @param {Function} fn A function (possibly asynchronous) to apply to each element: `(done)`. 
+     * @param {Function} callback The function to call when all tasks are done or if an error occurred: `(err, mappedVals)`.
+     *
+     * @function splunkjs.Async
+     */
+    root.parallelMap = function(vals, fn, callback) {     
+        vals = vals || [];
+        callback = callback || function() {};
+        
+        var tasks = [];
+        var createTask = function(val, idx) {
+            return function(done) { fn(val, idx, done); };
+        };
+        
+        for(var i = 0; i < vals.length; i++) {
+            tasks.push(createTask(vals[i], i));
+        }
+        
+        root.parallel(tasks, function(err) {
+            if (err) {
+                if (callback) {
+                    callback(err);
+                }
+                callback = null;
+            }
+            else {
+                var args = utils.toArray(arguments);
+                args.shift();
+                callback(null, args);
+            }
+        });
+    };
+    
+    /**
+     * Runs an asynchronous function (mapping it) over each element in an array, in series.
+     * When all tasks have been completed or if an error occurs, a callback
+     * function is called with the resulting array.
+     *
+     * @example
+     *      
+     *      var keeper = 1;
+     *      Async.seriesMap(
+     *          [1, 2, 3],
+     *          function(val, idx, done) { 
+     *              console.log(keeper++); // == 1, then 2, then 3
+     *              done(null, val + 1);
+     *          },
+     *          function(err, vals) {
+     *              console.log(vals); // == [2,3,4];
+     *          }
+     *      );
+     *
+     * @param {Array} vals An array of values.
+     * @param {Function} fn A function (possibly asynchronous) to apply to each element: `(done)`.
+     * @param {Function} callback The function to call when all tasks are done or if an error occurred: `(err, mappedVals)`.
+     *
+     * @function splunkjs.Async
+     */
+    root.seriesMap = function(vals, fn, callback) {     
+        vals = vals || [];
+        callback = callback || function() {};
+        
+        var tasks = [];
+        var createTask = function(val, idx) {
+            return function(done) { fn(val, idx, done); };
+        };
+        
+        for(var i = 0; i < vals.length; i++) {
+            tasks.push(createTask(vals[i], i));
+        }
+        
+        root.series(tasks, function(err) {
+            if (err) {
+                if (callback) {
+                    callback(err);
+                }
+            }
+            else {
+                var args = utils.toArray(arguments);
+                args.shift();
+                callback(null, args);
+            }
+        });
+    };
+    
+    /**
+     * Applies an asynchronous function over each element in an array, in parallel.
+     * A callback function is called when all tasks have been completed. If an 
+     * error occurs, the callback function is called with an error parameter.
+     *
+     * @example
+     *      
+     *      var total = 0;
+     *      Async.parallelEach(
+     *          [1, 2, 3],
+     *          function(val, idx, done) { 
+     *              var go = function() {
+     *                  total += val;
+     *                  done();
+     *              };
+     *              
+     *              if (idx === 1) {
+     *                  Async.sleep(100, go);    
+     *              }
+     *              else {
+     *                  go();
+     *              }
+     *          },
+     *          function(err) {
+     *              console.log(total); // == 6
+     *          }
+     *      );
+     *
+     * @param {Array} vals An array of values.
+     * @param {Function} fn A function (possibly asynchronous) to apply to each element: `(done)`.
+     * @param {Function} callback The function to call when all tasks are done or if an error occurred: `(err)`.
+     *
+     * @function splunkjs.Async
+     */
+    root.parallelEach = function(vals, fn, callback) {  
+        vals = vals || [];   
+        callback = callback || function() {};
+        
+        root.parallelMap(vals, fn, function(err, result) {
+            callback(err); 
+        });
+    };
+    
+    /**
+     * Applies an asynchronous function over each element in an array, in series.
+     * A callback function is called when all tasks have been completed. If an 
+     * error occurs, the callback function is called with an error parameter.
+     *
+     * @example
+     *      
+     *      var results = [1, 3, 6];
+     *      var total = 0;
+     *      Async.seriesEach(
+     *          [1, 2, 3],
+     *          function(val, idx, done) { 
+     *              total += val;
+     *              console.log(total === results[idx]); //== true
+     *              done();
+     *          },
+     *          function(err) {
+     *              console.log(total); //== 6
+     *          }
+     *      );
+     *
+     * @param {Array} vals An array of values.
+     * @param {Function} fn A function (possibly asynchronous)to apply to each element: `(done)`.
+     * @param {Function} callback The function to call when all tasks are done or if an error occurred: `(err)`.
+     *
+     * @function splunkjs.Async
+     */
+    root.seriesEach = function(vals, fn, callback) {    
+        vals = vals || []; 
+        callback = callback || function() {};
+        
+        root.seriesMap(vals, fn, function(err, result) {
+            callback(err); 
+        });
+    };
+    
+    /**
+     * Chains asynchronous tasks together by running a function (task) and
+     * passing the results as arguments to the next task. When all tasks have 
+     * been completed or if an error occurs, a callback function is called with 
+     * the results of the final task.
+     *
+     * Each task takes one or more parameters, depending on the previous task in the chain.
+     * The last parameter is always the function to run when the task is complete.
+     *
+     * `err` arguments are not passed to individual tasks, but are are propagated 
+     * to the final callback function.
+     *
+     * @example
+     *      
+     *     Async.chain(
+     *         function(callback) { 
+     *             callback(null, 1, 2);
+     *         },
+     *         function(val1, val2, callback) {
+     *             callback(null, val1 + 1);
+     *         },
+     *         function(val1, callback) {
+     *             callback(null, val1 + 1, 5);
+     *         },
+     *         function(err, val1, val2) {
+     *             console.log(val1); //== 3
+     *             console.log(val2); //== 5
+     *         }
+     *     );
+     *     
+     * @param {Function} tasks An array of functions: `(done)`.
+     * @param {Function} callback The function to call when all tasks are done or if an error occurred: `(err, ...)`.
+     *
+     * @function splunkjs.Async
+     */
+    root.chain = function(tasks, callback) {
+        // Allow for just a list of functions
+        if (arguments.length > 1 && utils.isFunction(arguments[0])) {
+            var args = utils.toArray(arguments);
+            tasks = args.slice(0, args.length - 1);
+            callback = args[args.length - 1];
+        }
+        
+        tasks = tasks || [];
+        callback = callback || function() {};
+        
+        if (!tasks.length) {
+            callback();
+        }
+        else {
+            var innerChain = function(task, restOfTasks, result) {
+                var chainCallback = function(err) {
+                    if (err) {
+                        callback(err);
+                        callback = function() {};
+                    }
+                    else {
+                        var args = utils.toArray(arguments);
+                        args.shift();
+                        innerChain(restOfTasks[0], restOfTasks.slice(1), args);
+                    }
+                };
+                
+                var args = result;
+                if (!restOfTasks.length) {
+                    args.push(callback);
+                }
+                else {
+                    args.push(chainCallback);
+                }
+                
+                task.apply(null, args);
+            };
+            
+            innerChain(tasks[0], tasks.slice(1), []);
+        }
+    };
+    
+    /**
+     * Runs a function after a delay (a specified timeout period). 
+     * The main purpose of this function is to make `setTimeout` adhere to 
+     * Node.js-style function signatures.
+     *
+     * @example
+     *      
+     *     Async.sleep(1000, function() { console.log("TIMEOUT");});
+     *     
+     * @param {Number} timeout The timeout period, in milliseconds.
+     * @param {Function} callback The function to call when the timeout occurs.
+     *
+     * @function splunkjs.Async
+     */
+    root.sleep = function(timeout, callback) {
+        setTimeout(function() {
+            callback();   
+        }, timeout);
+    };
+    
+    /**
+     * Runs a callback function with additional parameters, which are appended to
+     * the parameter list. 
+     *
+     * @example
+     *
+     *      var callback = function(a, b) {
+     *          console.log(a); //== 1
+     *          console.log(b); //== 2
+     *      };
+     *      
+     *      var augmented = Async.augment(callback, 2);
+     *      augmented(1);
+     *     
+     * @param {Function} callback The callback function to augment.
+     * @param {Anything...} rest The number of arguments to add.
+     *
+     * @function splunkjs.Async
+     */
+    root.augment = function(callback) {
+        var args = Array.prototype.slice.call(arguments, 1);
+        return function() {
+            var augmentedArgs = Array.prototype.slice.call(arguments);
+            for(var i = 0; i < args.length; i++) {
+              augmentedArgs.push(args[i]);
+            }
+            
+            callback.apply(null, augmentedArgs);
+        };
+    };
+})();
+},{"./utils":12}],4:[function(require,module,exports){
 /*!*/
 // Copyright 2012 Splunk, Inc.
 //
@@ -1263,7 +1807,7 @@ function outputHelpIfNecessary(cmd, options) {
                     throw new Error("Http instance required when creating a Context within a browser.");
                 }
                 else {
-                    let NodeHttp = require('./platform/node/node_http').NodeHttp;
+                    var NodeHttp = require('./platform/node/node_http').NodeHttp;
                     http = new NodeHttp();
                 }
             }
@@ -1274,20 +1818,21 @@ function outputHelpIfNecessary(cmd, options) {
 
             // Store our full prefix, which is just combining together
             // the scheme with the host
-            let versionPrefix = utils.getWithVersion(this.version, prefixMap);
+            var versionPrefix = utils.getWithVersion(this.version, prefixMap);
             this.prefix = this.scheme + "://" + this.host + ":" + this.port + versionPrefix;
 
-            // We perform the bindings so that every function works properly
-            this._headers         = utils.bind(this, this._headers);
-            this.fullpath         = utils.bind(this, this.fullpath);
-            this.urlify           = utils.bind(this, this.urlify);
-            this.get              = utils.bind(this, this.get);
-            this.del              = utils.bind(this, this.del);
-            this.post             = utils.bind(this, this.post);
-            this.login            = utils.bind(this, this.login);
-            this._shouldAutoLogin = utils.bind(this, this._shouldAutoLogin);
-            this._requestWrapper  = utils.bind(this, this._requestWrapper);
-            this.getInfo       = utils.bind(this, this.getInfo);
+            // We perform the bindings so that every function works
+            // properly when it is passed as a callback.
+            this._headers           = utils.bind(this, this._headers);
+            this.fullpath           = utils.bind(this, this.fullpath);
+            this.urlify             = utils.bind(this, this.urlify);
+            this.get                = utils.bind(this, this.get);
+            this.del                = utils.bind(this, this.del);
+            this.post               = utils.bind(this, this.post);
+            this.login              = utils.bind(this, this.login);
+            this._shouldAutoLogin   = utils.bind(this, this._shouldAutoLogin);
+            this._requestWrapper    = utils.bind(this, this._requestWrapper);
+            this.getInfo            = utils.bind(this, this.getInfo);
             this.disableV2SearchApi = utils.bind(this, this.disableV2SearchApi);
         },
 
@@ -1316,40 +1861,85 @@ function outputHelpIfNecessary(cmd, options) {
         /*!*/
         /**
          * This internal function aids with the autologin feature.
-         * It takes one parameters: `task`, which is a function describing an
-         * HTTP request.
+         * It takes two parameters: `task`, which is a function describing an
+         * HTTP request, and `callback`, to be invoked when all is said
+         * and done.
          *
-         * @param  {Function} task A function with no arguments which returns a promise.
+         * @param  {Function} task A function taking a single argument: `(callback)`.
+         * @param  {Function} callback The function to call when the request is complete: `(err, response)`.
          */
-        _requestWrapper:function (task){
+        _requestWrapper: function(task, callback) {
+            callback = callback || function() {};
+
             var that = this;
+            var req = null;
+
+            // This is the callback that will be invoked
+            // if we are currently logged in but our session key
+            // expired (i.e. we get a 401 response from the server).
+            // We will only retry once.
+            var reloginIfNecessary = function(err) {
+                // If we aborted, ignore it
+                if (req.wasAborted) {
+                    return;
+                }
+
+                if (err && err.status === 401 && that._shouldAutoLogin()) {
+                    // If we had an authorization error, we'll try and login
+                    // again, but only once
+                    that.sessionKey = null;
+                    that.login(function(err, success) {
+                        // If we've already aborted the request,
+                        // just do nothing
+                        if (req.wasAborted) {
+                            return;
+                        }
+
+                        if (err) {
+                            // If there was an error logging in, send it through
+                            callback(err);
+                        }
+                        else {
+                            // Relogging in was successful, so we execute
+                            // our task again.
+                            task(callback);
+                        }
+                    });
+                }
+                else {
+                    callback.apply(null, arguments);
+                }
+            };
 
             if (!this._shouldAutoLogin() || this.sessionKey) {
                 // Since we are not auto-logging in, just execute our task,
                 // but intercept any 401s so we can login then
-                return task().then((res)=>{
-                    return res;
-                })
-                .catch((err)=>{
-                    if(err && err.status===401 && that._shouldAutoLogin()){
-                        that.sessionKey = null;
-                        return that.login().then((response)=>{
-                                return task();
-                            }).catch((error)=>{
-                                throw error;
-                            });
-                    }
-                    throw err;
-                });
+                req = task(reloginIfNecessary);
+                return req;
             }
 
-            return this.login()
-                    .then((res)=>{
-                            return task();
-                        })
-                        .catch((err)=>{
-                            throw err;
-                        });
+            // OK, so we know that we should try and autologin,
+            // so we try and login, and if we succeed, execute
+            // the original task
+            req = this.login(function(err, success) {
+                // If we've already aborted the request,
+                // just do nothing
+                if (req.wasAborted) {
+                    return;
+                }
+
+                if (err) {
+                    // If there was an error logging in, send it through
+                    callback(err);
+                }
+                else {
+                    // Logging in was successful, so we execute
+                    // our task.
+                    task(callback);
+                }
+            });
+
+            return req;
         },
 
         /**
@@ -1376,8 +1966,8 @@ function outputHelpIfNecessary(cmd, options) {
 
             // Get the app and owner, first from the passed in namespace, then the service,
             // finally defaulting to wild cards
-            let owner = namespace.owner || this.owner || "-";
-            let app   = namespace.app || this.app || "-";
+            var owner = namespace.owner || this.owner || "-";
+            var app   = namespace.app || this.app || "-";
 
             namespace.sharing = (namespace.sharing || "").toLowerCase();
 
@@ -1409,83 +1999,97 @@ function outputHelpIfNecessary(cmd, options) {
         /**
          * Get Splunk version during login phase.
          *
-         * @param {Number} response_timeout A timeout period for aborting a request in milisecs (0 means no timeout).
+         * @param {Function} callback The function to call when login has finished: `()`.
          *
          * @method splunkjs.Context
          * @private
          */
-         getInfo: function (response_timeout) {
+        getInfo: function (callback) {
             var that = this;
-            let url = this.paths.info;
+            var url = this.paths.info;
+
+            callback = callback || function() {};
+
+            var wrappedCallback = function(err, response) {
+                var hasVersion = !!(!err && response.data && response.data.generator.version);
+                let hasInstanceType = !!(!err && response.data && response.data.generator["instance_type"]);
+
+                if (err || !hasVersion) {
+                    callback(err || "No version found", false);
+                }
+                else {
+                    that.instanceType = hasInstanceType ? response.data.generator["instance_type"] : "";
+                    that.version = response.data.generator.version;
+                    that.http.version = that.version;
+                    callback(null, true);
+                }
+            };
             return this.http.get(
                 this.urlify(url),
                 this._headers(),
                 "",
                 this.timeout,
-                response_timeout
-            ).then((response)=>{
-                let hasVersion = !!(response.data && response.data.generator.version);
-                let hasInstanceType = !!(response.data && response.data.generator["instance_type"]);
-                
-                if (!hasVersion) {
-                    return Promise.reject("No version found");
-                }
-                else{
-                    that.instanceType = hasInstanceType ? response.data.generator["instance_type"] : "";
-                    that.version = response.data.generator.version;
-                    that.http.version = that.version;
-                    return Promise.resolve(true);
-                }
-
-            });
+                wrappedCallback
+            );
         },
 
         /**
          * Authenticates and logs in to a Splunk instance, then stores the
          * resulting session key.
          *
-         * @param {Number} response_timeout A timeout period for aborting a request in milisecs (0 means no timeout).
+         * @param {Function} callback The function to call when login has finished: `(err, wasSuccessful)`.
          *
          * @method splunkjs.Context
          * @private
          */
-        login: function(response_timeout) {
+        login: function(callback) {
             var that = this;
-            let url = this.paths.login;
-            let params = {
+            var url = this.paths.login;
+            var params = {
                 username: this.username,
                 password: this.password,
                 cookie  : '1'
             };
 
+            callback = callback || function() {};
+
+            var wrappedCallback = function(err, response) {
+                // Let's make sure that not only did the request succeed, but
+                // we actually got a non-empty session key back.
+                var hasSessionKey = !!(!err && response.data && response.data.sessionKey);
+
+                if (err || !hasSessionKey) {
+                    callback(err || "No session key available", false);
+                }
+                else {
+                    that.sessionKey = response.data.sessionKey;
+                    that.getInfo(callback);
+                }
+            };
             return this.http.post(
                 this.urlify(url),
                 this._headers(),
                 params,
                 this.timeout,
-                response_timeout
-            ).then((response)=>{
-                let hasSessionKey = !!(response.data && response.data.sessionKey);
-                if (!hasSessionKey) {
-                    return Promise.reject("No session key available");
-                }
-                else {
-                    that.sessionKey = response.data.sessionKey;
-                    return that.getInfo();
-                }
-            })
+                wrappedCallback
+            );
         },
 
         /**
          * Logs the session out resulting in the removal of all cookies and the
          * session key.
          *
+         * @param {Function} callback The function to call when logout has finished: `()`.
+         *
          * @method splunkjs.Context
          * @private
          */
-        logout: function() {
+        logout: function(callback) {
+            callback = callback || function() {};
+
             this.sessionKey = null;
             this.http._cookieStore = {};
+            callback();
         },
 
         /**
@@ -1493,34 +2097,35 @@ function outputHelpIfNecessary(cmd, options) {
          *
          * @param {String} path The REST endpoint path of the GET request.
          * @param {Object} params The entity-specific parameters for this request.
-         * @param {Number} response_timeout A timeout period for aborting a request in milisecs (0 means no timeout).
+         * @param {Function} callback The function to call when the request is complete: `(err, response)`.
          *
          * @method splunkjs.Context
          */
-        get: function(path, params, response_timeout, isAsync) {
+        get: function(path, params, callback, isAsync) {
             var that = this;
+
             if(isAsync) {
                 return that.http.get(
                     that.urlify(path),
                     that._headers(),
                     params,
                     that.timeout,
-                    response_timeout,
+                    null,
                     true
                 );
             }
             else {
-                let request = function() {
+                var request = function(callback) {
                     return that.http.get(
                         that.urlify(path),
                         that._headers(),
                         params,
                         that.timeout,
-                        response_timeout
+                        callback
                     );
                 };
     
-                return this._requestWrapper(request);
+                return this._requestWrapper(request, callback);
             }
         },
 
@@ -1529,22 +2134,23 @@ function outputHelpIfNecessary(cmd, options) {
          *
          * @param {String} path The REST endpoint path of the DELETE request.
          * @param {Object} params The entity-specific parameters for this request.
-         * @param {Number} response_timeout A timeout period for aborting a request in milisecs (0 means no timeout).
+         * @param {Function} callback The function to call when the request is complete: `(err, response)`.
+         *
          * @method splunkjs.Context
          */
-        del: function(path, params,response_timeout) {
+        del: function(path, params, callback) {
             var that = this;
-            let request = function() {
+            var request = function(callback) {
                 return that.http.del(
                     that.urlify(path),
                     that._headers(),
                     params,
                     that.timeout,
-                    response_timeout
+                    callback
                 );
             };
 
-            return this._requestWrapper(request);
+            return this._requestWrapper(request, callback);
         },
 
         /**
@@ -1552,22 +2158,23 @@ function outputHelpIfNecessary(cmd, options) {
          *
          * @param {String} path The REST endpoint path of the POST request.
          * @param {Object} params The entity-specific parameters for this request.
-         * @param {Number} response_timeout A timeout period for aborting a request in milisecs (0 means no timeout).
+         * @param {Function} callback The function to call when the request is complete: `(err, response)`.
+         *
          * @method splunkjs.Context
          */
-        post: function(path, params, response_timeout) {
+        post: function(path, params, callback) {
             var that = this;
-            let request = function() {
+            var request = function(callback) {
                 return that.http.post(
                     that.urlify(path),
                     that._headers(),
                     params,
                     that.timeout,
-                    response_timeout
+                    callback
                 );
             };
 
-            return this._requestWrapper(request);
+            return this._requestWrapper(request, callback);
         },
 
         /**
@@ -1579,13 +2186,13 @@ function outputHelpIfNecessary(cmd, options) {
          * @param {Object} post A dictionary of POST argument that will get form encoded.
          * @param {Object} body The body of the request, mutually exclusive with `post`.
          * @param {Object} headers Headers for this request.
-         * @param {Number} response_timeout A timeout period for aborting a request in milisecs (0 means no timeout).
+         * @param {Function} callback The function to call when the request is complete: `(err, response)`.
          *
          * @method splunkjs.Context
          */
-        request: function(path, method, query, post, body, headers,response_timeout) {
+        request: function(path, method, query, post, body, headers, callback) {
             var that = this;
-            let request = function() {
+            var request = function(callback) {
                 return that.http.request(
                     that.urlify(path),
                     {
@@ -1595,11 +2202,12 @@ function outputHelpIfNecessary(cmd, options) {
                         post: post,
                         body: body,
                         timeout: that.timeout
-                    }
-                ,response_timeout);
+                    },
+                    callback
+                );
             };
 
-            return this._requestWrapper(request);
+            return this._requestWrapper(request, callback);
         },
 
         /**
@@ -1613,18 +2221,18 @@ function outputHelpIfNecessary(cmd, options) {
          * @method splunkjs.Context
          */
         versionCompare: function (otherVersion) {
-            let thisVersion = this.version;
+            var thisVersion = this.version;
             if (thisVersion === "default") {
                 thisVersion = "5.0";
             }
 
-            let components1 = thisVersion.split(".");
-            let components2 = otherVersion.split(".");
-            let numComponents = Math.max(components1.length, components2.length);
+            var components1 = thisVersion.split(".");
+            var components2 = otherVersion.split(".");
+            var numComponents = Math.max(components1.length, components2.length);
 
-            for (let i = 0; i < numComponents; i++) {
-                let c1 = (i < components1.length) ? parseInt(components1[i], 10) : 0;
-                let c2 = (i < components2.length) ? parseInt(components2[i], 10) : 0;
+            for (var i = 0; i < numComponents; i++) {
+                var c1 = (i < components1.length) ? parseInt(components1[i], 10) : 0;
+                var c2 = (i < components2.length) ? parseInt(components2[i], 10) : 0;
                 if (c1 < c2) {
                     return -1;
                 } else if (c1 > c2) {
@@ -1654,7 +2262,7 @@ function outputHelpIfNecessary(cmd, options) {
     };
 })();
 
-},{"./http":5,"./jquery.class":6,"./paths":8,"./platform/node/node_http":9,"./utils":11}],4:[function(require,module,exports){
+},{"./http":6,"./jquery.class":7,"./paths":9,"./platform/node/node_http":10,"./utils":12}],5:[function(require,module,exports){
 
 // Copyright 2011 Splunk, Inc.
 //
@@ -1676,11 +2284,12 @@ function outputHelpIfNecessary(cmd, options) {
 
 window.SplunkTest = {
     Utils    : require('../../tests/test_utils'),
+    Async    : require('../../tests/test_async'),
     Http     : require('../../tests/test_http'),
     Context  : require('../../tests/test_context'),
     Service  : require('../../tests/test_service')
 };
-},{"../../tests/test_context":316,"../../tests/test_http":317,"../../tests/test_service":318,"../../tests/test_utils":319}],5:[function(require,module,exports){
+},{"../../tests/test_async":317,"../../tests/test_context":318,"../../tests/test_http":319,"../../tests/test_service":320,"../../tests/test_utils":321}],6:[function(require,module,exports){
 /*!*/
 // Copyright 2012 Splunk, Inc.
 //
@@ -1748,7 +2357,8 @@ window.SplunkTest = {
          */
         init: function() {
 
-            // We perform the bindings so that every function works properly
+            // We perform the bindings so that every function works
+            // properly when it is passed as a callback.
             this.get                = utils.bind(this, this.get);
             this.del                = utils.bind(this, this.del);
             this.post               = utils.bind(this, this.post);
@@ -1771,7 +2381,7 @@ window.SplunkTest = {
          * Returns all cookies formatted as a string to be put into the Cookie Header.
          */
         _getCookieString: function() {
-            let cookieString = "";
+            var cookieString = "";
 
             utils.forEach(this._cookieStore, function (cookieValue, cookieKey) {
                 cookieString += cookieKey;
@@ -1789,8 +2399,8 @@ window.SplunkTest = {
          */
         _parseCookieHeader: function(cookieHeader) {
             // Returns an object of form { $cookieKey: $cookieValue, $optionalCookieAttributeName: $""value, ... }
-            let parsedCookieObject = CookieHandler.parse(cookieHeader);
-            let cookie = {};
+            var parsedCookieObject = CookieHandler.parse(cookieHeader);
+            var cookie = {};
 
             // This gets the first key value pair into an object and just repeatedly returns thereafter
             utils.forEach(parsedCookieObject, function(cookieValue, cookieKey) {
@@ -1811,19 +2421,19 @@ window.SplunkTest = {
          * @param {Object} headers An object of headers for this request.
          * @param {Object} params Parameters for this request.
          * @param {Number} timeout A timeout period.
-         * @param {Number} response_timeout A timeout period for aborting a request in milisecs (0 means no timeout).
+         * @param {Function} callback The function to call when the request is complete: `(err, response)`.
          *
          * @method splunkjs.Http
          */
-        get: function(url, headers, params, timeout, response_timeout, isAsync) {
-            let message = {
+        get: function(url, headers, params, timeout, callback, isAsync) {
+            var message = {
                 method: "GET",
                 headers: headers,
                 timeout: timeout,
-                response_timeout: response_timeout,
-                query: params,
+                query: params
             };
-            return this.request(url, message, isAsync);
+
+            return this.request(url, message, callback, isAsync);
         },
 
         /**
@@ -1833,21 +2443,20 @@ window.SplunkTest = {
          * @param {Object} headers  An object of headers for this request.
          * @param {Object} params Parameters for this request.
          * @param {Number} timeout A timeout period.
-         * @param {Number} response_timeout A timeout period for aborting a request in milisecs (0 means no timeout).
+         * @param {Function} callback The function to call when the request is complete: `(err, response)`.
          *
          * @method splunkjs.Http
          */
-        post: function(url, headers, params, timeout, response_timeout) {
+        post: function(url, headers, params, timeout, callback) {
             headers["Content-Type"] = "application/x-www-form-urlencoded";
-            let message = {
+            var message = {
                 method: "POST",
                 headers: headers,
                 timeout: timeout,
-                response_timeout: response_timeout,
                 post: params
             };
 
-            return this.request(url, message);
+            return this.request(url, message, callback);
         },
 
         /**
@@ -1857,20 +2466,19 @@ window.SplunkTest = {
          * @param {Object} headers An object of headers for this request.
          * @param {Object} params Query parameters for this request.
          * @param {Number} timeout A timeout period.
-         * @param {Number} response_timeout A timeout period for aborting a request in milisecs (0 means no timeout).
+         * @param {Function} callback The function to call when the request is complete: `(err, response)`.
          *
          * @method splunkjs.Http
          */
-        del: function(url, headers, params, timeout, response_timeout) {
-            let message = {
+        del: function(url, headers, params, timeout, callback) {
+            var message = {
                 method: "DELETE",
                 headers: headers,
                 timeout: timeout,
-                response_timeout: response_timeout,
                 query: params
             };
 
-            return this.request(url, message);
+            return this.request(url, message, callback);
         },
 
         /**
@@ -1881,19 +2489,20 @@ window.SplunkTest = {
          *
          * @param {String} url The encoded URL of the request.
          * @param {Object} message An object with values for method, headers, timeout, and encoded body.
+         * @param {Function} callback The function to call when the request is complete: `(err, response)`.
          *
          * @method splunkjs.Http
          * @see makeRequest
          */
-        request: function(url, message, isAsync) {
+        request: function(url, message, callback, isAsync) {
             var that = this;
-            let query = utils.getWithVersion(this.version, queryBuilderMap)(message);
-            let post = message.post || {};
+            var query = utils.getWithVersion(this.version, queryBuilderMap)(message);
+            var post = message.post || {};
 
-            let encodedUrl = url + "?" + Http.encode(query);
-            let body = message.body ? message.body : Http.encode(post);
+            var encodedUrl = url + "?" + Http.encode(query);
+            var body = message.body ? message.body : Http.encode(post);
 
-            let cookieString = that._getCookieString();
+            var cookieString = that._getCookieString();
 
             if (cookieString.length !== 0) {
                 message.headers["Cookie"] = cookieString;
@@ -1903,42 +2512,44 @@ window.SplunkTest = {
                 delete message.headers["Authorization"];
             }
 
-            let options = {
+            var options = {
                 method: message.method,
                 headers: message.headers,
                 timeout: message.timeout,
-                response_timeout: message.response_timeout,
                 query: message.query,
                 body: body
             };
 
+            // Now we can invoke the user-provided HTTP class,
+            // passing in our "wrapped" callback
             if(isAsync) {
                 return this.makeRequestAsync(encodedUrl, options);
             }
             else {
-                let res = this.makeRequest(encodedUrl, options);
-                return res.then((response) => {
-                    if(!response){
-                        return;
-                    }
+                var wrappedCallback = function(response) {
+                    callback = callback || function() {};
+    
                     // Handle cookies if 'set-cookie' header is in the response
-                    let cookieHeaders = response.response.headers['set-cookie'];
-                        if (cookieHeaders) {
-                            utils.forEach(cookieHeaders, function (cookieHeader) {
-                                let cookie = that._parseCookieHeader(cookieHeader);
-                                that._cookieStore[cookie.key] = cookie.value;
-                            });
-                        }
+    
+                    var cookieHeaders = response.response.headers['set-cookie'];
+                    if (cookieHeaders) {
+                        utils.forEach(cookieHeaders, function (cookieHeader) {
+                            var cookie = that._parseCookieHeader(cookieHeader);
+                            that._cookieStore[cookie.key] = cookie.value;
+                        });
+                    }
+    
+                    // Handle callback
+    
+                    if (response.status < 400 && response.status !== "abort") {
+                        callback(null, response);
+                    }
+                    else {
+                        callback(response);
+                    }
+                };
 
-                        if (response.status < 400 && response.status !== "abort") {
-                            return response;
-                        }
-                        else {
-                            throw response;
-                        }
-                    }).catch((error) => {
-                        throw error;
-                    });
+                return this.makeRequest(encodedUrl, options, wrappedCallback);
             }
         },
 
@@ -1948,10 +2559,11 @@ window.SplunkTest = {
          *
          * @param {String} url The encoded URL of the request.
          * @param {Object} message An object with values for method, headers, timeout, and encoded body.
+         * @param {Function} callback The function to call when the request is complete: `(err, response)`.
          *
          * @method splunkjs.Http
          */
-        makeRequest: function(url, message) {
+        makeRequest: function(url, message, callback) {
             throw new Error("UNDEFINED FUNCTION - OVERRIDE REQUIRED");
         },
 
@@ -1978,9 +2590,9 @@ window.SplunkTest = {
          * @method splunkjs.Http
          */
         _buildResponse: function(error, response, data) {
-            let complete_response, json = {};
+            var complete_response, json = {};
 
-            let contentType = null;
+            var contentType = null;
             if (response && response.headers) {
                 contentType = utils.trim(response.headers["content-type"] || response.headers["Content-Type"] || response.headers["Content-type"] || response.headers["contentType"]);
             }
@@ -2027,10 +2639,10 @@ window.SplunkTest = {
      * @function splunkjs.Http
      */
     Http.encode = function(params) {
-        let encodedStr = "";
+        var encodedStr = "";
 
         // We loop over all the keys so we encode them.
-        for (let key in params) {
+        for (var key in params) {
             if (params.hasOwnProperty(key)) {
                 // Only append the ampersand if we already have
                 // something encoded, and the last character isn't
@@ -2040,19 +2652,19 @@ window.SplunkTest = {
                 }
 
                 // Get the value
-                let value = params[key];
+                var value = params[key];
 
                 // If it's an array, we loop over each value
                 // and encode it in the form &key=value[i]
                 if (value instanceof Array) {
-                    for (let i = 0; i < value.length; i++) {
+                    for (var i = 0; i < value.length; i++) {
                         encodedStr = encodedStr + key + "=" + encodeURIComponent(value[i]) + "&";
                     }
                 }
                 else if (typeof value === "object") {
-                    for(let innerKey in value) {
+                    for(var innerKey in value) {
                         if (value.hasOwnProperty(innerKey)) {
-                            let innerValue = value[innerKey];
+                            var innerValue = value[innerKey];
                             encodedStr = encodedStr + key + "=" + encodeURIComponent(value[innerKey]) + "&";
                         }
                     }
@@ -2072,7 +2684,7 @@ window.SplunkTest = {
     };
 })();
 
-},{"./jquery.class":6,"./log":7,"./utils":11,"cookie":106}],6:[function(require,module,exports){
+},{"./jquery.class":7,"./log":8,"./utils":12,"cookie":107}],7:[function(require,module,exports){
 /*! Simple JavaScript Inheritance
  * By John Resig http://ejohn.org/
  * MIT Licensed.
@@ -2139,7 +2751,7 @@ window.SplunkTest = {
       return Class;
     };
 })();
-},{}],7:[function(require,module,exports){
+},{}],8:[function(require,module,exports){
 (function (process){(function (){
 /*!*/
 // Copyright 2012 Splunk, Inc.
@@ -2329,7 +2941,7 @@ window.SplunkTest = {
 })();
 
 }).call(this)}).call(this,require('_process'))
-},{"./utils":11,"_process":239}],8:[function(require,module,exports){
+},{"./utils":12,"_process":240}],9:[function(require,module,exports){
 /*!*/
 // Copyright 2012 Splunk, Inc.
 //
@@ -2394,7 +3006,7 @@ window.SplunkTest = {
     };
 })();
 
-},{}],9:[function(require,module,exports){
+},{}],10:[function(require,module,exports){
 (function (Buffer){(function (){
 
 // Copyright 2011 Splunk, Inc.
@@ -2424,7 +3036,7 @@ window.SplunkTest = {
             this._super();
         },
 
-        makeRequest: function(url, message) {
+        makeRequest: function(url, message, callback) {
             var request_options = {
                 url: url,
                 method: message.method,
@@ -2437,10 +3049,6 @@ window.SplunkTest = {
                 rejectUnauthorized : false
             };
 
-            if(message.response_timeout != undefined){
-                request_options.response_timeout = message.response_timeout;
-            }
-
             // Get the byte-length of the content, which adjusts for multi-byte characters
             request_options.headers["Content-Length"] = Buffer.byteLength(request_options.body, "utf8");
             request_options.headers["User-Agent"] = "splunk-sdk-javascript/" + SDK_VERSION;
@@ -2450,38 +3058,42 @@ window.SplunkTest = {
             }
 
             var that = this;
-
-            function formatResponse(error = null, res = null) {
-                var complete_response;
-
+            var req = needle.request(request_options.method, request_options.url, request_options.body, request_options, 
+                function (error, res, data) 
+                {
+                // If we already aborted this request, then do nothing
+                if (req.wasAborted) {
+                    return;
+                }
+                
                 var response = {
                     headers: res ? res.headers : {},
                     statusCode: res ? res.statusCode : 600
                 };
-                var body = res ? res.body : {};
+
+                var complete_response;
 
                 if(message.query && ["xml", "csv"].includes(message.query.output_mode)){
-                    complete_response = that._buildResponse(error, response, body);
+                    complete_response = that._buildResponse(error, response, data);
                 }
                 else {
-                    complete_response = that._buildResponse(error, response, JSON.stringify(body));
+                    complete_response = that._buildResponse(error, response, JSON.stringify(data));
                 }
-
-                return complete_response;
+                
+                callback(complete_response);
+            });
+            
+            req.abort = function () {
+                var res = { headers: {}, statusCode: "abort" };
+                var data = "{}";
+                var complete_response = that._buildResponse("abort", res, data);
+                
+                callback(complete_response);
+                
+                // Note that we were aborted
+                req.wasAborted = true;
             }
-
-            var req = needle(request_options.method, request_options.url, request_options.body, request_options)
-                    .then((res) => {
-                        return formatResponse(null, res);
-                    })
-                    .catch((err) => {
-                        if(err.code == 'ECONNRESET' && request_options.response_timeout != undefined){
-                            var res = { headers: {}, statusCode: "abort", body: {}};
-                            throw formatResponse("abort", res);
-                        }
-                        throw formatResponse(err, null);
-                    });
-
+            
             return req;
         },
 
@@ -2498,10 +3110,6 @@ window.SplunkTest = {
                 rejectUnauthorized : false,
             };
 
-            if(message.response_timeout != undefined){
-                request_options.response_timeout = message.response_timeout;
-            }
-            
             // Get the byte-length of the content, which adjusts for multi-byte characters
             request_options.headers["Content-Length"] = Buffer.byteLength(request_options.body, "utf8");
             request_options.headers["User-Agent"] = "splunk-sdk-javascript/" + SDK_VERSION;
@@ -2519,7 +3127,7 @@ window.SplunkTest = {
 })();
 
 }).call(this)}).call(this,require("buffer").Buffer)
-},{"../../../package.json":295,"../../http":5,"../../utils":11,"buffer":68,"needle":208}],10:[function(require,module,exports){
+},{"../../../package.json":296,"../../http":6,"../../utils":12,"buffer":69,"needle":209}],11:[function(require,module,exports){
 /*!*/
 // Copyright 2014 Splunk, Inc.
 //
@@ -2540,6 +3148,7 @@ window.SplunkTest = {
     
     var Context     = require('./context');
     var Http        = require('./http');
+    var Async       = require('./async');
     var Paths       = require('./paths').Paths;
     var Class       = require('./jquery.class').Class;
     var utils       = require('./utils');
@@ -2593,7 +3202,8 @@ window.SplunkTest = {
         init: function() {
             this._super.apply(this, arguments);
 
-            // We perform the bindings so that every function works properly
+            // We perform the bindings so that every function works 
+            // properly when it is passed as a callback.
             this.specialize         = utils.bind(this, this.specialize);
             this.apps               = utils.bind(this, this.apps);
             this.configurations     = utils.bind(this, this.configurations);
@@ -2613,8 +3223,8 @@ window.SplunkTest = {
          *
          * @example
          *
-         *      let svc = ...;
-         *      let newService = svc.specialize("myuser", "unix");
+         *      var svc = ...;
+         *      var newService = svc.specialize("myuser", "unix");
          *
          * @param {String} owner The Splunk username, such as "admin". A value of "nobody" means no specific user. The "-" wildcard means all users.
          * @param {String} app The app context for this resource (such as "search"). The "-" wildcard means all apps.
@@ -2643,10 +3253,9 @@ window.SplunkTest = {
          * @example
          *
          *      // List installed apps
-         *      let apps = svc.apps();
-         *      let res = await apps.fetch();
-         *      console.log(res.list());
-         * 
+         *      var apps = svc.apps();
+         *      apps.fetch(function(err) { console.log(apps.list()); });
+         *
          * @return {splunkjs.Service.Collection} The `Applications` collection.
          *
          * @endpoint apps/local
@@ -2664,11 +3273,13 @@ window.SplunkTest = {
          * @example
          *
          *      // List all properties in the 'props.conf' file
-         *      let files = svc.configurations();
-         *      let propsFile = await files.item("props");
-         *      let props = await propsFile.fetch();
-         *      console.log(props.properties());
-         * 
+         *      var files = svc.configurations();
+         *      files.item("props", function(err, propsFile) {
+         *          propsFile.fetch(function(err, props) {
+         *              console.log(props.properties()); 
+         *          });
+         *      });
+         *
          * @param {Object} namespace Namespace information:
          *    - `owner` (_string_): The Splunk username, such as "admin". A value of "nobody" means no specific user. The "-" wildcard means all users.
          *    - `app` (_string_): The app context for this resource (such as "search"). The "-" wildcard means all apps.
@@ -2690,11 +3301,12 @@ window.SplunkTest = {
          * @example
          *
          *      // Check if we have an _internal index
-         *      let indexes = svc.indexes();
-         *      let res = await indexes.fetch();
-         *      let index = res.item("_internal");
-         *      console.log("Was index found: " + !!index);
-         *      // `index` is an Index object.
+         *      var indexes = svc.indexes();
+         *      indexes.fetch(function(err, indexes) {
+         *          var index = indexes.item("_internal");
+         *          console.log("Was index found: " + !!index);
+         *          // `index` is an Index object.
+         *      });
          *
          * @param {Object} namespace Namespace information:
          *    - `owner` (_string_): The Splunk username, such as "admin". A value of "nobody" means no specific user. The "-" wildcard means all users.
@@ -2717,9 +3329,10 @@ window.SplunkTest = {
          * @example
          *
          *      // List all # of saved searches
-         *      let savedSearches = svc.savedSearches();
-         *      let res = await savedSearches.fetch();
-         *      console.log("# Of Saved Searches: " + res.list().length);
+         *      var savedSearches = svc.savedSearches();
+         *      savedSearches.fetch(function(err, savedSearches) {
+         *          console.log("# Of Saved Searches: " + savedSearches.list().length);
+         *      });
          *
          * @param {Object} namespace Namespace information:
          *    - `owner` (_string_): The Splunk username, such as "admin". A value of "nobody" means no specific user. The "-" wildcard means all users.
@@ -2742,9 +3355,10 @@ window.SplunkTest = {
          * @example
          *
          *      // List all # of storage passwords
-         *      let storagePasswords = svc.storagePasswords();
-         *      let res = await storagePasswords.fetch();
-         *      console.log("# of Storage Passwords: " + res.list().length);
+         *      var storagePasswords = svc.storagePasswords();
+         *      storagePasswords.fetch(function(err, storagePasswords) {
+         *          console.log("# of Storage Passwords: " + storagePasswords.list().length);
+         *      });
          *
          * @param {Object} namespace Namespace information:
          *    - `owner` (_string_): The Splunk username, such as "admin". A value of "nobody" means no specific user. The "-" wildcard means all users.
@@ -2767,9 +3381,11 @@ window.SplunkTest = {
          * @example
          *      
          *      // List all # of fired alert groups
-         *      let firedAlertGroups = svc.firedAlertGroups();
-         *      let res = await firedAlertGroups.fetch();
-         *      console.log("# of alert groups: " + res.list().length);
+         *      var firedAlertGroups = svc.firedAlertGroups();
+         *      firedAlertGroups.fetch(function(err, firedAlertGroups) {
+         *          console.log("# of alert groups: " + firedAlertGroups.list().length);
+         *      });
+         *
          *
          * @param {Object} namespace Namespace information:
          *    - `owner` (_string_): The Splunk username, such as "admin". A value of "nobody" means no specific user. The "-" wildcard means all users.
@@ -2792,12 +3408,13 @@ window.SplunkTest = {
          * @example
          *
          *      // List all job IDs
-         *      let jobs = svc.jobs();
-         *      let res = await jobs.fetch();
-         *      let list = res.list();
-         *      for(let i = 0; i < list.length; i++) {
-         *          console.log("Job " + (i+1) + ": " + list[i].sid);
-         *      }
+         *      var jobs = svc.jobs();
+         *      jobs.fetch(function(err, jobs) {
+         *          var list = jobs.list();
+         *          for(var i = 0; i < list.length; i++) {
+         *              console.log("Job " + (i+1) + ": " + list[i].sid);
+         *          }
+         *      });
          *
          * @param {Object} namespace Namespace information:
          *    - `owner` (_string_): The Splunk username, such as "admin". A value of "nobody" means no specific user. The "-" wildcard means all users.
@@ -2832,12 +3449,13 @@ window.SplunkTest = {
          * @example
          *
          *      // List all usernames
-         *      let users = svc.users();
-         *      let res = await users.fetch();
-         *      let list = res.list();
-         *      for(let i = 0; i < list.length; i++) {
-         *          console.log("User " + (i+1) + ": " + list[i].properties().name);
-         *      }
+         *      var users = svc.users();
+         *      users.fetch(function(err, users) {
+         *          var list = users.list();
+         *          for(var i = 0; i < list.length; i++) {
+         *              console.log("User " + (i+1) + ": " + list[i].properties().name);
+         *          }
+         *      });
          *
          * @return {splunkjs.Service.Users} The `Users` collection.
          *
@@ -2856,12 +3474,13 @@ window.SplunkTest = {
          * @example
          *
          *      // List all views
-         *      let views = svc.views();
-         *      let res = await views.fetch();
-         *      let list = res.list();
-         *      for(let i = 0; i < list.length; i++) {
-         *          console.log("View " + (i+1) + ": " + list[i].properties().name);
-         *      }
+         *      var views = svc.views();
+         *      views.fetch(function(err, views) {
+         *          var list = views.list();
+         *          for(var i = 0; i < list.length; i++) {
+         *              console.log("View " + (i+1) + ": " + list[i].properties().name);
+         *          }
+         *      });
          *
          * @param {Object} namespace Namespace information:
          *    - `owner` (_string_): The Splunk username, such as "admin". A value of "nobody" means no specific user. The "-" wildcard means all users.
@@ -2889,8 +3508,9 @@ window.SplunkTest = {
          *
          * @example
          *
-         *      let newJob = await service.search("search ERROR", {id: "myjob_123"});
-         *      console.log("CREATED: ", newJob.sid);
+         *      service.search("search ERROR", {id: "myjob_123"}, function(err, newJob) {
+         *          console.log("CREATED": newJob.sid);
+         *      });
          *
          * @param {String} query The search query.
          * @param {Object} params A dictionary of properties for the job. For a list of available parameters, see <a href=" http://dev.splunk.com/view/SP-CAAAEFA#searchjobparams" target="_blank">Search job parameters</a> on Splunk Developer Portal.
@@ -2898,19 +3518,19 @@ window.SplunkTest = {
          *    - `owner` (_string_): The Splunk username, such as "admin". A value of "nobody" means no specific user. The "-" wildcard means all users.
          *    - `app` (_string_): The app context for this resource (such as "search"). The "-" wildcard means all apps.
          *    - `sharing` (_string_): A mode that indicates how the resource is shared. The sharing mode can be "user", "app", "global", or "system".
-         * @param {Number} response_timeout A timeout period for aborting a request in milisecs (0 means no timeout).
+         * @param {Function} callback A function to call with the created job: `(err, createdJob)`.
          *
          * @endpoint search/jobs
          * @method splunkjs.Service
          */
-        search: function(query, params,namespace, response_timeout) {
-            if (!response_timeout && utils.isNumber(namespace)) {
-                response_timeout = namespace;
+        search: function(query, params, namespace, callback) {
+            if (!callback && utils.isFunction(namespace)) {
+                callback = namespace;
                 namespace = null;
             }
             
-            let jobs = new root.Jobs(this, namespace);
-            return jobs.search(query, params,response_timeout);
+            var jobs = new root.Jobs(this, namespace);
+            return jobs.search(query, params, callback);
         },
 
         /**
@@ -2921,18 +3541,18 @@ window.SplunkTest = {
          *    - `owner` (_string_): The Splunk username, such as "admin". A value of "nobody" means no specific user. The "-" wildcard means all users.
          *    - `app` (_string_): The app context for this resource (such as "search"). The "-" wildcard means all apps.
          *    - `sharing` (_string_): A mode that indicates how the resource is shared. The sharing mode can be "user", "app", "global", or "system".
-         * @param {Number} response_timeout A timeout period for aborting a request in milisecs (0 means no timeout).
+         * @param {Function} callback A function to call with the created job: `(err, job)`.
          *
          * @endpoint search/jobs
          * @method splunkjs.Service
          */
-        getJob: function(sid, namespace,response_timeout) {
-            if (!response_timeout && utils.isNumber(response_timeout)) {
-                response_timeout = namespace;
+        getJob: function(sid, namespace, callback) {
+            if (!callback && utils.isFunction(namespace)) {
+                callback = namespace;
                 namespace = null;
             }
-            let job = new root.Job(this, sid, namespace);
-            return job.fetch({}, response_timeout);
+            var job = new root.Job(this, sid, namespace);
+            return job.fetch({}, callback);
         },
         
         /**
@@ -2940,8 +3560,9 @@ window.SplunkTest = {
          *
          * @example
          *
-         *      let results = await service.oneshotSearch("search ERROR", {id: "myjob_123"});
-         *      console.log("RESULT FIELDS: ", results.fields);
+         *      service.oneshotSearch("search ERROR", {id: "myjob_123"}, function(err, results) {
+         *          console.log("RESULT FIELDS": results.fields);
+         *      });
          *
          * @param {String} query The search query.
          * @param {Object} params A dictionary of properties for the search:
@@ -2953,19 +3574,19 @@ window.SplunkTest = {
          *    - `owner` (_string_): The Splunk username, such as "admin". A value of "nobody" means no specific user. The "-" wildcard means all users.
          *    - `app` (_string_): The app context for this resource (such as "search"). The "-" wildcard means all apps.
          *    - `sharing` (_string_): A mode that indicates how the resource is shared. The sharing mode can be "user", "app", "global", or "system".
-         * @param {Number} response_timeout A timeout period for aborting a request in milisecs (0 means no timeout).
+         * @param {Function} callback A function to call with the results of the search: `(err, results)`.
          *
          * @endpoint search/jobs
          * @method splunkjs.Service
          */
-        oneshotSearch: function(query, params, namespace,response_timeout) {
-            if (!response_timeout && utils.isNumber(response_timeout)) {
-                response_timeout = namespace;
+        oneshotSearch: function(query, params, namespace, callback) {
+            if (!callback && utils.isFunction(namespace)) {
+                callback = namespace;
                 namespace = null;
             }
             
-            let jobs = new root.Jobs(this, namespace);
-            return jobs.oneshotSearch(query, params, response_timeout);
+            var jobs = new root.Jobs(this, namespace);
+            return jobs.oneshotSearch(query, params, callback);
         },
         
         /**
@@ -2973,21 +3594,36 @@ window.SplunkTest = {
          *
          * @example
          *
-         *      let user  = await service.currentUser();
-         *      console.log("Real name: ", user.properties().realname);
+         *      service.currentUser(function(err, user) {
+         *          console.log("Real name: ", user.properties().realname);
+         *      });
          *
-         * @param {Number} response_timeout A timeout period for aborting a request in milisecs (0 means no timeout).
+         * @param {Function} callback A function to call with the user instance: `(err, user)`.
          * @return {splunkjs.Service.currentUser} The `User`.
          *
          * @endpoint authorization/current-context
          * @method splunkjs.Service
          */
-        currentUser: function(response_timeout) {
+        currentUser: function(callback) {
+            callback = callback || function() {};
+            
             var that = this;
-            let req = this.get(Paths.currentUser, {}, response_timeout).then((response)=>{
-                let username = response.data.entry[0].content.username;
-                let user = new root.User(that, username);
-                return user.fetch({}, response_timeout)
+            var req = this.get(Paths.currentUser, {}, function(err, response) {
+                if (err) {
+                    callback(err);
+                } 
+                else {
+                    var username = response.data.entry[0].content.username;
+                    var user = new root.User(that, username);
+                    user.fetch(function() {
+                        if (req.wasAborted) {
+                            return; // aborted, so ignore
+                        }
+                        else {
+                            callback.apply(null, arguments);
+                        }
+                    });
+                }
             });
             
             return req;
@@ -2998,17 +3634,20 @@ window.SplunkTest = {
          *
          * @example
          *
-         *      let info = await service.serverInfo();
-         *      console.log("Splunk Version: ", info.properties().version);
+         *      service.serverInfo(function(err, info) {
+         *          console.log("Splunk Version: ", info.properties().version);
+         *      });
          *
-         * @param {Number} response_timeout A timeout period for aborting a request in milisecs (0 means no timeout).
+         * @param {Function} callback A function to call with the server info: `(err, info)`.
          *
          * @endpoint server/info
          * @method splunkjs.Service
          */
-        serverInfo: function(response_timeout) {
-            let serverInfo = new root.ServerInfo(this);
-            return serverInfo.fetch({}, response_timeout);
+        serverInfo: function(callback) {
+            callback = callback || function() {};
+            
+            var serverInfo = new root.ServerInfo(this);
+            return serverInfo.fetch(callback);
         },
         
         /**
@@ -3016,8 +3655,9 @@ window.SplunkTest = {
          *
          * @example
          *
-         *      let parse = await service.parse("search index=_internal | head 1");
-         *      console.log("Commands: ", parse.commands);
+         *      service.parse("search index=_internal | head 1", function(err, parse) {
+         *          console.log("Commands: ", parse.commands);
+         *      });
          *
          * @param {String} query The search query to parse.
          * @param {Object} params An object of options for the parser:
@@ -3025,31 +3665,42 @@ window.SplunkTest = {
          *    - `output_mode` (_string_): The output format (XML or JSON).
          *    - `parse_only` (_boolean_): If `true`, disables the expansion of search due to evaluation of subsearches, time term expansion, lookups, tags, eventtypes, and sourcetype alias.
          *    - `reload_macros` (_boolean_): If `true`, reloads macro definitions from macros.conf.
-         * @param {Number} response_timeout A timeout period for aborting a request in milisecs (0 means no timeout).
+         * @param {Function} callback A function to call with the parse info: `(err, parse)`.
          *
          * @endpoint search/parser
          * @method splunkjs.Service
          */
-        parse: function(query, params,response_timeout) {
-            if (!response_timeout && utils.isNumber(params)) {
-                response_timeout = params;
+        parse: function(query, params, callback) {
+            if (!callback && utils.isFunction(params)) {
+                callback = params;
                 params = {};
             }
-
+            
+            callback = callback || function() {};
             params = params || {};
             
             params.q = query;
             
             // Pre-9.0 uses GET and v1 endpoint
             if (this.disableV2SearchApi()) {
-                return this.get(Paths.parser, params, response_timeout).then((response) => {
-                    return response.data;
+                return this.get(Paths.parser, params, function(err, response) {
+                    if (err) {
+                        callback(err);
+                    } 
+                    else {
+                        callback(null, response.data);
+                    }
                 });
             }
 
             // Post-9.0 uses POST and v2 endpoint
-            return this.post(Paths.parserV2, params, response_timeout).then((response) => {
-                return response.data;
+            return this.post(Paths.parserV2, params, function(err, response) {
+                if (err) {
+                    callback(err);
+                } 
+                else {
+                    callback(null, response.data);
+                }
             });
 
         },
@@ -3059,25 +3710,37 @@ window.SplunkTest = {
          *
          * @example
          *
-         *      let options = await service.typeahead("index=", 10);
-         *      console.log("Autocompletion options: ", options);
+         *      service.typeahead("index=", 10, function(err, options) {
+         *          console.log("Autocompletion options: ", options);
+         *      });
          *
          * @param {String} prefix The query fragment to autocomplete.
          * @param {Number} count The number of options to return (optional).
-         * @param {Number} response_timeout A timeout period for aborting a request in milisecs (0 means no timeout).
+         * @param {Function} callback A function to call with the autocompletion info: `(err, options)`.
          *
          * @endpoint search/typeahead
          * @method splunkjs.Service
          */
-        typeahead: function(prefix, count, response_timeout) {
-            let params = {
+        typeahead: function(prefix, count, callback) {
+            if (!callback && utils.isFunction(count)) {
+                callback = count;
+                count = 10;
+            }
+            
+            callback = callback || function() {};
+            var params = {
                 count: count || 10,
                 prefix: prefix
             };
             
-            return this.get(Paths.typeahead, params,response_timeout).then((response) => {
-                    let results = (response.data || {}).results;
-                    return (results || []);
+            return this.get(Paths.typeahead, params, function(err, response) {
+                if (err) {
+                    callback(err);
+                }
+                else {
+                    var results = (response.data || {}).results;
+                    callback(null, results || []);
+                }
             });
         },
         
@@ -3086,8 +3749,9 @@ window.SplunkTest = {
          *
          * @example
          *
-         *      let result = await service.log("A new event", {index: "_internal", sourcetype: "mysourcetype"});
-         *      console.log("Submitted event: ", result);
+         *      service.log("A new event", {index: "_internal", sourcetype: "mysourcetype"}, function(err, result) {
+         *          console.log("Submitted event: ", result);
+         *      });
          *
          * @param {String|Object} event The text for this event, or a JSON object.
          * @param {Object} params A dictionary of parameters for indexing: 
@@ -3096,16 +3760,18 @@ window.SplunkTest = {
          *    - `host_regex` (_string_): A regular expression used to extract the host value from each event. 
          *    - `source` (_string_): The value to populate in the Source field for events from this data input.
          *    - `sourcetype` (_string_): The value to populate in the Sourcetype field for events from this data input.
-         * @param {Number} response_timeout A timeout period for aborting a request in milisecs (0 means no timeout).
+         * @param {Function} callback A function to call when the event is submitted: `(err, result)`.
          *
          * @endpoint receivers/simple
          * @method splunkjs.Service
          */
-        log: function(event, params,response_timeout) {
-            if (!response_timeout && utils.isNumber(params)) {
-                response_timeout = params;
+        log: function(event, params, callback) {
+            if (!callback && utils.isFunction(params)) {
+                callback = params;
                 params = {};
             }
+            
+            callback = callback || function() {};
             params = params || {};
             
             // If the event is a JSON object, convert it to a string.
@@ -3113,24 +3779,29 @@ window.SplunkTest = {
                 event = JSON.stringify(event);
             }
             
-            let path = this.paths.submitEvent;
-            let method = "POST";
-            let headers = {"Content-Type": "text/plain"};
-            let body = event;
-            let get = params;
-            let post = {};
+            var path = this.paths.submitEvent;
+            var method = "POST";
+            var headers = {"Content-Type": "text/plain"};
+            var body = event;
+            var get = params;
+            var post = {};
             
-            let req = this.request(
+            var req = this.request(
                 path, 
                 method, 
                 get, 
                 post, 
                 body, 
-                headers,
-                response_timeout
-            ).then((response) => {
-                return response.data;
-            });
+                headers, 
+                function(err, response) {
+                    if (err) {
+                        callback(err);
+                    } 
+                    else {
+                        callback(null, response.data);
+                    }
+                }
+            );
             
             return req;
         }
@@ -3167,7 +3838,8 @@ window.SplunkTest = {
             this.service = service;
             this.qualifiedPath = qualifiedPath;
 
-            // We perform the bindings so that every function works properly
+            // We perform the bindings so that every function works 
+            // properly when it is passed as a callback.
             this.get    = utils.bind(this, this.get);
             this.post   = utils.bind(this, this.post);
             this.del    = utils.bind(this, this.del);
@@ -3265,23 +3937,22 @@ window.SplunkTest = {
          * @example
          *
          *      // Will make a request to {service.prefix}/search/jobs/123456/results?offset=1
-         *      let endpoint = new splunkjs.Service.Endpoint(service, "search/jobs/12345");
-         *      let res = await endpoint.get("results", {offset: 1});
-         *      console.log("DONE");
+         *      var endpoint = new splunkjs.Service.Endpoint(service, "search/jobs/12345");
+         *      endpoint.get("results", {offset: 1}, function() { console.log("DONE"))});
          *
          * @param {String} relpath A relative path to append to the endpoint path.
          * @param {Object} params A dictionary of entity-specific parameters to add to the query string.
-         * @param {Number} response_timeout A timeout period for aborting a request in milisecs (0 means no timeout).
+         * @param {Function} callback A function to call when the request is complete: `(err, response)`.
          *
          * @method splunkjs.Service.Endpoint
          */
-        get: function(relpath, params, response_timeout, isAsync) {
-            let url = this.createUrl(this.qualifiedPath, relpath);
+        get: function (relpath, params, callback, isAsync) {
+            var url = this.createUrl(this.qualifiedPath, relpath);
 
             return this.service.get(
                 url,
                 params,
-                response_timeout,
+                callback,
                 isAsync
             );
         },
@@ -3293,23 +3964,22 @@ window.SplunkTest = {
          * @example
          *
          *      // Will make a request to {service.prefix}/search/jobs/123456/control
-         *      let endpoint = new splunkjs.Service.Endpoint(service, "search/jobs/12345");
-         *      let res = await endpoint.post("control", {action: "cancel"});
-         *      console.log("CANCELLED");
+         *      var endpoint = new splunkjs.Service.Endpoint(service, "search/jobs/12345");
+         *      endpoint.post("control", {action: "cancel"}, function() { console.log("CANCELLED"))});
          *
          * @param {String} relpath A relative path to append to the endpoint path.
          * @param {Object} params A dictionary of entity-specific parameters to add to the body.
-         * @param {Number} response_timeout A timeout period for aborting a request in milisecs (0 means no timeout).
+         * @param {Function} callback A function to call when the request is complete: `(err, response)`.
          *
          * @method splunkjs.Service.Endpoint
          */
-        post: function(relpath, params, response_timeout) {
-            let url = this.createUrl(this.qualifiedPath, relpath);
+        post: function (relpath, params, callback) {
+            var url = this.createUrl(this.qualifiedPath, relpath);
 
             return this.service.post(
                 url,
                 params,
-                response_timeout
+                callback
             );
         },
 
@@ -3320,18 +3990,17 @@ window.SplunkTest = {
          * @example
          *
          *      // Will make a request to {service.prefix}/search/jobs/123456
-         *      let endpoint = new splunkjs.Service.Endpoint(service, "search/jobs/12345");
-         *      let res = await endpoint.delete("", {});
-         *      console.log("DELETED");
+         *      var endpoint = new splunkjs.Service.Endpoint(service, "search/jobs/12345");
+         *      endpoint.delete("", {}, function() { console.log("DELETED"))});
          *
          * @param {String} relpath A relative path to append to the endpoint path.
          * @param {Object} params A dictionary of entity-specific parameters to add to the query string.
-         * @param {Number} response_timeout A timeout period for aborting a request in milisecs (0 means no timeout).
+         * @param {Function} callback A function to call when the request is complete: `(err, response)`.
          *
          * @method splunkjs.Service.Endpoint
          */
-        del: function(relpath, params, response_timeout) {
-            let url = this.qualifiedPath;
+        del: function(relpath, params, callback) {
+            var url = this.qualifiedPath;
 
             // If we have a relative path, we will append it with a preceding
             // slash.
@@ -3342,7 +4011,7 @@ window.SplunkTest = {
             return this.service.del(
                 url,
                 params,
-                response_timeout
+                callback
             );
         }
     });
@@ -3374,14 +4043,15 @@ window.SplunkTest = {
          * @method splunkjs.Service.Resource
          */
         init: function (service, path, namespace) {
-            let fullpath = service.fullpath(path, namespace);
+            var fullpath = service.fullpath(path, namespace);
             
             this._super(service, fullpath);
             this.namespace = namespace;
             this._properties = {};
             this._state = {};
             
-            // We perform the bindings so that every function works properly
+            // We perform the bindings so that every function works 
+            // properly when it is passed as a callback.
             this._load       = utils.bind(this, this._load);
             this.fetch       = utils.bind(this, this.fetch);
             this.properties  = utils.bind(this, this.properties);
@@ -3415,12 +4085,12 @@ window.SplunkTest = {
          * Refreshes the resource by fetching the object from the server
          * and loading it.
          *
-         * 
+         * @param {Function} callback A function to call when the object is retrieved: `(err, resource)`.
          *
          * @method splunkjs.Service.Resource
          * @protected
          */
-        fetch: function() {
+        fetch: function(callback) {
             throw new Error("MUST BE OVERRIDDEN");
         },
         
@@ -3485,7 +4155,8 @@ window.SplunkTest = {
         init: function(service, path, namespace) {
             this._super(service, path, namespace);
             
-            // We perform the bindings so that every function works properly
+            // We perform the bindings so that every function works 
+            // properly when it is passed as a callback.
             this._load     = utils.bind(this, this._load);
             this.fetch     = utils.bind(this, this.fetch);
             this.remove    = utils.bind(this, this.remove);
@@ -3619,60 +4290,83 @@ window.SplunkTest = {
          *    - `sort_dir` (_string_): The direction to sort returned items: “asc” or “desc”.
          *    - `sort_key` (_string_): The field to use for sorting (optional).
          *    - `sort_mode` (_string_): The collating sequence for sorting returned items: “auto”, “alpha”, “alpha_case”, or “num”.
-         * @param {Number} response_timeout A timeout period for aborting a request in milisecs (0 means no timeout).
+         * @param {Function} callback A function to call when the object is retrieved: `(err, resource)`.
          *
          * @method splunkjs.Service.Entity
          */
-        fetch: function(options, response_timeout) {
-            if (utils.isNumber(options) && !response_timeout) {
-                response_timeout = options;
+        fetch: function(options, callback) {
+            if (!callback && utils.isFunction(options)) {
+                callback = options;
                 options = {};
             }
+            callback = callback || function() {};
+            
             options = options || {};
+            
             var that = this;
-            return this.get("", options, response_timeout).then((res) => {
-                that._load(res.data ? res.data.entry : null);
-                return that;
+            return this.get("", options, function(err, response) {
+                if (err) {
+                    callback(err);
+                } 
+                else {
+                    that._load(response.data ? response.data.entry : null);
+                    callback(null, that);
+                }
             });
         },
         
         /**
          * Deletes the entity from the server.
          *
-         * @param {Number} response_timeout A timeout period for aborting a request in milisecs (0 means no timeout).
+         * @param {Function} callback A function to call when the object is deleted: `(err)`.
          *
          * @method splunkjs.Service.Entity
          * @protected
          */
-        remove: function(response_timeout) {
-            return this.del("", {}, response_timeout);
+        remove: function(callback) {
+            callback = callback || function() {};
+            
+            var that = this;
+            return this.del("", {}, function(err) {
+                callback(err);
+            });
         },
         
         /**
          * Updates the entity on the server.
          *
          * @param {Object} props The properties to update the object with.
-         * @param {Number} response_timeout A timeout period for aborting a request in milisecs (0 means no timeout).
+         * @param {Function} callback A function to call when the object is updated: `(err, entity)`.
          *
          * @method splunkjs.Service.Entity
          * @protected
          */
-        update: function(props, response_timeout) {
+        update: function(props, callback) {
+            callback = callback || function() {};
+            
             if (props.hasOwnProperty("name")) {
                 throw new Error("Cannot set 'name' field in 'update'");
             }
             
             var that = this;
-            let req = this.post("", props, response_timeout).then((response)=>{
-                if (!that.fetchOnUpdate){
+            var req = this.post("", props, function(err, response) {
+                if (!err && !that.fetchOnUpdate) {
                     that._load(response.data.entry);
-                    return that;
+                    callback(err, that);
                 }
-                else{
-                    return that.fetch({}, response_timeout)
+                else if (!err && that.fetchOnUpdate) {
+                    that.fetch(function() {
+                        if (req.wasAborted) {
+                            return; // aborted, so ignore
+                        }
+                        else {
+                            callback.apply(null, arguments);
+                        }
+                    });
                 }
-            }).catch((err) => {
-                throw [err, that];
+                else {
+                    callback(err, that);
+                }
             });
             
             return req;
@@ -3681,47 +4375,67 @@ window.SplunkTest = {
         /**
          * Disables the entity on the server.
          *
-         * @param {Number} response_timeout A timeout period for aborting a request in milisecs (0 means no timeout).
+         * @param {Function} callback A function to call when the object is disabled: `(err, entity)`.
          *
          * @method splunkjs.Service.Entity
          * @protected
          */
-        disable: function(response_timeout) {
+        disable: function(callback) {
+            callback = callback || function() {};
+            
             var that = this;
-            return this.post("disable", {}, response_timeout).then((response) => {
-                return that;
-            });;
+            this.post("disable", {}, function(err, response) {
+                if (err) {
+                    callback(err);
+                }
+                else {
+                    callback(null, that);
+                }
+            });
         },
         
         /**
          * Enables the entity on the server.
          *
-         * @param {Number} response_timeout A timeout period for aborting a request in milisecs (0 means no timeout).
+         * @param {Function} callback A function to call when the object is enabled: `(err, entity)`.
          *
          * @method splunkjs.Service.Entity
          * @protected
          */
-        enable: function(response_timeout) {
+        enable: function(callback) {
+            callback = callback || function() {};
+            
             var that = this;
-            return this.post("enable", {}, response_timeout).then((response)=>{
-                return that;
+            this.post("enable", {}, function(err, response) {
+                if (err) {
+                    callback(err);
+                }
+                else {
+                    callback(null, that);
+                }
             });
         },
         
         /**
          * Reloads the entity on the server.
-         * 
-         * @param {Number} response_timeout A timeout period for aborting a request in milisecs (0 means no timeout).
+         *
+         * @param {Function} callback A function to call when the object is reloaded: `(err, entity)`.
          *
          * @method splunkjs.Service.Entity
          * @protected
          */
-        reload: function(response_timeout) {
+        reload: function(callback) {
+            callback = callback || function() {};
+            
             var that = this;
-            return this.post("_reload", {}, response_timeout)
-                .then((res) => {
-                    return that;
-                });
+            this.post("_reload", {}, function(err, response) {
+                if (err) {
+                    callback(err);
+                }
+                else {
+                    callback(null, that);
+                }
+            });
         }
     });
 
@@ -3760,7 +4474,8 @@ window.SplunkTest = {
         init: function (service, path, namespace) {
             this._super(service, path, namespace);
             
-            // We perform the bindings so that every function works properly
+            // We perform the bindings so that every function works 
+            // properly when it is passed as a callback.
             this._load             = utils.bind(this, this._load);
             this.fetch             = utils.bind(this, this.fetch);
             this.create            = utils.bind(this, this.create);
@@ -3801,12 +4516,12 @@ window.SplunkTest = {
         _load: function(properties) {
             this._super(properties);
             
-            let entities = [];
-            let entitiesByName = {};
-            let entityPropertyList = properties.entry || [];
-            for(let i = 0; i < entityPropertyList.length; i++) {
-                let props = entityPropertyList[i];
-                let entity = this.instantiateEntity(props);
+            var entities = [];
+            var entitiesByName = {};
+            var entityPropertyList = properties.entry || [];
+            for(var i = 0; i < entityPropertyList.length; i++) {
+                var props = entityPropertyList[i];
+                var entity = this.instantiateEntity(props);
                 entity._load(props);
                 entities.push(entity);
                 
@@ -3869,15 +4584,16 @@ window.SplunkTest = {
          *    - `sort_dir` (_string_): The direction to sort returned items: “asc” or “desc”.
          *    - `sort_key` (_string_): The field to use for sorting (optional).
          *    - `sort_mode` (_string_): The collating sequence for sorting returned items: “auto”, “alpha”, “alpha_case”, or “num”.
-         * @param {Number} response_timeout A timeout period for aborting a request in milisecs (0 means no timeout).
+         * @param {Function} callback A function to call when the object is retrieved: `(err, resource)`.
          *
          * @method splunkjs.Service.Collection
          */
-        fetch: function(options, response_timeout) {
-            if (utils.isNumber(options) && !response_timeout) {
-                response_timeout = options;
+        fetch: function(options, callback) {
+            if (!callback && utils.isFunction(options)) {
+                callback = options;
                 options = {};
             }
+            callback = callback || function() {};
             
             options = options || {};
             if (!options.count) {
@@ -3885,17 +4601,21 @@ window.SplunkTest = {
             }
             
             var that = this;
-            let req = that.get("", options, response_timeout);
-            return req.then((res) => {
-                that._load(res.data);
-                return that;
-            }).catch((err) => {
-                throw err;
+            var req = that.get("", options, function(err, response) {
+                if (err) {
+                    callback(err);
+                }
+                else {
+                    that._load(response.data);
+                    callback(null, that);
+                }
             });
+            
+            return req;
         },
 
         /**
-         * It's an asynchronous version of fetch(options, response_timeout) function.
+         * It's an asynchronous version of fetch(options, callback) function.
          * 
          * Refreshes the resource by fetching the object from the server and 
          * loading it.
@@ -3907,23 +4627,17 @@ window.SplunkTest = {
          *    - `sort_dir` (_string_): The direction to sort returned items: “asc” or “desc”.
          *    - `sort_key` (_string_): The field to use for sorting (optional).
          *    - `sort_mode` (_string_): The collating sequence for sorting returned items: “auto”, “alpha”, “alpha_case”, or “num”.
-         * @param {Number} response_timeout A timeout period for aborting a request in milisecs (0 means no timeout).
          *
          * @method splunkjs.Service.Collection
          */
-        fetchAsync: async function(options, response_timeout) {
-            if (utils.isNumber(options) && !response_timeout) {
-                response_timeout = options;
-                options = {};
-            }
-
+        fetchAsync: async function(options) {
             options = options || {};
             if (!options.count) {
                 options.count = 0;
             }
             
             var that = this;
-            let response = await that.get("", options, response_timeout, true);
+            var response = await that.get("", options, null, true);
             that._load(response.body);
             return that;
         },
@@ -3933,11 +4647,12 @@ window.SplunkTest = {
          *
          * @example
          *
-         *      let apps = service.apps();
-         *      let res = await apps.fetch();
-         *      let app = res.item("search");
-         *      console.log("Search App Found: " + !!app);
-         *      // `app` is an Application object.
+         *      var apps = service.apps();
+         *      apps.fetch(function(err, apps) {
+         *          var app = apps.item("search");
+         *          console.log("Search App Found: " + !!app);
+         *          // `app` is an Application object.
+         *      });
          *
          * @param {String} id The name of the entity to retrieve.
          * @param {Object} namespace Namespace information:
@@ -3961,9 +4676,9 @@ window.SplunkTest = {
                 throw new Error("When searching for an entity, wildcards are not allowed in the namespace. Please refine your search.");
             }
             
-            let fullPath = null;
+            var fullPath = null;
             if (this._entitiesByName.hasOwnProperty(id)) {
-                let entities = this._entitiesByName[id];                 
+                var entities = this._entitiesByName[id];                 
                 
                 if (entities.length === 1 && !namespace) {
                     // If there is only one entity with the
@@ -3993,8 +4708,8 @@ window.SplunkTest = {
                 else {
                     // There is more than one entity, and we do have
                     // a namespace, so we try and find it
-                    for(let i = 0; i < entities.length; i++) {
-                        let entity = entities[i];
+                    for(var i = 0; i < entities.length; i++) {
+                        var entity = entities[i];
                         fullPath = this.service.fullpath(entities[i].path(), namespace);
                         if (entity.qualifiedPath === fullPath) {
                             return entity;
@@ -4013,33 +4728,46 @@ window.SplunkTest = {
          *
          * @example
          *
-         *      let apps = service.apps();
-         *      let newApp = await apps.create({name: "NewSearchApp"});
-         *      console.log("CREATED");
+         *      var apps = service.apps();
+         *      apps.create({name: "NewSearchApp"}, function(err, newApp) {
+         *          console.log("CREATED");
+         *      });
          *
          * @param {Object} params A dictionary of entity-specific properties.
-         * @param {Number} response_timeout A timeout period for aborting a request in milisecs (0 means no timeout).
+         * @param {Function} callback The function to call when the request is complete: `(err, response)`.
          * @returns {Array} An array of `splunkjs.Service.Entity` objects.
          *
          * @method splunkjs.Service.Collection
          */
-        create: function(params, response_timeout) {
-            response_timeout = response_timeout ? response_timeout :  0;
+        create: function(params, callback) {
+            callback = callback || function() {};
             var that = this;
-            let req = this.post("", params, response_timeout).then((response)=>{
-                let props = response.data.entry;
-                if (utils.isArray(props)) {
-                    props = props[0];
+            var req = this.post("", params, function(err, response) {
+                if (err) {
+                    callback(err);
                 }
-                
-                let entity = that.instantiateEntity(props);
-                entity._load(props); 
-                
-                if (that.fetchOnEntityCreation) {
-                    return entity.fetch({}, response_timeout);
-                }
-                else {                   
-                    return entity;
+                else {
+                    var props = response.data.entry;
+                    if (utils.isArray(props)) {
+                        props = props[0];
+                    }
+                    
+                    var entity = that.instantiateEntity(props);
+                    entity._load(props); 
+                    
+                    if (that.fetchOnEntityCreation) {
+                        entity.fetch(function() {
+                            if (req.wasAborted) {
+                                return; // aborted, so ignore
+                            }
+                            else {
+                                callback.apply(null, arguments);
+                            }
+                        });
+                    }
+                    else {                   
+                        callback(null, entity);
+                    }
                 }
             });
             
@@ -4051,14 +4779,19 @@ window.SplunkTest = {
          *
          * @example
          *
-         *      let apps = service.apps();
-         *      let res = await apps.fetch();
-         *      let appList = res.list();
-         *      console.log(appList.length);
+         *      var apps = service.apps();
+         *      apps.fetch(function(err, apps) {
+         *          var appList = apps.list();
+         *          console.log(appList.length);
+         *      });
+         *
+         * @param {Function} callback A function to call with the list of entities: `(err, list)`.
          *
          * @method splunkjs.Service.Collection
          */
-        list: function() {
+        list: function(callback) {
+            callback = callback || function() {};
+            
             return utils.clone(this._entities);
         }
     });
@@ -4111,8 +4844,8 @@ window.SplunkTest = {
          *
          * @example
          *
-         *      let savedSearch = service.savedSearches().item("MySavedSearch");
-         *      let alertCount = savedSearch.alertCount();
+         *      var savedSearch = service.savedSearches().item("MySavedSearch");
+         *      var alertCount = savedSearch.alertCount();
          * 
          * @return {Number} The count of triggered alerts.
          *
@@ -4128,19 +4861,22 @@ window.SplunkTest = {
          *
          * @example
          *
-         *      let savedSearch = service.savedSearches().item("MySavedSearch");
-         *      let search = await savedSearch.acknowledge();
-         *      console.log("ACKNOWLEDGED");
+         *      var savedSearch = service.savedSearches().item("MySavedSearch");
+         *      savedSearch.acknowledge(function(err, search) {
+         *          console.log("ACKNOWLEDGED");
+         *      });
          *
-         * @param {Number} response_timeout A timeout period for aborting a request in milisecs (0 means no timeout).
+         * @param {Function} callback A function to call when the saved search is acknowledged: `(err, savedSearch)`.
          *
          * @endpoint saved/searches/{name}/acknowledge
          * @method splunkjs.Service.SavedSearch
          */
-        acknowledge: function(response_timeout) {    
+        acknowledge: function(callback) {
+            callback = callback || function() {};
+            
             var that = this;
-            let req = this.post("acknowledge", {},response_timeout).catch((err) => {
-                throw [err, that];
+            var req = this.post("acknowledge", {}, function(err) {
+                callback(err, that);
             });
             
             return req;
@@ -4148,38 +4884,45 @@ window.SplunkTest = {
         
         /**
          * Dispatches a saved search, which creates a search job and returns a 
-         * `splunkjs.Service.Job` instance in the response array.
+         * `splunkjs.Service.Job` instance in the callback function.
          *
          * @example
          *
-         *      let savedSearch = service.savedSearches().item("MySavedSearch");
-         *      let [job, savedSearch] = await savedSearch.dispatch({force_dispatch: false});
-         *      console.log("Job SID: ", job.sid);
+         *      var savedSearch = service.savedSearches().item("MySavedSearch");
+         *      savedSearch.dispatch({force_dispatch: false}, function(err, job, savedSearch) {
+         *          console.log("Job SID: ", job.sid);
+         *      });
          *
          * @param {Object} options The options for dispatching this saved search:
          *    - `dispatch.now` (_string_): The time that is used to dispatch the search as though the specified time were the current time.
          *    - `dispatch.*` (_string_): Overwrites the value of the search field specified in *.
          *    - `trigger_actions` (_boolean_): Indicates whether to trigger alert actions.
          *    - `force_dispatch` (_boolean_): Indicates whether to start a new search if another instance of this search is already running.
-         * @param {Number} response_timeout A timeout period for aborting a request in milisecs (0 means no timeout).         
+         * @param {Function} callback A function to call when the saved search is dispatched: `(err, job, savedSearch)`.
          *
          * @endpoint saved/searches/{name}/dispatch
          * @method splunkjs.Service.SavedSearch
          */
-        dispatch: function(options, response_timeout) {
-            if (!response_timeout && utils.isNumber(options)) {
-                response_timeout = options;
+        dispatch: function(options, callback) {
+            if (!callback && utils.isFunction(options)) {
+                callback = options;
                 options = {};
             }
             
+            callback = callback || function() {};
             options = options || {};
             
             var that = this;
-            let req = this.post("dispatch", options, response_timeout).then((response) => {
-                let sid = response.data.sid;
-                let job = new root.Job(that.service, sid, that.namespace);
+            var req = this.post("dispatch", options, function(err, response) {
+                if (err) {
+                    callback(err);
+                    return;
+                }
                 
-                return [job, that];
+                var sid = response.data.sid;
+                var job = new root.Job(that.service, sid, that.namespace);
+                
+                callback(null, job, that);
             });
             
             return req;
@@ -4190,7 +4933,7 @@ window.SplunkTest = {
          *
          * @example
          *
-         *      let alerts = service.firedAlertGroups().item("MySavedSearch");
+         *      var alerts = service.firedAlertGroups().item("MySavedSearch");
          *
          * @return {splunkjs.Service.FiredAlertGroup} An AlertGroup object with the
          * same name as this SavedSearch object.
@@ -4207,40 +4950,47 @@ window.SplunkTest = {
          *
          * @example
          *
-         *      let savedSearch = service.savedSearches().item("MySavedSearch");
-         *      let [jobs, search] = await savedSearch.history({count: 10});
-         *      for(let i = 0; i < jobs.length; i++) {
-         *          console.log("Job", i, ":", jobs[i].sid);
-         *      }
+         *      var savedSearch = service.savedSearches().item("MySavedSearch");
+         *      savedSearch.history({count: 10}, function(err, jobs, search) {
+         *          for(var i = 0; i < jobs.length; i++) {
+         *              console.log("Job", i, ":", jobs[i].sid);
+         *          }
+         *      });
          *
          * @param {Object} options Options for retrieving history. For a full list, see the <a href="https://docs.splunk.com/Documentation/Splunk/8.0.2/RESTREF/RESTprolog#Pagination_and_filtering_parameters" target="_blank">Pagination and Filtering options</a> in the REST API documentation.
-         * @param {Number} response_timeout A timeout period for aborting a request in milisecs (0 means no timeout).         
+         * @param {Function} callback A function to call when the history is retrieved: `(err, job, savedSearch)`.
          *
          * @endpoint saved/searches/{name}/history
          * @method splunkjs.Service.SavedSearch
          */
-        history: function(options, response_timeout) {
-            if (!response_timeout && utils.isNumber(options)) {
-                response_timeout = options;
+        history: function(options, callback) {
+            if (!callback && utils.isFunction(options)) {
+                callback = options;
                 options = {};
             }
             
+            callback = callback || function() {};
             options = options || {};
             
             var that = this;
-            return this.get("history", options, response_timeout).then((response) => {
-                let jobs = [];
-                let data = response.data.entry || [];
-                for(let i = 0; i < data.length; i++) {
-                    let jobData = response.data.entry[i];
-                    let namespace = utils.namespaceFromProperties(jobData);
-                    let job = new root.Job(that.service, jobData.name, namespace);
+            return this.get("history", options, function(err, response) {
+                if (err) {
+                    callback(err);
+                    return;
+                }
+                
+                var jobs = [];
+                var data = response.data.entry || [];
+                for(var i = 0; i < data.length; i++) {
+                    var jobData = response.data.entry[i];
+                    var namespace = utils.namespaceFromProperties(jobData);
+                    var job = new root.Job(that.service, jobData.name, namespace);
                     
                     job._load(jobData);
                     jobs.push(job);
                 }
                 
-                return [jobs, that];
+                callback(null, jobs, that);
             });
         },
         
@@ -4249,19 +4999,22 @@ window.SplunkTest = {
          *
          * @example
          *
-         *      let savedSearch = service.savedSearches().item("MySavedSearch");
-         *      let [suppressionState, search] = await savedSearch.history();
-         *      console.log("STATE: ", suppressionState);
+         *      var savedSearch = service.savedSearches().item("MySavedSearch");
+         *      savedSearch.history(function(err, suppressionState, search) {
+         *          console.log("STATE: ", suppressionState);
+         *      });
          *
-         * @param {Number} response_timeout A timeout period for aborting a request in milisecs (0 means no timeout).         
+         * @param {Function} callback A function to call when the suppression state is retrieved: `(err, suppressionState, savedSearch)`.
          *
          * @endpoint saved/searches/{name}/suppress
          * @method splunkjs.Service.SavedSearch
          */
-        suppressInfo: function(response_timeout) {
+        suppressInfo: function(callback) {
+            callback = callback || function() {};
+            
             var that = this;
-            return this.get("suppress", {}, response_timeout).then((response) => {
-                return [response.data.entry.content, that];
+            return this.get("suppress", {}, function(err, response) {
+                callback(err, response.data.entry.content, that);
             });
         },
         
@@ -4273,28 +5026,36 @@ window.SplunkTest = {
          * the server or from the local cache. 
          *
          * @param {Object} props The properties to update the saved search with. For a list of available parameters, see <a href="http://dev.splunk.com/view/SP-CAAAEFA#savedsearchparams" target="_blank">Saved search parameters</a> on Splunk Developer Portal.
-         * @param {Number} response_timeout A timeout period for aborting a request in milisecs (0 means no timeout).
+         * @param {Function} callback A function to call when the object is updated: `(err, entity)`.
          *
          * @method splunkjs.Service.SavedSearch
          */
-        update: function(params, response_timeout) {
-            if (utils.isNumber(params) && !response_timeout) {
-                response_timeout = params;
-                params = {};
-            }
+        update: function(params, callback) {
             params = params || {};
             
             if (!params.search) {
-                let update = this._super;
-                let req = this.fetch({}, response_timeout).then((search) => {
-                    params.search = search.properties().search;
-                    return update.call(search, params, response_timeout);
+                var update = this._super;
+                var req = this.fetch(function(err, search) {
+                    if (err) {
+                        callback(err);
+                    }
+                    else {
+                        params.search = search.properties().search;
+                        update.call(search, params, function() {
+                            if (req.wasAborted) {
+                                return; // aborted, so ignore
+                            }
+                            else {
+                                callback.apply(null, arguments);
+                            }
+                        });
+                    }
                 });
                 
                 return req;
             }
             else {
-                return this._super(params, response_timeout);
+                return this._super(params, callback);
             }
         }
     });
@@ -4327,7 +5088,7 @@ window.SplunkTest = {
          * @method splunkjs.Service.SavedSearches
          */
         instantiateEntity: function(props) {
-            let entityNamespace = utils.namespaceFromProperties(props);
+            var entityNamespace = utils.namespaceFromProperties(props);
             return new root.SavedSearch(this.service, props.name, entityNamespace);
         },
         
@@ -4425,7 +5186,7 @@ window.SplunkTest = {
          * @method splunkjs.Service.StoragePasswords
          */
         instantiateEntity: function(props) {
-            let entityNamespace = utils.namespaceFromProperties(props);
+            var entityNamespace = utils.namespaceFromProperties(props);
             return new root.StoragePassword(this.service, props.name, entityNamespace);
         },
         
@@ -4445,11 +5206,11 @@ window.SplunkTest = {
         init: function(service, namespace) {
             this._super(service, this.path(), namespace);
         },
-        create: function(params, response_timeout){
+        create: function(params, callback){
             if(this.service.app == '-' || this.service.owner == '-'){
                 throw new Error("While creating StoragePasswords, namespace cannot have wildcards.");
             }
-            return this._super(params,response_timeout);
+            this._super(params,callback);
         }
     });
 
@@ -4642,36 +5403,44 @@ window.SplunkTest = {
          *
          * @example
          *
-         *      let alertGroup = service.firedAlertGroups().item("MyAlert");
-         *      let [firedAlerts, alert] = await alertGroup.list();
-         *      for(let i = 0; i < firedAlerts.length; i++) {
-         *          console.log("Fired alert", i, ":", firedAlerts[i].sid);
-         *      }
+         *      var alertGroup = service.firedAlertGroups().item("MyAlert");
+         *      alertGroup.list(function(err, firedAlerts, alert) {
+         *          for(var i = 0; i < firedAlerts.length; i++) {
+         *              console.log("Fired alert", i, ":", firedAlerts[i].sid);
+         *          }
+         *      });
          *
-         * @param {Number} response_timeout A timeout period for aborting a request in milisecs (0 means no timeout).
+         * @param {Function} callback A function to call when the fired alerts are retrieved: `(err, firedAlerts, alertGroup)`.
          *
          * @method splunkjs.Service.FiredAlertGroup
          */
-        list: function(options, response_timeout) {
-            if (!response_timeout && utils.isNumber(options)) {
-                response_timeout = options;
+        list: function(options, callback) {
+            if (!callback && utils.isFunction(options)) {
+                callback = options;
                 options = {};
             }
 
+            callback = callback || function() {};
             options = options || {};
 
             var that = this;
-            return this.get("", options, response_timeout).then((response) => {
-                let firedAlerts = [];
-                let data = response.data.entry || [];
-                for (let i = 0; i < data.length; i++) {
-                    let firedAlertData = response.data.entry[i];
-                    let namespace = utils.namespaceFromProperties(firedAlertData);
-                    let firedAlert = new root.FiredAlert(that.service, firedAlertData.name, namespace);
+            return this.get("", options, function(err, response) {
+                if (err) {
+                    callback(err);
+                    return;
+                }
+                
+                var firedAlerts = [];
+                var data = response.data.entry || [];
+                for (var i = 0; i < data.length; i++) {
+                    var firedAlertData = response.data.entry[i];
+                    var namespace = utils.namespaceFromProperties(firedAlertData);
+                    var firedAlert = new root.FiredAlert(that.service, firedAlertData.name, namespace);
                     firedAlert._load(firedAlertData);
                     firedAlerts.push(firedAlert);
                 }
-                return [firedAlerts, that];
+                
+                callback(null, firedAlerts, that);
             });
         },
 
@@ -4726,7 +5495,7 @@ window.SplunkTest = {
          * @method splunkjs.Service.FiredAlertGroupCollection
          */
         instantiateEntity: function(props) {
-            let entityNamespace = utils.namespaceFromProperties(props);
+            var entityNamespace = utils.namespaceFromProperties(props);
             return new root.FiredAlertGroup(this.service, props.name, entityNamespace);
         },
 
@@ -4809,20 +5578,27 @@ window.SplunkTest = {
          *
          * @example
          *
-         *      let app = service.apps().item("app");
-         *      let search;
-         *      [info, search] = await app.setup();
-         *      console.log("SETUP INFO: ", info);
+         *      var app = service.apps().item("app");
+         *      app.setup(function(err, info, search) {
+         *          console.log("SETUP INFO: ", info);
+         *      });
          *
-         * @param {Number} response_timeout A timeout period for aborting a request in milisecs (0 means no timeout).
+         * @param {Function} callback A function to call when setup information is retrieved: `(err, info, app)`.
          *
          * @endpoint apps/local/{name}/setup
          * @method splunkjs.Service.Application
          */
-        setupInfo: function(response_timeout) {
+        setupInfo: function(callback) {
+            callback = callback || function() {};
+            
             var that = this;
-            return this.get("setup", {}, response_timeout).then((response) => {
-                return [response.data.entry.content, that];
+            return this.get("setup", {}, function(err, response) {
+                if (err) {
+                    callback(err);
+                } 
+                else {
+                    callback(null, response.data.entry.content, that);
+                }
             });
         },
         
@@ -4831,20 +5607,27 @@ window.SplunkTest = {
          *
          * @example
          *
-         *      let app = service.apps().item("MyApp");
-         *      let info;
-         *      [info, app] = await app.updateInfo();
-         *      console.log("UPDATE INFO: ", info);
+         *      var app = service.apps().item("MyApp");
+         *      app.updateInfo(function(err, info, app) {
+         *          console.log("UPDATE INFO: ", info);
+         *      });
          *
-         * @param {Number} response_timeout A timeout period for aborting a request in milisecs (0 means no timeout).
+         * @param {Function} callback A function to call when update information is retrieved: `(err, info, app)`.
          *
          * @endpoint apps/local/{name}/update
          * @method splunkjs.Service.Application
          */
-        updateInfo: function(response_timeout) {
+        updateInfo: function(callback) {
+            callback = callback || function() {};
+            
             var that = this;
-            return this.get("update", {}, response_timeout).then((response) => {
-                return [response.data.entry.content, that];
+            return this.get("update", {}, function(err, response) {
+                if (err) {
+                    callback(err);
+                } 
+                else {
+                    callback(null, response.data.entry.content, that);
+                }
             });
         }
     });
@@ -5026,22 +5809,32 @@ window.SplunkTest = {
          * **Note:** This endpoint requires a special implementation.
          *
          * @param {Object} params A dictionary of properties. For a list of available parameters, see <a href="http://dev.splunk.com/view/SP-CAAAEJ8#userauthparams" target="_blank">User authentication parameters</a> on Splunk Developer Portal.
-         * @param {Number} response_timeout A timeout period for aborting a request in milisecs (0 means no timeout).
+         * @param {Function} callback A function to call with the new entity: `(err, createdEntity)`.
          *
          * @method splunkjs.Service.Users
          */
-        create: function(params, response_timeout) {
-            if (utils.isNumber(params) && !response_timeout) {
-                response_timeout = params;
-                params = {};
-            }
+        create: function(params, callback) {
+            callback = callback || function() {};
+            
             var that = this;
-            let req = this.post("", params, response_timeout).then((response) => {
-                // This endpoint requires us to use the passed-in name
-                let props = {name: params.name};
-                                    
-                let entity = that.instantiateEntity(props);                                     
-                return entity.fetch({}, response_timeout);
+            var req = this.post("", params, function(err, response) {
+                if (err) {
+                    callback(err);
+                }
+                else {
+                    // This endpoint requires us to use the passed-in name
+                    var props = {name: params.name};
+                    
+                    var entity = that.instantiateEntity(props);                    
+                    entity.fetch(function() {
+                        if (req.wasAborted) {
+                            return; // aborted, so ignore
+                        }
+                        else {
+                            callback.apply(null, arguments);
+                        }
+                    });
+                }
             });
             
             return req;
@@ -5113,7 +5906,7 @@ window.SplunkTest = {
          * @method splunkjs.Service.Views
          */
         instantiateEntity: function(props) {
-            let entityNamespace = utils.namespaceFromProperties(props);
+            var entityNamespace = utils.namespaceFromProperties(props);
             return new root.View(this.service, props.name, entityNamespace);
         },
         
@@ -5178,10 +5971,10 @@ window.SplunkTest = {
          *
          * @example
          *
-         *      let index = service.indexes().item("_internal");
-         *      let result;
-         *      [result, index] = await index.submitEvent("A new event", {sourcetype: "mysourcetype"});
-         *      console.log("Submitted event: ", result);
+         *      var index = service.indexes().item("_internal");
+         *      index.submitEvent("A new event", {sourcetype: "mysourcetype"}, function(err, result, index) {
+         *          console.log("Submitted event: ", result);
+         *      });
          *
          * @param {String} event The text for this event.
          * @param {Object} params A dictionary of parameters for indexing: 
@@ -5189,36 +5982,35 @@ window.SplunkTest = {
          *    - `host_regex` (_string_): A regular expression used to extract the host value from each event. 
          *    - `source` (_string_): The source value to fill in the metadata for this input's events.
          *    - `sourcetype` (_string_): The sourcetype to apply to events from this input.
-         * @param {Number} response_timeout A timeout period for aborting a request in milisecs (0 means no timeout).
+         * @param {Function} callback A function to call when the event is submitted: `(err, result, index)`.
          *
          * @endpoint receivers/simple?index={name}
          * @method splunkjs.Service.Index
          */
-        submitEvent: function(event, params, response_timeout) {
-            if (!response_timeout && utils.isNumber(params)) {
-                response_timeout = params;
+        submitEvent: function(event, params, callback) {
+            if (!callback && utils.isFunction(params)) {
+                callback = params;
                 params = {};
             }
             
+            callback = callback || function() {};
             params = params || {};
             
             // Add the index name
             params["index"] = this.name;
             
             var that = this;
-            return this.service.log(event, params, response_timeout).then((result) => {
-                return [result, that];
-            }).catch((err) => {
-                throw [err, that];
+            return this.service.log(event, params, function(err, result) {
+                callback(err, result, that); 
             });
         },
         
-        remove: function(response_timeout) {
+        remove: function(callback) {
             if (this.service.versionCompare("5.0") < 0) {
                 throw new Error("Indexes cannot be removed in Splunk 4.x");
             }
             else {
-                return this._super(response_timeout);
+                return this._super(callback);
             }
         }
     });
@@ -5250,7 +6042,7 @@ window.SplunkTest = {
          * @method splunkjs.Service.Indexes
          */
         instantiateEntity: function(props) {
-            let entityNamespace = utils.namespaceFromProperties(props);
+            var entityNamespace = utils.namespaceFromProperties(props);
             return new root.Index(this.service, props.name, entityNamespace);
         },
         
@@ -5276,27 +6068,31 @@ window.SplunkTest = {
          *
          * @example
          *
-         *      let indexes = service.indexes();
-         *      let newIndex = await indexes.create("NewIndex", {assureUTF8: true});
-         *      console.log("CREATED");
+         *      var indexes = service.indexes();
+         *      indexes.create("NewIndex", {assureUTF8: true}, function(err, newIndex) {
+         *          console.log("CREATED");
+         *      });
          *
          * @param {String} name A name for this index.
          * @param {Object} params A dictionary of properties. For a list of available parameters, see <a href="http://dev.splunk.com/view/SP-CAAAEJ3#indexparams" target="_blank">Index parameters</a> on Splunk Developer Portal.
-         * @param {Number} response_timeout A timeout period for aborting a request in milisecs (0 means no timeout).
+         * @param {Function} callback A function to call with the new index: `(err, createdIndex)`.
          *
          * @endpoint data/indexes
          * @method splunkjs.Service.Indexes
          */
-        create: function(name, params, response_timeout) {
-            if (utils.isObject(name) && utils.isNumber(params) && !response_timeout) {
-                response_timeout = params;
+        create: function(name, params, callback) {
+            // If someone called us with the default style of (params, callback),
+            // lets make it work
+            if (utils.isObject(name) && utils.isFunction(params) && !callback) {
+                callback = params;
                 params = name;
                 name = params.name;
             }
+            
             params = params || {};
             params["name"] = name;
             
-            return this._super(params, response_timeout);
+            return this._super(params, callback);
         }
     });
     
@@ -5315,7 +6111,7 @@ window.SplunkTest = {
          * @method splunkjs.Service.ConfigurationStanza
          */
         path: function() {
-            let name = this.name === "default" ? "_new" : this.name;
+            var name = this.name === "default" ? "_new" : this.name;
             return Paths.configurations + "/conf-" + encodeURIComponent(this.file) + "/" + encodeURIComponent(name);
         },
         
@@ -5383,7 +6179,7 @@ window.SplunkTest = {
          * @method splunkjs.Service.ConfigurationFile
          */
         instantiateEntity: function(props) {
-            let entityNamespace = utils.namespaceFromProperties(props);
+            var entityNamespace = utils.namespaceFromProperties(props);
             return new root.ConfigurationStanza(this.service, this.name, props.name, entityNamespace);
         },
         
@@ -5411,33 +6207,36 @@ window.SplunkTest = {
          *
          * @example
          *
-         *      let file = service.configurations().item("props");
-         *      let newStanza = await file.create("my_stanza");
-         *      console.log("CREATED");
+         *      var file = service.configurations().item("props");
+         *      file.create("my_stanza", function(err, newStanza) {
+         *          console.log("CREATED");
+         *      });
          *
          * @param {String} stanzaName A name for this stanza.
          * @param {Object} values A dictionary of key-value pairs to put in this stanza.
-         * @param {Number} response_timeout A timeout period for aborting a request in milisecs (0 means no timeout).
+         * @param {Function} callback A function to call with the created stanza: `(err, createdStanza)`.
          *
          * @endpoint configs/conf-{file}
          * @method splunkjs.Service.ConfigurationFile
          */
-        create: function(stanzaName, values, response_timeout) {
-            if (utils.isObject(stanzaName) && utils.isNumber(values) && !response_timeout) {
-                response_timeout = values;
+        create: function(stanzaName, values, callback) {
+            // If someone called us with the default style of (params, callback),
+            // lets make it work
+            if (utils.isObject(stanzaName) && utils.isFunction(values) && !callback) {
+                callback = values;
                 values = stanzaName;
                 stanzaName = values.name;
             }
             
-            if (utils.isNumber(values) && !response_timeout) {
-                response_timeout = values;
+            if (utils.isFunction(values) && !callback) {
+                callback = values;
                 values = {};
             }
             
             values = values || {};
             values["name"] = stanzaName;
             
-            return this._super(values, response_timeout);
+            return this._super(values, callback);
         }
     });
     
@@ -5506,25 +6305,42 @@ window.SplunkTest = {
          *
          * @example
          *
-         *      let configurations = service.configurations();
-         *      let newFile = await configurations.create("myprops");
-         *      console.log("CREATED");
+         *      var configurations = service.configurations();
+         *      configurations.create("myprops", function(err, newFile) {
+         *          console.log("CREATED");
+         *      });
          *
          * @param {String} filename A name for this configuration file.
-         * @param {Number} response_timeout A timeout period for aborting a request in milisecs (0 means no timeout).
+         * @param {Function} callback A function to call with the new configuration file: `(err, createdFile)`.
          *
          * @endpoint properties
          * @method splunkjs.Service.Configurations
          */
-        create: function(filename, response_timeout) {
+        create: function(filename, callback) {
+            // If someone called us with the default style of (params, callback),
+            // lets make it work
             if (utils.isObject(filename)) {
                 filename = filename["__conf"];
             }
             
+            callback = callback || function() {};
+            
             var that = this;
-            let req = this.post("", {__conf: filename}, response_timeout).then((response) => {
-                let entity = new root.ConfigurationFile(that.service, filename);
-                return entity.fetch({}, response_timeout);
+            var req = this.post("", {__conf: filename}, function(err, response) {
+                if (err) {
+                    callback(err);
+                }
+                else {
+                    var entity = new root.ConfigurationFile(that.service, filename);
+                    entity.fetch(function() {
+                        if (req.wasAborted) {
+                            return; // aborted, so ignore
+                        }
+                        else {
+                            callback.apply(null, arguments);
+                        }
+                    });
+                }
             });
             
             return req;
@@ -5534,20 +6350,19 @@ window.SplunkTest = {
          * Fetch a configuration file.
          *
          * @param {String} file A name for configuration file.
-         * @param {Number} response_timeout A timeout period for aborting a request in milisecs (0 means no timeout).
          * @return file, if exists or null
          * 
          * @endpoint properties
          * @method splunkjs.Service.Configurations
          */
-        getConfFile: async function(filename, response_timeout) {
+        getConfFile: async function(filename) {
             var that = this;
 
             // 1. Fetch files list
-            let response = await this.get("",  {__conf: filename}, response_timeout, true);
+            var response = await this.get("",  {__conf: filename}, null, true);
 
             // 2. Filter the files
-            let files = response 
+            var files = response 
                             && response.body 
                             && response.body.entry 
                             && response.body.entry.filter(f => f.name === filename);
@@ -5558,10 +6373,10 @@ window.SplunkTest = {
             }
 
             // 4. Create a local instance
-            let configurationFile = new root.ConfigurationFile(that.service, filename);
+            var configurationFile = new root.ConfigurationFile(that.service, filename);
 
             // 5. Load the file content
-            let fetchedFile = await configurationFile.fetchAsync(response_timeout);
+            var fetchedFile = await configurationFile.fetchAsync();
 
             return fetchedFile;
         },
@@ -5578,7 +6393,7 @@ window.SplunkTest = {
          */
         getStanza: async function(file, stanza) {
             // 1. check if the stanza exists
-            let fetchedStanza = file.item(stanza);
+            var fetchedStanza = file.item(stanza);
             
             if(fetchedStanza == undefined) {
                 return null;
@@ -5594,37 +6409,43 @@ window.SplunkTest = {
          * @param {String} filename A name for this configuration file to be created/updated.
          * @param {String} stanzaName A name for the stanza to be created/updated.
          * @param {String} keyValueMap A key-value map of properties to be put under the stanza.
-         * @param {Number} response_timeout A timeout period for aborting a request in milisecs (0 means no timeout).
+         * @param {Function} callback A function to call with the new configuration file.
          *
          * @endpoint properties
          * @method splunkjs.Service.Configurations
          */
-        createAsync: async function (filename, stanzaName, keyValueMap, response_timeout) {
-            let that = this;
+        createAsync: async function (filename, stanzaName, keyValueMap, callback) {
+            callback = callback || function() {};
+            var that = this;
 
             // 1. Check if the file exists
-            let configFile = await this.getConfFile(filename);
+            var configFile = await this.getConfFile(filename);
 
             // 2. If the file doesn't exist, create a new file
             if(configFile == undefined) {
 
-                await that.create( { __conf: filename }, response_timeout);
+                that.create( { __conf: filename });
 
                 configFile = new root.ConfigurationFile( that.service, filename );
-                configFile = await configFile.fetchAsync(response_timeout);
+                configFile = await configFile.fetchAsync();
             }
 
             // 3. Check if the stanza exists
-            let configStanza = await this.getStanza(configFile, stanzaName);
+            var configStanza = await this.getStanza(configFile, stanzaName);
 
             // 4. If the stanza doesn't exist, create a new stanza with given keyValueMap
             if(configStanza == undefined) {
-                return await configFile.create(stanzaName, keyValueMap, response_timeout);
+
+                configFile.create(stanzaName, keyValueMap, function (err, newStanza) {
+                    callback();
+                });
             }
 
             // 5. If the stanza exists, update it with the keyValueMap
             else {
-                return configStanza.update(keyValueMap, response_timeout);
+                configStanza.update(keyValueMap, (err, updatedStanza) => {
+                    callback();
+                });
             }
         },
     });
@@ -5676,7 +6497,8 @@ window.SplunkTest = {
             this._super(service, this.path(), namespace);
             this.sid = sid;
 
-            // We perform the bindings so that every function works properly
+            // We perform the bindings so that every function works 
+            // properly when it is passed as a callback.
             this.cancel         = utils.bind(this, this.cancel);
             this.disablePreview = utils.bind(this, this.disablePreview);
             this.enablePreview  = utils.bind(this, this.enablePreview);
@@ -5699,17 +6521,19 @@ window.SplunkTest = {
          *
          * @example
          *
-         *      let job = service.jobs().item("mysid");
-         *      await job.cancel();
-         *      console.log("CANCELLED");
+         *      var job = service.jobs().item("mysid");
+         *      job.cancel(function(err) {
+         *          console.log("CANCELLED");
+         *      });
          *
-         * @param {Number} response_timeout A timeout period for aborting a request in milisecs (0 means no timeout).
+         * @param {Function} callback A function to call when the search is done: `(err)`.
          *
          * @endpoint search/jobs/{search_id}/control
          * @method splunkjs.Service.Job
          */
-        cancel: function (response_timeout) {
-            let req = this.post("control", {action: "cancel"}, response_timeout);
+        cancel: function (callback) {
+            var req = this.post("control", {action: "cancel"}, callback);
+            
             return req;
         },
 
@@ -5718,19 +6542,22 @@ window.SplunkTest = {
          *
          * @example
          *
-         *      let job = service.jobs().item("mysid");
-         *      let res = await job.disablePreview();
-         *      console.log("PREVIEW DISABLED");
+         *      var job = service.jobs().item("mysid");
+         *      job.disablePreview(function(err, job) {
+         *          console.log("PREVIEW DISABLED");
+         *      });
          *
-         * @param {Number} response_timeout A timeout period for aborting a request in milisecs (0 means no timeout).
+         * @param {Function} callback A function to call with this search job: `(err, job)`.
          *
          * @endpoint search/jobs/{search_id}/control
          * @method splunkjs.Service.Job
          */
-        disablePreview: function(response_timeout) {
+        disablePreview: function(callback) {
+            callback = callback || function() {};
+            
             var that = this;
-            let req = this.post("control", {action: "disablepreview"}, response_timeout).catch((err) => {
-                throw [err, that];
+            var req = this.post("control", {action: "disablepreview"}, function(err) {
+                callback(err, that);
             });
             
             return req;
@@ -5741,21 +6568,24 @@ window.SplunkTest = {
          *
          * @example
          *
-         *      let job = service.jobs().item("mysid");
-         *      let res = await job.disablePreview();
-         *      console.log("PREVIEW ENABLED");
+         *      var job = service.jobs().item("mysid");
+         *      job.disablePreview(function(err, job) {
+         *          console.log("PREVIEW ENABLED");
+         *      });
          *
-         * @param {Number} response_timeout A timeout period for aborting a request in milisecs (0 means no timeout).
+         * @param {Function} callback A function to call with this search job: `(err, job)`.
          *
          * @endpoint search/jobs/{search_id}/control
          * @method splunkjs.Service.Job
          */
-        enablePreview: function(response_timeout) {
+        enablePreview: function(callback) {
+            callback = callback || function() {};
+            
             var that = this;
-            let req = this.post("control", {action: "enablepreview"}, response_timeout).catch((err) => {
-                throw [err, that];
+            var req = this.post("control", {action: "enablepreview"}, function(err) {
+                callback(err, that);
             });
-
+            
             return req;
         },
 
@@ -5764,40 +6594,47 @@ window.SplunkTest = {
          *
          * @example
          *
-         *      let job = service.jobs().item("mysid");
-         *      let events;
-         *      [events, job] = await job.events({count: 10});
-         *      console.log("Fields: ", events.fields);
+         *      var job = service.jobs().item("mysid");
+         *      job.events({count: 10}, function(err, events, job) {
+         *          console.log("Fields: ", events.fields);
+         *      });
          *
          * @param {Object} params The parameters for retrieving events. For a list of available parameters, see the <a href="http://docs.splunk.com/Documentation/Splunk/latest/RESTAPI/RESTsearch#GET_search.2Fjobs.2F.7Bsearch_id.7D.2Fevents" target="_blank">GET search/jobs/{search_id}/events</a> endpoint in the REST API documentation.
-         * @param {Number} response_timeout A timeout period for aborting a request in milisecs (0 means no timeout).
+         * @param {Function} callback A function to call when the events are retrieved: `(err, events, job)`.
          *
          * @endpoint search/jobs/{search_id}/events
          * @method splunkjs.Service.Job
          */
-        events: function(params, response_timeout) {
-            if (utils.isNumber(params) && !response_timeout) {
-                response_timeout = params;
-                params = {};
-            }
+        events: function(params, callback) {
+            callback = callback || function() {};
             params = params || {};
             params.output_mode = params.output_mode || "json_rows"; 
             
             var that = this;
 
             // Default path to v2
-            let eventsPath = Paths.jobsV2 + "/" + encodeURIComponent(this.name) + "/events";
+            var eventsPath = Paths.jobsV2 + "/" + encodeURIComponent(this.name) + "/events";
             // Splunk version pre-9.0 doesn't support v2
             // v1(GET), v2(POST)
             if (this.disableV2SearchApi()) {
                 eventsPath = Paths.jobs + "/" + encodeURIComponent(this.name) + "/events";
-                return this.get(eventsPath, params, response_timeout).then((response) => {
-                    return [response.data, that];
+                return this.get(eventsPath, params, function(err, response) {
+                    if (err) {
+                        callback(err);
+                    }
+                    else {
+                        callback(null, response.data, that);
+                    }
                 });
             }
 
-            return this.post(eventsPath, params, response_timeout).then((response) => {
-                return [response.data, that];
+            return this.post(eventsPath, params, function(err, response) {
+                if (err) {
+                    callback(err);
+                }
+                else {
+                    callback(null, response.data, that);
+                }
             });
         },
 
@@ -5806,19 +6643,22 @@ window.SplunkTest = {
          *
          * @example
          *
-         *      let job = service.jobs().item("mysid");
-         *      let res = await job.finalize();
-         *      console.log("JOB FINALIZED");
+         *      var job = service.jobs().item("mysid");
+         *      job.finalize(function(err, job) {
+         *          console.log("JOB FINALIZED");
+         *      });
          *
-         * @param {Number} response_timeout A timeout period for aborting a request in milisecs (0 means no timeout).
+         * @param {Function} callback A function to call with the job: `(err, job)`.
          *
          * @endpoint search/jobs/{search_id}/control
          * @method splunkjs.Service.Job
          */
-        finalize: function(response_timeout) {
+        finalize: function(callback) {
+            callback = callback || function() {};
+            
             var that = this;
-            let req = this.post("control", {action: "finalize"}, response_timeout).catch((err) => {
-                throw [err, that];
+            var req = this.post("control", {action: "finalize"}, function(err) {
+                callback(err, that);
             });
             
             return req;
@@ -5830,6 +6670,7 @@ window.SplunkTest = {
          * @param {String} type One of {"events", "preview", "results"}.
          * @param {Object} params A dictionary of optional parameters:
          *    - `pagesize` (_integer_): The number of items to return on each request. Defaults to as many as possible.
+         * @return {Object} An iterator object with a `next(callback)` method, where `callback` is of the form `(err, results, hasMoreResults)`.
          * 
          * @endpoint search/jobs/{search_id}/results
          * @method splunkjs.Service.Job
@@ -5843,107 +6684,125 @@ window.SplunkTest = {
          *
          * @example
          *
-         *      let job = service.jobs().item("mysid");
-         *      let res = await job.pause();
-         *      console.log("JOB PAUSED");
+         *      var job = service.jobs().item("mysid");
+         *      job.pause(function(err, job) {
+         *          console.log("JOB PAUSED");
+         *      });
          *
-         * @param {Number} response_timeout A timeout period for aborting a request in milisecs (0 means no timeout).
+         * @param {Function} callback A function to call with the job: `(err, job)`.
          *
          * @endpoint search/jobs/{search_id}/control
          * @method splunkjs.Service.Job
          */
-        pause: function(response_timeout) {  
+        pause: function(callback) {
+            callback = callback || function() {};
+            
             var that = this;
-            let req = this.post("control", {action: "pause"}, response_timeout).catch((err) => {
-                throw [err, that];
+            var req = this.post("control", {action: "pause"}, function(err) {
+                callback(err, that);
             });
             
             return req;
         },
 
-        /**
+        /*
          * Gets the preview results for a search job with given parameters.
          *
          * @example
          *
-         *      let job = service.jobs().item("mysid");
-         *      let results;
-         *      [results, job] = await job.preview({count: 10});
-         *      console.log("Fields: ", results.fields);
+         *      var job = service.jobs().item("mysid");
+         *      job.preview({count: 10}, function(err, results, job) {
+         *          console.log("Fields: ", results.fields);
+         *      });
          *
          * @param {Object} params The parameters for retrieving preview results. For a list of available parameters, see the <a href="http://docs.splunk.com/Documentation/Splunk/latest/RESTAPI/RESTsearch#GET_search.2Fjobs.2F.7Bsearch_id.7D.2Fresults_preview" target="_blank">GET search/jobs/{search_id}/results_preview</a> endpoint in the REST API documentation.
-         * @param {Number} response_timeout A timeout period for aborting a request in milisecs (0 means no timeout).
+         * @param {Function} callback A function to call when the preview results are retrieved : `(err, results, job)`.
          *
          * @endpoint search/jobs/{search_id}/results_preview
          * @method splunkjs.Service.Job
          */
-        preview: function(params, response_timeout) {
-            if (utils.isNumber(params) && !response_timeout) {
-                response_timeout = params;
-                params = {};
-            }
+        preview: function(params, callback) {
+            callback = callback || function() {};
             params = params || {};
             params.output_mode = params.output_mode || "json_rows"; 
             
             var that = this;
 
             // Default path to v2
-            let resultsPreviewPath = Paths.jobsV2 + "/" + encodeURIComponent(this.name) + "/results_preview";
+            var resultsPreviewPath = Paths.jobsV2 + "/" + encodeURIComponent(this.name) + "/results_preview";
             // Splunk version pre-9.0 doesn't support v2
             // v1(GET), v2(POST)
             if (this.disableV2SearchApi()) {
                 resultsPreviewPath = Paths.jobs + "/" + encodeURIComponent(this.name) + "/results_preview";
-                return this.get(resultsPreviewPath, params, response_timeout).then((response) => {
-                    return [response.data, that];
+                return this.get(resultsPreviewPath, params, function(err, response) {
+                    if (err) {
+                        callback(err);
+                    }
+                    else {
+                        callback(null, response.data, that);
+                    }
                 });
             }
-            return this.post(resultsPreviewPath, params, response_timeout).then((response) => {
-                return [response.data, that];
+            return this.post(resultsPreviewPath, params, function(err, response) {
+                if (err) {
+                    callback(err);
+                }
+                else {
+                    callback(null, response.data, that);
+                }
             });
         },
 
         /**
          * Gets the results for a search job with given parameters.
          * 
-         * The response can be `undefined` if the job is not yet done. To
-         * avoid this, use the `Job.track()` method to wait until the job
-         * is complete prior to fetching the results with this method.
+         * The callback can get `undefined` for its `results` parameter if the
+         * job is not yet done. To avoid this, use the `Job.track()` method to
+         * wait until the job is complete prior to fetching the results with
+         * this method.
          * 
          * @example
          *
-         *      let job = service.jobs().item("mysid");
-         *      let results;
-         *      [results, job] = await job.results({count: 10});
-         *      console.log("Fields: ", results.results);
+         *      var job = service.jobs().item("mysid");
+         *      job.results({count: 10}, function(err, results, job) {
+         *          console.log("Fields: ", results.results);
+         *      });
          *
          * @param {Object} params The parameters for retrieving search results. For a list of available parameters, see the <a href="http://docs.splunk.com/Documentation/Splunk/latest/RESTAPI/RESTsearch#GET_search.2Fjobs.2F.7Bsearch_id.7D.2Fresults" target="_blank">GET search/jobs/{search_id}/results</a> endpoint in the REST API documentation.
-         * @param {Number} response_timeout A timeout period for aborting a request in milisecs (0 means no timeout).
+         * @param {Function} callback A function to call when the results are retrieved: `(err, results, job)`.
          *
          * @endpoint search/jobs/{search_id}/results
          * @method splunkjs.Service.Job
          */
-        results: function(params, response_timeout) {
-            if (utils.isNumber(params) && !response_timeout) {
-                response_timeout = params;
-                params = {};
-            }
+        results: function(params, callback) {
+            callback = callback || function() {};
             params = params || {};
             params.output_mode = params.output_mode || "json_rows";
             
             var that = this;
 
             // Default path to v2
-            let resultsPath = Paths.jobsV2 + "/" + encodeURIComponent(this.name) + "/results";
+            var resultsPath = Paths.jobsV2 + "/" + encodeURIComponent(this.name) + "/results";
             // Splunk version pre-9.0 doesn't support v2
             // v1(GET), v2(POST)
             if (this.disableV2SearchApi()) {
                 resultsPath = Paths.jobs + "/" + encodeURIComponent(this.name) + "/results";
-                return this.get(resultsPath, params, response_timeout).then((response) => {
-                    return [response.data, that];
+                return this.get(resultsPath, params, function(err, response) {
+                    if (err) {
+                        callback(err);
+                    }
+                    else {
+                        callback(null, response.data, that);
+                    }
                 });
             }
-            return this.post(resultsPath, params, response_timeout).then((response) => {
-                return [response.data, that];
+            return this.post(resultsPath, params, function(err, response) {
+                if (err) {
+                    callback(err);
+                }
+                else {
+                    callback(null, response.data, that);
+                }
             });
         },
 
@@ -5952,20 +6811,27 @@ window.SplunkTest = {
          *
          * @example
          *
-         *      let job = service.jobs().item("mysid");
-         *      let searchlog;
-         *      [searchlog, job] = await job.searchlog();
-         *      console.log(searchlog);
+         *      var job = service.jobs().item("mysid");
+         *      job.searchlog(function(err, searchlog, job) {
+         *          console.log(searchlog);
+         *      });
          *
-         * @param {Number} response_timeout A timeout period for aborting a request in milisecs (0 means no timeout).
+         * @param {Function} callback A function to call with the search log and job: `(err, searchlog, job)`.
          *
          * @endpoint search/jobs/{search_id}/search.log
          * @method splunkjs.Service.Job
          */
-        searchlog: function(response_timeout) {
+        searchlog: function(callback) {
+            callback = callback || function() {};
+            
             var that = this;
-            return this.get("search.log", {}, response_timeout).then((response) => {
-                return [response.data, that];
+            return this.get("search.log", {}, function(err, response) {
+                if (err) {
+                    callback(err);
+                }
+                else {
+                    callback(null, response.data, that);
+                }
             });
         },
 
@@ -5974,22 +6840,25 @@ window.SplunkTest = {
          *
          * @example
          *
-         *      let job = service.jobs().item("mysid");
-         *      let res = await job.setPriority(6);
-         *      console.log("JOB PRIORITY SET");
+         *      var job = service.jobs().item("mysid");
+         *      job.setPriority(6, function(err, job) {
+         *          console.log("JOB PRIORITY SET");
+         *      });
          *
          * @param {Number} value The priority (an integer between 1-10). A higher value means a higher priority.
-         * @param {Number} response_timeout A timeout period for aborting a request in milisecs (0 means no timeout).
+         * @param {Function} callback A function to call with the search job: `(err, job)`.
          *
          * @endpoint search/jobs/{search_id}/control
          * @method splunkjs.Service.Job
          */
-        setPriority: function(value, response_timeout) {
+        setPriority: function(value, callback) {
+            callback = callback || function() {};
+            
             var that = this;
-            let req = this.post("control", {action: "setpriority", priority: value}, response_timeout).catch((err) => {
-                throw [err, that];
+            var req = this.post("control", {action: "setpriority", priority: value}, function(err) {
+                callback(err, that);
             });
-
+            
             return req;
         },
 
@@ -5999,20 +6868,23 @@ window.SplunkTest = {
          *
          * @example
          *
-         *      let job = service.jobs().item("mysid");
-         *      let res = await job.setTTL(1000);
-         *      console.log("JOB TTL SET");
+         *      var job = service.jobs().item("mysid");
+         *      job.setTTL(1000, function(err, job) {
+         *          console.log("JOB TTL SET");
+         *      });
          *
          * @param {Number} value The time to live, in seconds. 
-         * @param {Number} response_timeout A timeout period for aborting a request in milisecs (0 means no timeout).
+         * @param {Function} callback A function to call with the search job: `(err, job)`.
          *
          * @endpoint search/jobs/{search_id}/control
          * @method splunkjs.Service.Job
          */
-        setTTL: function(value, response_timeout) {
+        setTTL: function(value, callback) {
+            callback = callback || function() {};
+            
             var that = this;
-            let req = this.post("control", {action: "setttl", ttl: value}, response_timeout).catch((err) => {
-                throw [err, that];
+            var req = this.post("control", {action: "setttl", ttl: value}, function(err) {
+                callback(err, that);
             });
             
             return req;
@@ -6023,26 +6895,28 @@ window.SplunkTest = {
          *
          * @example
          *
-         *      let job = service.jobs().item("mysid");
-         *      let summary;
-         *      [summary, job] = await job.summary({top_count: 5});
-         *      console.log("Summary: ", summary);
+         *      var job = service.jobs().item("mysid");
+         *      job.summary({top_count: 5}, function(err, summary, job) {
+         *          console.log("Summary: ", summary);
+         *      });
          *
          * @param {Object} params The parameters for retrieving the summary. For a list of available parameters, see the <a href="http://docs.splunk.com/Documentation/Splunk/latest/RESTAPI/RESTsearch#GET_search.2Fjobs.2F.7Bsearch_id.7D.2Fsummary" target="_blank">GET search/jobs/{search_id}/summary</a> endpoint in the REST API documentation.
-         * @param {Number} response_timeout A timeout period for aborting a request in milisecs (0 means no timeout).
+         * @param {Function} callback A function to call with the summary and search job: `(err, summary, job)`.
          *
          * @endpoint search/jobs/{search_id}/summmary
          * @method splunkjs.Service.Job
          */
-        summary: function(params, response_timeout) {
-            if (utils.isNumber(params) && !response_timeout) {
-                response_timeout = params;
-                params = {};
-            }
-
+        summary: function(params, callback) {
+            callback = callback || function() {};
+            
             var that = this;
-            return this.get("summary", params, response_timeout).then((response) => {
-                return [response.data, that];
+            return this.get("summary", params, function(err, response) {
+                if (err) {
+                    callback(err);
+                }
+                else {
+                    callback(null, response.data, that);
+                }
             });
         },
 
@@ -6051,26 +6925,28 @@ window.SplunkTest = {
          *
          * @example
          *
-         *      let job = service.jobs().item("mysid");
-         *      let timeline;
-         *      [timeline, job] = await job.timeline({time_format: "%c"});
-         *      console.log("Timeline: ", timeline);
+         *      var job = service.jobs().item("mysid");
+         *      job.timeline({time_format: "%c"}, function(err, job, timeline) {
+         *          console.log("Timeline: ", timeline);
+         *      });
          *
          * @param {Object} params The parameters for retrieving the timeline. For a list of available parameters, see the <a href="http://docs.splunk.com/Documentation/Splunk/latest/RESTAPI/RESTsearch#GET_search.2Fjobs.2F.7Bsearch_id.7D.2Ftimeline" target="_blank">GET search/jobs/{search_id}/timeline </a> endpoint in the REST API documentation.
-         * @param {Number} response_timeout A timeout period for aborting a request in milisecs (0 means no timeout).
+         * @param {Function} callback A function to call with the timeline and search job: `(err, timeline, job)`.
          *
          * @endpoint search/jobs/{search_id}/timeline
          * @method splunkjs.Service.Job
          */
-        timeline: function(params, response_timeout) {
-            if (utils.isNumber(params) && !response_timeout) {
-                response_timeout = params;
-                params = {};
-            }
-
+        timeline: function(params, callback) {
+            callback = callback || function() {};
+            
             var that = this;
-            return this.get("timeline", params, response_timeout).then((response) => {
-                return [response.data, that];
+            return this.get("timeline", params, function(err, response) {
+                if (err) {
+                    callback(err);
+                }
+                else {
+                    callback(null, response.data, that);
+                }
             });
         },
 
@@ -6080,19 +6956,22 @@ window.SplunkTest = {
          *
          * @example
          *
-         *      let job = service.jobs().item("mysid");
-         *      await job.touch();
-         *      console.log("JOB TOUCHED");
+         *      var job = service.jobs().item("mysid");
+         *      job.touch(function(err) {
+         *          console.log("JOB TOUCHED");
+         *      });
          *
-         * @param {Number} response_timeout A timeout period for aborting a request in milisecs (0 means no timeout).
+         * @param {Function} callback A function to call with the search job: `(err, job)`.
          *
          * @endpoint search/jobs/{search_id}/control
          * @method splunkjs.Service.Job
          */
-        touch: function(response_timeout) {
+        touch: function(callback) {
+            callback = callback || function() {};
+            
             var that = this;
-            let req = this.post("control", {action: "touch"}, response_timeout).catch((err) => {
-                throw [err, that];
+            var req = this.post("control", {action: "touch"}, function(err) {
+                callback(err, that);
             });
             
             return req;
@@ -6114,15 +6993,16 @@ window.SplunkTest = {
          *
          * @method splunkjs.Service.Job
          */
-         track: async function(options, callbacks) {
-            let period = options.period || 500; // ms
+        track: function(options, callbacks) {
+            var period = options.period || 500; // ms
+            
             if (utils.isFunction(callbacks)) {
                 callbacks = {
                     done: callbacks
                 };
             }
             
-            let noCallbacksAfterReady = (
+            var noCallbacksAfterReady = (
                 !callbacks.progress &&
                 !callbacks.done &&
                 !callbacks.failed &&
@@ -6140,46 +7020,67 @@ window.SplunkTest = {
             callbacks._stoppedAfterReady = callbacks._stoppedAfterReady || function() {};
             
             var that = this;
-            let emittedReady = false;
-            let doneLooping = false;
-            while(!doneLooping) {
-                try {
-                    let job = await that.fetch();
-                    let dispatchState = job.properties().dispatchState;
-                    let notReady = dispatchState === "QUEUED" || dispatchState === "PARSING";
-                    if (notReady) {
-                        callbacks._preready(job);
-                    } else {
-                        if (!emittedReady) {
-                            callbacks.ready(job);
-                            emittedReady = true;
+            var emittedReady = false;
+            var doneLooping = false;
+            Async.whilst(
+                function() { return !doneLooping; },
+                function(nextIteration) {
+                    that.fetch(function(err, job) {
+                        if (err) {
+                            nextIteration(err);
+                            return;
+                        }
+                        
+                        var dispatchState = job.properties().dispatchState;
+                        var notReady = dispatchState === "QUEUED" || dispatchState === "PARSING";
+                        if (notReady) {
+                            callbacks._preready(job);
+                        }
+                        else {
+                            if (!emittedReady) {
+                                callbacks.ready(job);
+                                emittedReady = true;
+                                
+                                // Optimization: Don't keep polling the job if the
+                                // caller only cares about the `ready` event.
+                                if (noCallbacksAfterReady) {
+                                    callbacks._stoppedAfterReady(job);
+                                    
+                                    doneLooping = true;
+                                    nextIteration();
+                                    return;
+                                }
+                            }
                             
-                            // Optimization: Don't keep polling the job if the
-                            // caller only cares about the `ready` event.
-                            if (noCallbacksAfterReady) {
+                            callbacks.progress(job);
+                            
+                            var props = job.properties();
+                            
+                            if (dispatchState === "DONE" && props.isDone) {
+                                callbacks.done(job);
+                                
                                 doneLooping = true;
-                                return callbacks._stoppedAfterReady(job);
+                                nextIteration();
+                                return;
+                            }
+                            else if (dispatchState === "FAILED" && props.isFailed) {
+                                callbacks.failed(job);
+                                
+                                doneLooping = true;
+                                nextIteration();
+                                return;
                             }
                         }
                         
-                        callbacks.progress(job);
-                        
-                        let props = job.properties();
-                        
-                        if (dispatchState === "DONE" && props.isDone) {
-                            doneLooping = true;
-                            return callbacks.done(job);
-                        }
-                        else if (dispatchState === "FAILED" && props.isFailed) {
-                            doneLooping = true;
-                            return callbacks.failed(job);
-                        }
+                        Async.sleep(period, nextIteration);
+                    });
+                },
+                function(err) {
+                    if (err) {
+                        callbacks.error(err);
                     }
-                    await utils.sleep(period);
-                } catch (err) {
-                    return callbacks.error(err);
                 }
-            }
+            );
         },
 
         /**
@@ -6187,19 +7088,22 @@ window.SplunkTest = {
          *
          * @example
          *
-         *      let job = service.jobs().item("mysid");
-         *      let res = await job.unpause();
-         *      console.log("JOB UNPAUSED");
+         *      var job = service.jobs().item("mysid");
+         *      job.unpause(function(err) {
+         *          console.log("JOB UNPAUSED");
+         *      });
          *
-         * @param {Number} response_timeout A timeout period for aborting a request in milisecs (0 means no timeout).
+         * @param {Function} callback A function to call with the search job: `(err, job)`.
          *
          * @endpoint search/jobs/{search_id}/control
          * @method splunkjs.Service.Job
          */
-        unpause: function(response_timeout) {
+        unpause: function(callback) {
+            callback = callback || function() {};
+            
             var that = this;
-            let req = this.post("control", {action: "unpause"}, response_timeout).catch((err)=>{
-                throw [err, that];
+            var req = this.post("control", {action: "unpause"}, function(err) {
+                callback(err, that);
             });
             
             return req;
@@ -6238,8 +7142,8 @@ window.SplunkTest = {
          * @method splunkjs.Service.Jobs
          */
         instantiateEntity: function(props) {
-            let sid = props.content.sid;
-            let entityNamespace = utils.namespaceFromProperties(props);
+            var sid = props.content.sid;
+            var entityNamespace = utils.namespaceFromProperties(props);
             return new root.Job(this.service, sid, entityNamespace);
         },
         
@@ -6263,7 +7167,8 @@ window.SplunkTest = {
             this.disableV2SearchApi = service.disableV2SearchApi;
 
             this._super(service, this.path(), namespace);
-            // We perform the bindings so that every function works properly
+            // We perform the bindings so that every function works 
+            // properly when it is passed as a callback.
             this.create         = utils.bind(this, this.create);
             
         },
@@ -6280,31 +7185,41 @@ window.SplunkTest = {
          *
          * @param {String} query The search query.
          * @param {Object} params A dictionary of properties for the search job. For a list of available parameters, see <a href="http://dev.splunk.com/view/SP-CAAAEFA#searchjobparams" target="_blank">Search job parameters</a> on Splunk Developer Portal.
-         * @param {Number} response_timeout A timeout period for aborting a request in milisecs (0 means no timeout).
+         * @param {Function} callback A function to call with the created job: `(err, createdJob)`.
          *
          * @endpoint search/jobs
          * @method splunkjs.Service.Jobs
          */
-        create: function(query, params, response_timeout) {
-            if (utils.isObject(query) && (utils.isNumber(params) || !params) && !response_timeout) {
-                response_timeout = params;
+        create: function(query, params, callback) {
+            // If someone called us with the default style of (params, callback),
+            // lets make it work
+            if (utils.isObject(query) && utils.isFunction(params) && !callback) {
+                callback = params;
                 params = query;
                 query = params.search;
             }
             
+            callback = callback || function() {};
             params = params || {};
             params.search = query; 
+            
             if ((params.exec_mode || "").toLowerCase() === "oneshot") {
-                return Promise.reject(new Error("Please use splunkjs.Service.Jobs.oneshotSearch for exec_mode=oneshot"));
+                throw new Error("Please use splunkjs.Service.Jobs.oneshotSearch for exec_mode=oneshot");
             }
             
             if (!params.search) {
-                return Promise.reject("Must provide a query to create a search job");
+                callback("Must provide a query to create a search job");
+                return;
             } 
             var that = this;
-            return this.post("", params, response_timeout).then((response) => {
-                let job = new root.Job(that.service, response.data.sid, that.namespace);
-                return job;
+            return this.post("", params, function(err, response) {
+                if (err) {
+                    callback(err);
+                }
+                else {
+                    var job = new root.Job(that.service, response.data.sid, that.namespace);
+                    callback(null, job);
+                }
             });
         },
                 
@@ -6320,20 +7235,21 @@ window.SplunkTest = {
          *
          * @example
          *
-         *      let jobs = service.jobs();
-         *      let newJob = await jobs.search("search ERROR", {id: "myjob_123"});
-         *      console.log("CREATED": newJob.sid);
+         *      var jobs = service.jobs();
+         *      jobs.search("search ERROR", {id: "myjob_123"}, function(err, newJob) {
+         *          console.log("CREATED": newJob.sid);
+         *      });
          *
          * @param {String} query The search query.
          * @param {Object} params A dictionary of properties for the search job. For a list of available parameters, see <a href="http://dev.splunk.com/view/SP-CAAAEFA#searchjobparams" target="_blank">Search job parameters</a> on Splunk Developer Portal.
          *        **Note:** This method throws an error if the `exec_mode=oneshot` parameter is passed in with the properties dictionary.
-         * @param {Number} response_timeout A timeout period for aborting a request in milisecs (0 means no timeout).
+         * @param {Function} callback A function to call with the new search job: `(err, createdJob)`.
          *
          * @endpoint search/jobs
          * @method splunkjs.Service.Jobs
          */
-        search: function(query, params, response_timeout) {
-            return this.create(query, params, response_timeout);
+        search: function(query, params, callback) {
+            return this.create(query, params, callback);
         },
                 
         /**
@@ -6341,9 +7257,10 @@ window.SplunkTest = {
          *
          * @example
          *
-         *      let jobs = service.jobs();
-         *      let results = await jobs.oneshotSearch("search ERROR", {id: "myjob_123"});
-         *      console.log("RESULT FIELDS": results.fields);
+         *      var jobs = service.jobs();
+         *      jobs.oneshotSearch("search ERROR", {id: "myjob_123"}, function(err, results) {
+         *          console.log("RESULT FIELDS": results.fields);
+         *      });
          *
          * @param {String} query The search query. 
          * @param {Object} params A dictionary of properties for the search:
@@ -6351,45 +7268,54 @@ window.SplunkTest = {
          *    - `earliest_time` (_string_): Specifies the earliest time in the time range to search. The time string can be a UTC time (with fractional seconds), a relative time specifier (to now), or a formatted time string.
          *    - `latest_time` (_string_): Specifies the latest time in the time range to search. The time string can be a UTC time (with fractional seconds), a relative time specifier (to now), or a formatted time string.
          *    - `rf` (_string_): Specifies one or more fields to add to the search.
-         * @param {Number} response_timeout A timeout period for aborting a request in milisecs (0 means no timeout).
+         * @param {Function} callback A function to call with the results of the search: `(err, results)`.
          *
          * @endpoint search/jobs
          * @method splunkjs.Service.Jobs
          */
-        oneshotSearch: function(query, params, response_timeout) {
-            if (utils.isObject(query) && utils.isNumber(params) && !response_timeout) {
-                response_timeout = params;
+        oneshotSearch: function(query, params, callback) {
+            // If someone called us with the default style of (params, callback),
+            // lets make it work
+            if (utils.isObject(query) && utils.isFunction(params) && !callback) {
+                callback = params;
                 params = query;
                 query = params.search;
             }
             
+            callback = callback || function() {};
             params = params || {};
             params.search = query; 
             params.exec_mode = "oneshot";
             
             if (!params.search) {
-                return Promise.reject("Must provide a query to create a search job");
+                callback("Must provide a query to create a search job");
             }
             
-            let outputMode = params.output_mode || "json_rows";
+            var outputMode = params.output_mode || "json_rows";
             
-            let path = this.qualifiedPath;
-            let method = "POST";
-            let headers = {};
-            let post = params;
-            let get = {output_mode: outputMode};
-            let body = null;
+            var path = this.qualifiedPath;
+            var method = "POST";
+            var headers = {};
+            var post = params;
+            var get = {output_mode: outputMode};
+            var body = null;
             
-            let req = this.service.request(
+            var req = this.service.request(
                 path, 
                 method, 
                 get, 
                 post, 
                 body, 
-                headers,
-                response_timeout).then((response) => {
-                    return response.data;
-                });
+                headers, 
+                function(err, response) {
+                    if (err) {
+                        callback(err);
+                    } 
+                    else {
+                        callback(null, response.data);
+                    }
+                }
+            );
             
             return req;
         }
@@ -6647,7 +7573,7 @@ window.SplunkTest = {
             this.owner          = this.lineage[this.lineage.length - 1];
 
             this.outputFields = [];
-            for (let i = 0; i < props.outputFields.length; i++) {
+            for (var i = 0; i < props.outputFields.length; i++) {
                 this.outputFields[props.outputFields[i].fieldName] = new root.DataModelField(props.outputFields[i]);
             }
 
@@ -6776,12 +7702,12 @@ window.SplunkTest = {
          *
          * @param {Object} args A dictionary of properties for the search job (optional). For a list of available parameters, see <a href="http://dev.splunk.com/view/SP-CAAAEFA#searchjobparams" target="_blank">Search job parameters</a> on Splunk Developer Portal.
          *        **Note:** This method throws an error if the `exec_mode=oneshot` parameter is passed in with the properties dictionary.
-         * @param {Number} response_timeout A timeout period for aborting a request in milisecs (0 means no timeout).
+         * @param {Function} callback A function to call when done creating the search job: `(err, job)`.
          * @method splunkjs.Service.Pivot
          */
-        run: function(args, response_timeout) {
-            if (utils.isNumber(args) && !response_timeout) {
-                response_timeout = args;
+        run: function(args, callback) {
+            if (utils.isUndefined(callback)) {
+                callback = args;
                 args = {};
             }
             if (!args || Object.keys(args).length === 0) {
@@ -6789,7 +7715,7 @@ window.SplunkTest = {
             }
 
             // If tstats is undefined, use pivotSearch (try to run an accelerated search if possible)
-            return this.service.search(this.tstatsSearch || this.pivotSearch, args, response_timeout);
+            this.service.search(this.tstatsSearch || this.pivotSearch, args, callback);
         }
     });
 
@@ -6805,16 +7731,17 @@ window.SplunkTest = {
      * return the modified `splunkjs.Service.PivotSpecification` instance.
      *
      * @example
-     * 
-     *      let dataModels = await service.dataModels().fetch();
-     *      let searches = dataModels.item("internal_audit_logs").objectByName("searches");
-     *      let pivotSpecification = searches.createPivotSpecification();
-     *      let pivot = await pivotSpecification
-     *                              .addRowSplit("user", "Executing user")
-     *                              .addRangeColumnSplit("exec_time", {limit: 4})
-     *                              .addCellValue("search", "Search Query", "values")
-     *                              .pivot();
-     *      console.log("Got a Pivot object from the Splunk server!");
+     *     service.dataModels().fetch(function(err, dataModels) {
+     *         var searches = dataModels.item("internal_audit_logs").objectByName("searches");
+     *         var pivotSpecification = searches.createPivotSpecification();
+     *         pivotSpecification
+     *             .addRowSplit("user", "Executing user")
+     *             .addRangeColumnSplit("exec_time", {limit: 4})
+     *             .addCellValue("search", "Search Query", "values")
+     *             .pivot(function(err, pivot) {
+     *                 console.log("Got a Pivot object from the Splunk server!");
+     *             });
+     *     });
      *
      * Has these properties:
      *    - `dataModelObject` (_splunkjs.Service.DataModelObject_): The `DataModelObject` from which
@@ -6989,7 +7916,7 @@ window.SplunkTest = {
                     " is not a valid comparison operator");
             }
 
-            let ret = {
+            var ret = {
                 fieldName: fieldName,
                 owner: this.dataModelObject.fieldByName(fieldName).lineage.join("."),
                 type: comparisonType
@@ -7024,7 +7951,7 @@ window.SplunkTest = {
                 throw new Error("Cannot add limit filter on a nonexistent field.");
             }
 
-            let f = this.dataModelObject.fieldByName(fieldName);
+            var f = this.dataModelObject.fieldByName(fieldName);
 
             if (!utils.contains(["string", "number", "objectCount"], f.type)) {
                 throw new Error("Cannot add limit filter on " + fieldName + " because it is of type " + f.type);
@@ -7044,7 +7971,7 @@ window.SplunkTest = {
                 throw new Error("Stats function for fields of type object count must be COUNT; found " + statsFunction);
             }
 
-            let filter = {
+            var filter = {
                 fieldName: fieldName,
                 owner: f.lineage.join("."),
                 type: f.type,
@@ -7074,12 +8001,12 @@ window.SplunkTest = {
             if (!this.dataModelObject.hasField(fieldName)) {
                 throw new Error("Did not find field " + fieldName);
             }
-            let f = this.dataModelObject.fieldByName(fieldName);
+            var f = this.dataModelObject.fieldByName(fieldName);
             if (!utils.contains(["number", "string"], f.type)) {
                 throw new Error("Field was of type " + f.type + ", expected number or string.");
             }
 
-            let row = {
+            var row = {
                 fieldName: fieldName,
                 owner: f.owner,
                 type: f.type,
@@ -7118,11 +8045,11 @@ window.SplunkTest = {
             if (!this.dataModelObject.hasField(field)) {
                 throw new Error("Did not find field " + field);
             }
-            let f = this.dataModelObject.fieldByName(field);
+            var f = this.dataModelObject.fieldByName(field);
             if ("number" !== f.type) {
                 throw new Error("Field was of type " + f.type + ", expected number.");
             }
-            let updateRanges = {};
+            var updateRanges = {};
             if (!utils.isUndefined(ranges.start) && ranges.start !== null) {
                 updateRanges.start = ranges.start;
             }
@@ -7163,7 +8090,7 @@ window.SplunkTest = {
             if (!this.dataModelObject.fieldByName(field)) {
                 throw new Error("Did not find field " + field);
             }
-            let f = this.dataModelObject.fieldByName(field);
+            var f = this.dataModelObject.fieldByName(field);
             if ("boolean" !== f.type) {
                 throw new Error("Field was of type " + f.type + ", expected boolean.");
             }
@@ -7194,7 +8121,7 @@ window.SplunkTest = {
             if (!this.dataModelObject.hasField(field)) {
                 throw new Error("Did not find field " + field);
             }
-            let f = this.dataModelObject.fieldByName(field);
+            var f = this.dataModelObject.fieldByName(field);
             if ("timestamp" !== f.type) {
                 throw new Error("Field was of type " + f.type + ", expected timestamp.");
             }
@@ -7226,12 +8153,12 @@ window.SplunkTest = {
             if (!this.dataModelObject.hasField(fieldName)) {
                 throw new Error("Did not find field " + fieldName);
             }
-            let f = this.dataModelObject.fieldByName(fieldName);
+            var f = this.dataModelObject.fieldByName(fieldName);
             if (!utils.contains(["number", "string"], f.type)) {
                 throw new Error("Field was of type " + f.type + ", expected number or string.");
             }
 
-            let col = {
+            var col = {
                 fieldName: fieldName,
                 owner: f.owner,
                 type: f.type
@@ -7263,14 +8190,14 @@ window.SplunkTest = {
             if (!this.dataModelObject.hasField(fieldName)) {
                 throw new Error("Did not find field " + fieldName);
             }
-            let f = this.dataModelObject.fieldByName(fieldName);
+            var f = this.dataModelObject.fieldByName(fieldName);
             if ("number" !== f.type) {
                 throw new Error("Field was of type " + f.type + ", expected number.");
             }
 
             // In Splunk 6.0.1.1, data models incorrectly expect strings for these fields
             // instead of numbers. In 6.1, this is fixed and both are accepted.
-            let updatedRanges = {};
+            var updatedRanges = {};
             if (!utils.isUndefined(ranges.start) && ranges.start !== null) {
                 updatedRanges.start = ranges.start;
             }
@@ -7309,7 +8236,7 @@ window.SplunkTest = {
             if (!this.dataModelObject.fieldByName(fieldName)) {
                 throw new Error("Did not find field " + fieldName);
             }
-            let f = this.dataModelObject.fieldByName(fieldName);
+            var f = this.dataModelObject.fieldByName(fieldName);
             if ("boolean" !== f.type) {
                 throw new Error("Field was of type " + f.type + ", expected boolean.");
             }
@@ -7338,7 +8265,7 @@ window.SplunkTest = {
             if (!this.dataModelObject.hasField(field)) {
                 throw new Error("Did not find field " + field);
             }
-            let f = this.dataModelObject.fieldByName(field);
+            var f = this.dataModelObject.fieldByName(field);
             if ("timestamp" !== f.type) {
                 throw new Error("Field was of type " + f.type + ", expected timestamp.");
             }
@@ -7371,7 +8298,7 @@ window.SplunkTest = {
                 throw new Error("Did not find field " + fieldName);
             }
 
-            let f = this.dataModelObject.fieldByName(fieldName);
+            var f = this.dataModelObject.fieldByName(fieldName);
             if (utils.contains(["string", "ipv4"], f.type) &&
                 !utils.contains([
                     "list",
@@ -7462,24 +8389,26 @@ window.SplunkTest = {
          *
          * @example
          *
-         *      let dataModels = await service.dataModels().fetch();
-         *      let searches = dataModels.item("internal_audit_logs").objectByName("searches");
-         *      let pivotSpec = searches.createPivotSpecification();
-         *      // Use of the fluent API
-         *      let pivot = await pivotSpec.addRowSplit("user", "Executing user")
-         *          .addRangeColumnSplit("exec_time", {start: 0, end: 12, step: 5, limit: 4})
-         *          .addCellValue("search", "Search Query", "values")
-         *          .pivot();
-         *      console.log("Pivot search is:", pivot.search);
-         * 
-         * @param {Number} response_timeout A timeout period for aborting a request in milisecs (0 means no timeout).
+         *      service.dataModels().fetch(function(err, dataModels) {
+         *          var searches = dataModels.item("internal_audit_logs").objectByName("searches");
+         *          var pivotSpec = searches.createPivotSpecification();
+         *          // Use of the fluent API
+         *          pivotSpec.addRowSplit("user", "Executing user")
+         *              .addRangeColumnSplit("exec_time", {start: 0, end: 12, step: 5, limit: 4})
+         *              .addCellValue("search", "Search Query", "values")
+         *              .pivot(function(pivotErr, pivot) {
+         *                  console.log("Pivot search is:", pivot.search);
+         *              });
+         *      });
+         *
+         * @param {Function} callback A function to call when done getting the pivot: `(err, pivot)`.
          *
          * @method splunkjs.Service.PivotSpecification
          */
-        pivot: function(response_timeout) {
-            let svc = this.dataModelObject.dataModel.service;
+        pivot: function(callback) {
+            var svc = this.dataModelObject.dataModel.service;
 
-            let args = {
+            var args = {
                 pivot_json: JSON.stringify(this.toJsonObject())
             };
 
@@ -7487,18 +8416,19 @@ window.SplunkTest = {
                 args.namespace = this.accelerationNamespace;
             }
             
-            return svc.get(Paths.pivot + "/" + encodeURIComponent(this.dataModelObject.dataModel.name), args, response_timeout).
-                        then((response) => {
-                            if (response.data.entry && response.data.entry[0]) {
-                                return new root.Pivot(svc, response.data.entry[0].content);
-                            }
-                            else {
-                                return [new Error("Didn't get a Pivot report back from Splunk"), response];
-                            }
-                        }).catch((err) => {
-                            // TODO: analyze use of response argument and change accordingly
-                            throw new Error(err.data.messages[0].text);
-                        });
+            return svc.get(Paths.pivot + "/" + encodeURIComponent(this.dataModelObject.dataModel.name), args, function(err, response) {
+                if (err) {
+                    callback(new Error(err.data.messages[0].text), response);
+                    return;
+                }
+
+                if (response.data.entry && response.data.entry[0]) {
+                    callback(null, new root.Pivot(svc, response.data.entry[0].content));
+                }
+                else {
+                    callback(new Error("Didn't get a Pivot report back from Splunk"), response);
+                }
+            });
         },
 
         /**
@@ -7509,37 +8439,38 @@ window.SplunkTest = {
          * for this data model, defined by this `PivotSpecification`; then,
          * starts a search job running this pivot, accelerated if possible.
          *
-         * @example
-         * 
-         *      let dataModels = await service.dataModels().fetch();
-         *      let searches = dataModels.item("internal_audit_logs").objectByName("searches");
-         *      let pivotSpec = searches.createPivotSpecification();
-         *      // Use of the fluent API
-         *      let [job, pivot] = await pivotSpec.addRowSplit("user", "Executing user")
-         *                          .addRangeColumnSplit("exec_time", {start: 0, end: 12, step: 5, limit: 4})
-         *                          .addCellValue("search", "Search Query", "values")
-         *                          .run();
-         *      console.log("Job SID is:", job.sid);
-         *      console.log("Pivot search is:", pivot.search);
-         * 
+         *      service.dataModels().fetch(function(fetchErr, dataModels) {
+         *          var searches = dataModels.item("internal_audit_logs").objectByName("searches");
+         *          var pivotSpec = searches.createPivotSpecification();
+         *          // Use of the fluent API
+         *          pivotSpec.addRowSplit("user", "Executing user")
+         *              .addRangeColumnSplit("exec_time", {start: 0, end: 12, step: 5, limit: 4})
+         *              .addCellValue("search", "Search Query", "values")
+         *              .run(function(err, job, pivot) {
+         *                  console.log("Job SID is:", job.sid);
+         *                  console.log("Pivot search is:", pivot.search);
+         *              });
+         *      });
          * @param {Object} args A dictionary of properties for the search job (optional). For a list of available parameters, see <a href="http://dev.splunk.com/view/SP-CAAAEFA#searchjobparams" target="_blank">Search job parameters</a> on Splunk Developer Portal.
          *        **Note:** This method throws an error if the `exec_mode=oneshot` parameter is passed in with the properties dictionary.
-         * @param {Number} response_timeout A timeout period for aborting a request in milisecs (0 means no timeout).
+         * @param {Function} callback A function to call when done getting the pivot: `(err, job, pivot)`.
          *
          * @method splunkjs.Service.PivotSpecification
          */
-        run: function(args, response_timeout) {
-            if (utils.isNumber(args) && !response_timeout) {
-                response_timeout = args;
+        run: function(args, callback) {
+            if (!callback) {
+                callback = args;
                 args = {};
             }
             args = args || {};
 
-            return this.pivot().then(async (pivot) => {
-                let response = await pivot.run(args);
-                return [response, pivot];
-            }).catch((err) => {
-                throw [err, null, null];
+            this.pivot(function(err, pivot) {
+                if (err) {
+                    callback(err, null, null);
+                }
+                else {
+                    pivot.run(args, Async.augment(callback, pivot));
+                }
             });
         }
     });
@@ -7628,19 +8559,19 @@ window.SplunkTest = {
 
             // Parse fields
             this.fields = {};
-            for (let i = 0; i < props.fields.length; i++) {
+            for (var i = 0; i < props.fields.length; i++) {
                 this.fields[props.fields[i].fieldName] = new root.DataModelField(props.fields[i]);
             }
 
             // Parse constraints
             this.constraints = [];
-            for (let j = 0; j < props.constraints.length; j++) {
+            for (var j = 0; j < props.constraints.length; j++) {
                 this.constraints.push(new root.DataModelConstraint(props.constraints[j]));
             }
 
             // Parse calculations
             this.calculations = [];
-            for (let k = 0; k < props.calculations.length; k++) {
+            for (var k = 0; k < props.calculations.length; k++) {
                 this.calculations[props.calculations[k].calculationID] = new root.DataModelCalculation(props.calculations[k]);
             }
         },
@@ -7705,16 +8636,16 @@ window.SplunkTest = {
          */
         allFields: function() {
             // merge fields and calculatedFields()
-            let combinedFields = [];
+            var combinedFields = [];
 
-            for (let f in this.fields) {
+            for (var f in this.fields) {
                 if (this.fields.hasOwnProperty(f)) {
                     combinedFields[f] = this.fields[f];
                 }
             }
 
-            let calculatedFields = this.calculatedFields();
-            for (let cf in calculatedFields) {
+            var calculatedFields = this.calculatedFields();
+            for (var cf in calculatedFields) {
                 if (calculatedFields.hasOwnProperty(cf)) {
                     combinedFields[cf] = calculatedFields[cf];
                 }
@@ -7747,13 +8678,13 @@ window.SplunkTest = {
          * @method splunkjs.Service.DataModelObject
          */
         calculatedFields: function(){
-            let fields = {};
+            var fields = {};
             // Iterate over the calculations, get their fields
-            let keys = this.calculationIDs();
-            let calculations = this.calculations;
-            for (let i = 0; i < keys.length; i++) {
-                let calculation = calculations[keys[i]];
-                for (let f = 0; f < calculation.outputFieldNames().length; f++) {
+            var keys = this.calculationIDs();
+            var calculations = this.calculations;
+            for (var i = 0; i < keys.length; i++) {
+                var calculation = calculations[keys[i]];
+                for (var f = 0; f < calculation.outputFieldNames().length; f++) {
                     fields[calculation.outputFieldNames()[f]] = calculation.outputFields[calculation.outputFieldNames()[f]];
                 }
             }
@@ -7813,25 +8744,29 @@ window.SplunkTest = {
          *
          * @example
          *
-         *      let dataModels = await service.dataModels().fetch();
-         *      let object = dataModels.item("some_data_model").objectByName("some_object");
-         *      let accelerationJob = await object.createLocalAccelerationJob("-1d");
-         *      console.log("The job has name:", accelerationJob.name);
+         *      service.dataModels().fetch(function(err, dataModels) {
+         *          var object = dataModels.item("some_data_model").objectByName("some_object");
+         *          object.createLocalAccelerationJob("-1d", function(err, accelerationJob) {
+         *              console.log("The job has name:", accelerationJob.name);
+         *          });
+         *      });
          *
          * @param {String} earliestTime A time modifier (e.g., "-2w") setting the earliest time to index.
-         * @param {Number} response_timeout A timeout period for aborting a request in milisecs (0 means no timeout).
+         * @param {Function} callback A function to call with the search job: `(err, accelerationJob)`.
          *
          * @method splunkjs.Service.DataModelObject
          */
-        createLocalAccelerationJob: function(earliestTime, response_timeout) {
-            if (utils.isNumber(earliestTime) && !response_timeout) {
-                response_timeout = earliestTime;
+        createLocalAccelerationJob: function(earliestTime, callback) {
+            // If earliestTime parameter is not specified, then set callback to its value
+            if (!callback && utils.isFunction(earliestTime)) {
+                callback = earliestTime;
                 earliestTime = undefined;
             }
-            let query = "| datamodel \"" + this.dataModel.name + "\" " + this.name + " search | tscollect";
-            let args = earliestTime ? {earliest_time: earliestTime} : {};
 
-            return this.dataModel.service.search(query, args, response_timeout);
+            var query = "| datamodel \"" + this.dataModel.name + "\" " + this.name + " search | tscollect";
+            var args = earliestTime ? {earliest_time: earliestTime} : {};
+
+            this.dataModel.service.search(query, args, callback);
         },
 
         /**
@@ -7839,23 +8774,25 @@ window.SplunkTest = {
          *
          * @example
          *
-         *      let dataModels = await service.dataModels().fetch();
-         *      let object = dataModels.item("internal_audit_logs").objectByName("searches");
-         *      let job = await object.startSearch({}, "| head 5");
-         *      console.log("The job has name:", job.name);
+         *      service.dataModels().fetch(function(err, dataModels) {
+         *          var object = dataModels.item("internal_audit_logs").objectByName("searches");
+         *          object.startSearch({}, "| head 5", function(err, job) {
+         *              console.log("The job has name:", job.name);
+         *          });
+         *      });
          *
          * @param {Object} params A dictionary of properties for the search job. For a list of available parameters, see <a href="http://dev.splunk.com/view/SP-CAAAEFA#searchjobparams" target="_blank">Search job parameters</a> on Splunk Developer Portal.
          *        **Note:** This method throws an error if the `exec_mode=oneshot` parameter is passed in with the properties dictionary.
          * @param {String} querySuffix A search query, starting with a '|' that will be appended to the command to fetch the contents of this data model object (e.g., "| head 3").
-         * @param {Number} response_timeout A timeout period for aborting a request in milisecs (0 means no timeout).
+         * @param {Function} callback A function to call with the search job: `(err, job)`.
          *
          * @method splunkjs.Service.DataModelObject
          */
-        startSearch: function(params, querySuffix, response_timeout) {
-            let query = "| datamodel " + this.dataModel.name + " " + this.name + " search";
+        startSearch: function(params, querySuffix, callback) {
+            var query = "| datamodel " + this.dataModel.name + " " + this.name + " search";
             // Prepend a space to the querySuffix, or set it to an empty string if null or undefined
             querySuffix = (querySuffix) ? (" " + querySuffix) : ("");
-            return this.dataModel.service.search(query + querySuffix, params, response_timeout);
+            this.dataModel.service.search(query + querySuffix, params, callback);
         },
         
         /**
@@ -7943,16 +8880,16 @@ window.SplunkTest = {
                 this.concise = "0";
             }
 
-            let dataModelDefinition = JSON.parse(props.content.description);
+            var dataModelDefinition = JSON.parse(props.content.description);
 
             this.objectNames = dataModelDefinition.objectNameList;
             this.displayName = dataModelDefinition.displayName;
             this.description = dataModelDefinition.description;
 
             // Parse the objects for this data model           
-            let objs = dataModelDefinition.objects;
+            var objs = dataModelDefinition.objects;
             this.objects = [];
-            for (let i = 0; i < objs.length; i++) {
+            for (var i = 0; i < objs.length; i++) {
                 this.objects.push(new root.DataModelObject(objs[i], this));
             }
 
@@ -7980,7 +8917,7 @@ window.SplunkTest = {
          * @method splunkjs.Service.DataModel
          */
         objectByName: function(name) {
-            for (let i = 0; i < this.objects.length; i++) {
+            for (var i = 0; i < this.objects.length; i++) {
                 if (this.objects[i].name === name) {
                     return this.objects[i];
                 }
@@ -8007,27 +8944,27 @@ window.SplunkTest = {
          *         Valid keys are: `enabled`, `earliestTime`, `cronSchedule`.
          *         Any keys not set will be pulled from the acceleration settings already
          *         set on this data model.
-         * @param {Number} response_timeout A timeout period for aborting a request in milisecs (0 means no timeout).
+         * @param {Function} callback A function to call when the data model is updated: `(err, dataModel)`.
          *
          * @method splunkjs.Service.DataModel
          */
-        update: function(props, response_timeout) {
-            if (!response_timeout && utils.isNumber(props)) {
-                response_timeout = props;
+        update: function(props, callback) {
+            if (utils.isUndefined(callback)) {
+                callback = props;
                 props = {};
             }
-            props = props||{};
-            
+            callback = callback || function() {};
+
             if (!props) {
-                // Exit if props isn't set
-                return Promise.reject("Must specify a props argument to update a data model.");
+                callback(new Error("Must specify a props argument to update a data model."));
+                return; // Exit if props isn't set, to avoid calling the callback twice.
             }
             if (props.hasOwnProperty("name")) {
-                // Exit if the name is set
-                return Promise.reject(["Cannot set 'name' field in 'update'", this]);
+                callback(new Error("Cannot set 'name' field in 'update'"), this);
+                return; // Exit if the name is set, to avoid calling the callback twice.
             }
 
-            let updatedProps = {
+            var updatedProps = {
                 acceleration: JSON.stringify({
                     enabled: props.accceleration && props.acceleration.enabled || this.acceleration.enabled,
                     earliest_time: props.accceleration && props.acceleration.earliestTime || this.acceleration.earliestTime,
@@ -8036,11 +8973,14 @@ window.SplunkTest = {
             };
 
             var that = this;
-            return this.post("", updatedProps, response_timeout).then((response) => {
-                let dataModelNamespace = utils.namespaceFromProperties(response.data.entry[0]);
-                return new root.DataModel(that.service, response.data.entry[0].name, dataModelNamespace, response.data.entry[0]);
-            }).catch((err) => {
-                throw [err, that]
+            return this.post("", updatedProps, function(err, response) {
+                if (err) {
+                    callback(err, that);
+                }
+                else {
+                    var dataModelNamespace = utils.namespaceFromProperties(response.data.entry[0]);
+                    callback(null, new root.DataModel(that.service, response.data.entry[0].name, dataModelNamespace, response.data.entry[0]));
+                }
             });
         }
     });
@@ -8090,23 +9030,31 @@ window.SplunkTest = {
          * @param {String} name The name of the data model to create. If it contains spaces they will be replaced
          *     with underscores.
          * @param {Object} params A dictionary of properties.
-         * @param {Number} response_timeout A timeout period for aborting a request in milisecs (0 means no timeout).
+         * @param {Function} callback A function to call with the new `DataModel` object: `(err, createdDataModel)`.
          *
          * @method splunkjs.Service.DataModels
          */
-        create: function(name, params, response_timeout) {
-            if (utils.isNumber(params) && !response_timeout) {
-                response_timeout = params;
+        create: function(name, params, callback) {
+            // If we get (name, callback) instead of (name, params, callback)
+            // do the necessary variable swap
+            if (utils.isFunction(params) && !callback) {
+                callback = params;
                 params = {};
             }
 
             params = params || {};
+            callback = callback || function(){};
             name = name.replace(/ /g, "_");
 
             var that = this;
-            return this.post("", {name: name, description: JSON.stringify(params)}, response_timeout).then((response) => {
-                let dataModel = new root.DataModel(that.service, response.data.entry[0].name, that.namespace, response.data.entry[0]);
-                return dataModel;
+            return this.post("", {name: name, description: JSON.stringify(params)}, function(err, response) {
+                if (err) {
+                    callback(err);
+                }
+                else {
+                    var dataModel = new root.DataModel(that.service, response.data.entry[0].name, that.namespace, response.data.entry[0]);
+                    callback(null, dataModel);
+                }
             });
         },
 
@@ -8121,7 +9069,7 @@ window.SplunkTest = {
          * @method splunkjs.Service.DataModels
          */
         instantiateEntity: function(props) {
-            let entityNamespace = utils.namespaceFromProperties(props);
+            var entityNamespace = utils.namespaceFromProperties(props);
             return new root.DataModel(this.service, props.name, entityNamespace, props);
         }
     });
@@ -8137,29 +9085,30 @@ window.SplunkTest = {
             this._offset = 0;
         },
         
-        /**
-         * Fetches the next page from the endpoint.
-         *
-         * @param {Number} response_timeout A timeout period for aborting a request in milisecs (0 means no timeout).
-         *
-         * @method splunkjs.Service.PaginatedEndpointIterator
-         */
-        next: function(response_timeout) {
-            let that = this;
-            let params = {
+        // Fetches the next page from the endpoint.
+        next: function(callback) {
+            callback = callback || function() {};
+            
+            var that = this;
+            var params = {
                 count: this._pagesize,
                 offset: this._offset
             };
-            return this._endpoint(params, response_timeout).then((response) => {
-                let [results, job] = response;
-                let numResults = results.rows ? results.rows.length : 0;
-                that._offset += numResults;
-                return [results, numResults > 0];
+            return this._endpoint(params, function(err, results) {
+                if (err) {
+                    callback(err);
+                }
+                else {                    
+                    var numResults = (results.rows ? results.rows.length : 0);
+                    that._offset += numResults;
+                    
+                    callback(null, results, numResults > 0);
+                }
             });
         }
     });
 })();
-},{"./context":3,"./http":5,"./jquery.class":6,"./paths":8,"./utils":11}],11:[function(require,module,exports){
+},{"./async":3,"./context":4,"./http":6,"./jquery.class":7,"./paths":9,"./utils":12}],12:[function(require,module,exports){
 /*!*/
 // Copyright 2012 Splunk, Inc.
 //
@@ -8250,7 +9199,7 @@ window.SplunkTest = {
      * @function splunkjs.Utils
      */
     root.indexOf = function(arr, search) {
-        for(let i=0; i<arr.length; i++) {
+        for(var i=0; i<arr.length; i++) {
             if (arr[i] === search) {
                 return i;
             }
@@ -8292,7 +9241,7 @@ window.SplunkTest = {
      * @function splunkjs.Utils
      */
     root.startsWith = function(original, prefix) {
-        let matches = original.match("^" + prefix);
+        var matches = original.match("^" + prefix);
         return matches && matches.length > 0 && matches[0] === prefix;  
     };
 
@@ -8310,7 +9259,7 @@ window.SplunkTest = {
      * @function splunkjs.Utils
      */
     root.endsWith = function(original, suffix) {
-        let matches = original.match(suffix + "$");
+        var matches = original.match(suffix + "$");
         return matches && matches.length > 0 && matches[0] === suffix;  
     };
     
@@ -8451,7 +9400,7 @@ window.SplunkTest = {
             return obj.length === 0;
         }
         
-        for (let key in obj) {
+        for (var key in obj) {
             if (this.hasOwnProperty.call(obj, key)) {
                 return false;
             }
@@ -8481,14 +9430,14 @@ window.SplunkTest = {
             obj.forEach(iterator, context);
         } 
         else if (obj.length === +obj.length) {
-            for (let i = 0, l = obj.length; i < l; i++) {
+            for (var i = 0, l = obj.length; i < l; i++) {
                 if (i in obj && iterator.call(context, obj[i], i, obj) === {}) {
                     return;
                 }
             }
         } 
         else {
-            for (let key in obj) {
+            for (var key in obj) {
                 if (obj.hasOwnProperty(key)) {
                     if (iterator.call(context, obj[key], key, obj) === {}) {
                         return;
@@ -8515,7 +9464,7 @@ window.SplunkTest = {
      */
     root.extend = function(obj) {
         root.forEach(Array.prototype.slice.call(arguments, 1), function(source) {
-            for (let prop in source) {
+            for (var prop in source) {
                 obj[prop] = source[prop];
             }
         });
@@ -8577,7 +9526,7 @@ window.SplunkTest = {
       * @function splunkjs.Utils
       */
     root.keyOf = function(val, obj) {
-        for (let k in obj) {
+        for (var k in obj) {
             if (obj.hasOwnProperty(k) && obj[k] === val) {
                 return k;
             }
@@ -8596,7 +9545,7 @@ window.SplunkTest = {
      */
     root.getWithVersion = function(version, map) {
         map = map || {};
-        let currentVersion = (version + "") || "";
+        var currentVersion = (version + "") || "";
         while (currentVersion !== "") {
             if (map.hasOwnProperty(currentVersion)) {
                 return map[currentVersion];
@@ -8639,315 +9588,8 @@ window.SplunkTest = {
         return fs.readFileSync(path.resolve(filename, relativePath)).toString();
     };
 
-    /**
-     * can make a function to pause execution for a fixed amount of time
-     *
-     * @example
-     * 
-     *      await Utils.sleep(1000);
-     * 
-     * @param {Number} ms The timeout period, in milliseconds.
-     *
-     * @function splunkjs.Utils
-     */
-    root.sleep = function (ms) {
-        return new Promise(resolve => setTimeout(resolve, ms));
-    }
-
-    /**
-     * Runs an asynchronous `while` loop.
-     *
-     * @example
-     *      
-     *      let i = 0;
-     *      try {
-     *          await Utils.whilst(
-     *              function() { return i++ < 3; },
-     *              async function() {
-     *                  await Utils.sleep(0);
-     *              });
-     *      } catch(err) {
-     *          console.log(err);
-     *      }
-     *
-     * @param {Function} condition A function that returns a _boolean_ indicating whether the condition has been met.
-     * @param {Function} body A function that runs the body of the loop.
-     *
-     * @function splunkjs.Utils
-     */
-    root.whilst = async function(condition, body){
-        condition = condition || function() { return false; };
-        body = body || function() { return; };
-
-        let iterationDone = function(err) {
-            if (err) {
-                throw err;
-            }
-            else {
-                return root.whilst(condition, body);
-            }
-        };
-
-        if(condition()){
-            return iterationDone(await body())
-        }else{
-            return null;
-        }
-    }
-
-    /**
-     * Runs multiple functions (tasks) in parallel. 
-     * Each task takes the function as a parameter. 
-     * When all tasks have been completed or if an error occurs, the 
-     * function returns a combined results of all tasks. 
-     *
-     * **Note**: Tasks might not be run in the same order as they appear in the array,
-     * but the results will be returned in that order. 
-     *
-     * @example
-     *      
-     *      let [err, one, two] = await Utils.parallel([
-     *          function() {
-     *              return [null, 1];
-     *          },
-     *          function() {
-     *              return [null, 2, 3];
-     *          }]
-     *      );
-     *      console.log(err); // == null
-     *      console.log(one); // == 1
-     *      console.log(two); // == [1,2]
-     *
-     * @param {Function} tasks An array of functions.
-     * @param {Boolean} fromMap set to true when method call is made from parallerMap function. (optional)
-     *
-     * @function splunkjs.Utils
-     */
-    root.parallel = async function (tasks, fromMap) {
-        let res = [];
-        if(!root.isArray(tasks) && root.isFunction(fromMap)){
-            let taskList = [];
-            Object.keys(arguments).forEach(key => {
-                taskList.push(arguments[key]);
-            });
-            tasks = taskList;
-            fromMap = false;
-        }
-        for(let task of tasks) {
-            let result = task();
-            res.push(result);
-        }
-        let result = await Promise.all(res);
-        let response = [];
-        for(let resp of result){
-            if(resp){
-                if(resp[0]){
-                    return [resp[0], null];
-                }
-                if(resp.length > 2){
-                    response.push(resp.slice(1));
-                }else{
-                    response.push(resp[1]);
-                }
-            }
-        }
-        return fromMap ? [null, response] : [null, ...response];
-    }
-
-    /**
-     * Runs an asynchronous function (mapping it) over each element in an array, in parallel.
-     * When all tasks have been completed or if an error occurs, function
-     * returns the resulting array.
-     *
-     * @example
-     *      
-     *      let [err, vals] = await Utils.parallelMap(
-     *          [1, 2, 3],
-     *          async function(val, idx) { 
-     *              if (val === 2) {
-     *                  await Utils.sleep(100);
-     *                  return [null, val+1];
-     *               }
-     *              else {
-     *                  return [null, val + 1];
-     *              }
-     *          });
-     *      console.log(vals); // == [2,3,4]
-     *
-     * @param {Array} vals An array of values.
-     * @param {Function} fn A function (possibly asynchronous) to apply to each element. 
-     *
-     * @function splunkjs.Utils
-     */
-    root.parallelMap = async function (vals, fn) {
-        vals = vals || [];
-        let tasks = [];
-        let createTask = function(val, idx) {
-            return function() { return fn(val, idx); };
-        };
-        
-        for(let i = 0; i < vals.length; i++) {
-            tasks.push(createTask(vals[i], i));
-        }
-        return await root.parallel(tasks, true);
-    }
-
-    /**
-     * Applies an asynchronous function over each element in an array, in parallel.
-     * If an error occurs, the function returns an error.
-     *
-     * @example
-     *      
-     *      var total = 0;
-     *      let err = await Utils.parallelEach(
-     *          [1, 2, 3],
-     *          async function(val, idx) { 
-     *              var go = function() {
-     *                  total += val;
-     *              };
-     *              
-     *              if (idx === 1) {
-     *                  await Utils.sleep(100);
-     *                  go();
-     *              }
-     *              else {
-     *                  go();
-     *              }
-     *          });
-     *      console.log(total); // == 6
-     *
-     * @param {Array} vals An array of values.
-     * @param {Function} fn A function (possibly asynchronous) to apply to each element.
-     *
-     * @function splunkjs.Utils
-     */
-    root.parallelEach =  async function (vals, fn) {  
-        vals = vals || [];
-        let [err,res] = await root.parallelMap(vals, fn);
-        return err || null;
-    };
-
-    /**
-     * Runs multiple functions (tasks) in series. 
-     * Each task takes the function as a parameter. 
-     * When all tasks have been completed or if an error occurs, the 
-     * function returns the combined results of all tasks in the order
-     * they were run.
-     * 
-     * @example
-     *      
-     *      var keeper = 0;
-     *      let [err, one, two] = awiat Utils.series([
-     *          async function() {
-     *              await Utils.sleep(10);
-     *              console.log(keeper++); // == 0
-     *              return [null, 1];
-     *          },
-     *          function() {
-     *              console.log(keeper++); // == 1
-     *              return [null, 2, 3];
-     *          }]
-     *      );
-     *      console.log(err); // == null
-     *      console.log(one); // == 1
-     *      console.log(two); // == [2, 3]
-     *
-     * @param {Function} tasks An array of functions.
-     * @param {Boolean} fromMap set to true when method call is made from seriesMap function. (optional)
-     *
-     * @function splunkjs.Utils
-     */
-    root.series = async function (tasks, fromMap) {
-        let res = [];
-        if(!root.isArray(tasks)&& root.isFunction(fromMap)){
-            let taskList = [];
-            Object.keys(arguments).forEach(key => {
-                taskList.push(arguments[key]);
-            });
-            tasks = taskList;
-            fromMap = false;
-        }
-        for(let task of tasks) {
-            let result = await task();
-            if(result){
-                if(result[0]){
-                    return [result[0], null];
-                }
-                if(result.length > 2){
-                    res.push(result.slice(1));
-                }else{
-                    res.push(result[1]);
-                }
-            }
-        }
-        return fromMap ? [null, res] : [null, ...res];
-    }
-
-    /**
-     * Runs an asynchronous function (mapping it) over each element in an array, in series.
-     * When all tasks have been completed or if an error occurs, function
-     * returns the resulting array.
-     *
-     * @example
-     *      
-     *      var keeper = 1;
-     *      let [err, vals] = await Utils.seriesMap(
-     *          [1, 2, 3],
-     *          function(val, idx) { 
-     *              console.log(keeper++); // == 1, then 2, then 3
-     *              return [null, val + 1];
-     *          }
-     *      );
-     *      console.log(vals); // == [2,3,4];
-     *
-     * @param {Array} vals An array of values.
-     * @param {Function} fn A function (possibly asynchronous) to apply to each element.
-     *
-     * @function splunkjs.Utils
-     */
-    root.seriesMap = async function (vals, fn) {
-        vals = vals || [];
-        let tasks = [];
-        let createTask = function(val, idx) {
-            return function() { 
-                return fn(val, idx); 
-            };
-        };
-        for(let i = 0; i < vals.length; i++) {
-            tasks.push(createTask(vals[i], i));
-        }
-        return await root.series(tasks, true);
-    }
-
-    /**
-     * Applies an asynchronous function over each element in an array, in series.
-     * If an error occurs, the function returns an error.
-     *
-     * @example
-     *      
-     *      var results = [1, 3, 6];
-     *      var total = 0;
-     *      let err = await Utils.seriesEach(
-     *          [1, 2, 3],
-     *          function(val, idx) { 
-     *              total += val;
-     *              console.log(total === results[idx]); //== true
-     *          });
-     *      console.log(total); //== 6
-     *
-     * @param {Array} vals An array of values.
-     * @param {Function} fn A function (possibly asynchronous)to apply to each element.
-     *
-     * @function splunkjs.Utils
-     */
-    root.seriesEach = async function (vals, fn) {  
-        vals = vals || [];
-        let [err,res] = await root.seriesMap(vals, fn);
-        return err || null;
-    };
-
 })();
-},{"fs":66,"path":231}],12:[function(require,module,exports){
+},{"fs":67,"path":232}],13:[function(require,module,exports){
 'use strict';
 
 const asn1 = exports;
@@ -8960,7 +9602,7 @@ asn1.constants = require('./asn1/constants');
 asn1.decoders = require('./asn1/decoders');
 asn1.encoders = require('./asn1/encoders');
 
-},{"./asn1/api":13,"./asn1/base":15,"./asn1/constants":19,"./asn1/decoders":21,"./asn1/encoders":24,"bn.js":26}],13:[function(require,module,exports){
+},{"./asn1/api":14,"./asn1/base":16,"./asn1/constants":20,"./asn1/decoders":22,"./asn1/encoders":25,"bn.js":27}],14:[function(require,module,exports){
 'use strict';
 
 const encoders = require('./encoders');
@@ -9019,7 +9661,7 @@ Entity.prototype.encode = function encode(data, enc, /* internal */ reporter) {
   return this._getEncoder(enc).encode(data, reporter);
 };
 
-},{"./decoders":21,"./encoders":24,"inherits":193}],14:[function(require,module,exports){
+},{"./decoders":22,"./encoders":25,"inherits":194}],15:[function(require,module,exports){
 'use strict';
 
 const inherits = require('inherits');
@@ -9174,7 +9816,7 @@ EncoderBuffer.prototype.join = function join(out, offset) {
   return out;
 };
 
-},{"../base/reporter":17,"inherits":193,"safer-buffer":270}],15:[function(require,module,exports){
+},{"../base/reporter":18,"inherits":194,"safer-buffer":271}],16:[function(require,module,exports){
 'use strict';
 
 const base = exports;
@@ -9184,7 +9826,7 @@ base.DecoderBuffer = require('./buffer').DecoderBuffer;
 base.EncoderBuffer = require('./buffer').EncoderBuffer;
 base.Node = require('./node');
 
-},{"./buffer":14,"./node":16,"./reporter":17}],16:[function(require,module,exports){
+},{"./buffer":15,"./node":17,"./reporter":18}],17:[function(require,module,exports){
 'use strict';
 
 const Reporter = require('../base/reporter').Reporter;
@@ -9824,7 +10466,7 @@ Node.prototype._isPrintstr = function isPrintstr(str) {
   return /^[A-Za-z0-9 '()+,-./:=?]*$/.test(str);
 };
 
-},{"../base/buffer":14,"../base/reporter":17,"minimalistic-assert":201}],17:[function(require,module,exports){
+},{"../base/buffer":15,"../base/reporter":18,"minimalistic-assert":202}],18:[function(require,module,exports){
 'use strict';
 
 const inherits = require('inherits');
@@ -9949,7 +10591,7 @@ ReporterError.prototype.rethrow = function rethrow(msg) {
   return this;
 };
 
-},{"inherits":193}],18:[function(require,module,exports){
+},{"inherits":194}],19:[function(require,module,exports){
 'use strict';
 
 // Helper
@@ -10009,7 +10651,7 @@ exports.tag = {
 };
 exports.tagByName = reverse(exports.tag);
 
-},{}],19:[function(require,module,exports){
+},{}],20:[function(require,module,exports){
 'use strict';
 
 const constants = exports;
@@ -10032,7 +10674,7 @@ constants._reverse = function reverse(map) {
 
 constants.der = require('./der');
 
-},{"./der":18}],20:[function(require,module,exports){
+},{"./der":19}],21:[function(require,module,exports){
 'use strict';
 
 const inherits = require('inherits');
@@ -10369,7 +11011,7 @@ function derDecodeLen(buf, primitive, fail) {
   return len;
 }
 
-},{"../base/buffer":14,"../base/node":16,"../constants/der":18,"bn.js":26,"inherits":193}],21:[function(require,module,exports){
+},{"../base/buffer":15,"../base/node":17,"../constants/der":19,"bn.js":27,"inherits":194}],22:[function(require,module,exports){
 'use strict';
 
 const decoders = exports;
@@ -10377,7 +11019,7 @@ const decoders = exports;
 decoders.der = require('./der');
 decoders.pem = require('./pem');
 
-},{"./der":20,"./pem":22}],22:[function(require,module,exports){
+},{"./der":21,"./pem":23}],23:[function(require,module,exports){
 'use strict';
 
 const inherits = require('inherits');
@@ -10430,7 +11072,7 @@ PEMDecoder.prototype.decode = function decode(data, options) {
   return DERDecoder.prototype.decode.call(this, input, options);
 };
 
-},{"./der":20,"inherits":193,"safer-buffer":270}],23:[function(require,module,exports){
+},{"./der":21,"inherits":194,"safer-buffer":271}],24:[function(require,module,exports){
 'use strict';
 
 const inherits = require('inherits');
@@ -10727,7 +11369,7 @@ function encodeTag(tag, primitive, cls, reporter) {
   return res;
 }
 
-},{"../base/node":16,"../constants/der":18,"inherits":193,"safer-buffer":270}],24:[function(require,module,exports){
+},{"../base/node":17,"../constants/der":19,"inherits":194,"safer-buffer":271}],25:[function(require,module,exports){
 'use strict';
 
 const encoders = exports;
@@ -10735,7 +11377,7 @@ const encoders = exports;
 encoders.der = require('./der');
 encoders.pem = require('./pem');
 
-},{"./der":23,"./pem":25}],25:[function(require,module,exports){
+},{"./der":24,"./pem":26}],26:[function(require,module,exports){
 'use strict';
 
 const inherits = require('inherits');
@@ -10760,7 +11402,7 @@ PEMEncoder.prototype.encode = function encode(data, options) {
   return out.join('\n');
 };
 
-},{"./der":23,"inherits":193}],26:[function(require,module,exports){
+},{"./der":24,"inherits":194}],27:[function(require,module,exports){
 (function (module, exports) {
   'use strict';
 
@@ -14208,7 +14850,7 @@ PEMEncoder.prototype.encode = function encode(data, options) {
   };
 })(typeof module === 'undefined' || module, this);
 
-},{"buffer":36}],27:[function(require,module,exports){
+},{"buffer":37}],28:[function(require,module,exports){
 (function (global){(function (){
 'use strict';
 
@@ -14718,7 +15360,7 @@ var objectKeys = Object.keys || function (obj) {
 };
 
 }).call(this)}).call(this,typeof global !== "undefined" ? global : typeof self !== "undefined" ? self : typeof window !== "undefined" ? window : {})
-},{"object-assign":213,"util/":30}],28:[function(require,module,exports){
+},{"object-assign":214,"util/":31}],29:[function(require,module,exports){
 if (typeof Object.create === 'function') {
   // implementation from standard node.js 'util' module
   module.exports = function inherits(ctor, superCtor) {
@@ -14743,14 +15385,14 @@ if (typeof Object.create === 'function') {
   }
 }
 
-},{}],29:[function(require,module,exports){
+},{}],30:[function(require,module,exports){
 module.exports = function isBuffer(arg) {
   return arg && typeof arg === 'object'
     && typeof arg.copy === 'function'
     && typeof arg.fill === 'function'
     && typeof arg.readUInt8 === 'function';
 }
-},{}],30:[function(require,module,exports){
+},{}],31:[function(require,module,exports){
 (function (process,global){(function (){
 // Copyright Joyent, Inc. and other Node contributors.
 //
@@ -15340,7 +15982,7 @@ function hasOwnProperty(obj, prop) {
 }
 
 }).call(this)}).call(this,require('_process'),typeof global !== "undefined" ? global : typeof self !== "undefined" ? self : typeof window !== "undefined" ? window : {})
-},{"./support/isBuffer":29,"_process":239,"inherits":28}],31:[function(require,module,exports){
+},{"./support/isBuffer":30,"_process":240,"inherits":29}],32:[function(require,module,exports){
 /*!
  * assertion-error
  * Copyright(c) 2013 Jake Luer <jake@qualiancy.com>
@@ -15458,7 +16100,7 @@ AssertionError.prototype.toJSON = function (stack) {
   return props;
 };
 
-},{}],32:[function(require,module,exports){
+},{}],33:[function(require,module,exports){
 (function (global){(function (){
 'use strict';
 
@@ -15487,7 +16129,7 @@ module.exports = function availableTypedArrays() {
 };
 
 }).call(this)}).call(this,typeof global !== "undefined" ? global : typeof self !== "undefined" ? self : typeof window !== "undefined" ? window : {})
-},{}],33:[function(require,module,exports){
+},{}],34:[function(require,module,exports){
 'use strict'
 
 exports.byteLength = byteLength
@@ -15639,7 +16281,7 @@ function fromByteArray (uint8) {
   return parts.join('')
 }
 
-},{}],34:[function(require,module,exports){
+},{}],35:[function(require,module,exports){
 (function (module, exports) {
   'use strict';
 
@@ -19188,7 +19830,7 @@ function fromByteArray (uint8) {
   };
 })(typeof module === 'undefined' || module, this);
 
-},{"buffer":36}],35:[function(require,module,exports){
+},{"buffer":37}],36:[function(require,module,exports){
 var r;
 
 module.exports = function rand(len) {
@@ -19255,9 +19897,9 @@ if (typeof self === 'object') {
   }
 }
 
-},{"crypto":36}],36:[function(require,module,exports){
+},{"crypto":37}],37:[function(require,module,exports){
 
-},{}],37:[function(require,module,exports){
+},{}],38:[function(require,module,exports){
 // based on the aes implimentation in triple sec
 // https://github.com/keybase/triplesec
 // which is in turn based on the one from crypto-js
@@ -19487,7 +20129,7 @@ AES.prototype.scrub = function () {
 
 module.exports.AES = AES
 
-},{"safe-buffer":269}],38:[function(require,module,exports){
+},{"safe-buffer":270}],39:[function(require,module,exports){
 var aes = require('./aes')
 var Buffer = require('safe-buffer').Buffer
 var Transform = require('cipher-base')
@@ -19606,7 +20248,7 @@ StreamCipher.prototype.setAAD = function setAAD (buf) {
 
 module.exports = StreamCipher
 
-},{"./aes":37,"./ghash":42,"./incr32":43,"buffer-xor":67,"cipher-base":105,"inherits":193,"safe-buffer":269}],39:[function(require,module,exports){
+},{"./aes":38,"./ghash":43,"./incr32":44,"buffer-xor":68,"cipher-base":106,"inherits":194,"safe-buffer":270}],40:[function(require,module,exports){
 var ciphers = require('./encrypter')
 var deciphers = require('./decrypter')
 var modes = require('./modes/list.json')
@@ -19621,7 +20263,7 @@ exports.createDecipher = exports.Decipher = deciphers.createDecipher
 exports.createDecipheriv = exports.Decipheriv = deciphers.createDecipheriv
 exports.listCiphers = exports.getCiphers = getCiphers
 
-},{"./decrypter":40,"./encrypter":41,"./modes/list.json":51}],40:[function(require,module,exports){
+},{"./decrypter":41,"./encrypter":42,"./modes/list.json":52}],41:[function(require,module,exports){
 var AuthCipher = require('./authCipher')
 var Buffer = require('safe-buffer').Buffer
 var MODES = require('./modes')
@@ -19747,7 +20389,7 @@ function createDecipher (suite, password) {
 exports.createDecipher = createDecipher
 exports.createDecipheriv = createDecipheriv
 
-},{"./aes":37,"./authCipher":38,"./modes":50,"./streamCipher":53,"cipher-base":105,"evp_bytestokey":148,"inherits":193,"safe-buffer":269}],41:[function(require,module,exports){
+},{"./aes":38,"./authCipher":39,"./modes":51,"./streamCipher":54,"cipher-base":106,"evp_bytestokey":149,"inherits":194,"safe-buffer":270}],42:[function(require,module,exports){
 var MODES = require('./modes')
 var AuthCipher = require('./authCipher')
 var Buffer = require('safe-buffer').Buffer
@@ -19863,7 +20505,7 @@ function createCipher (suite, password) {
 exports.createCipheriv = createCipheriv
 exports.createCipher = createCipher
 
-},{"./aes":37,"./authCipher":38,"./modes":50,"./streamCipher":53,"cipher-base":105,"evp_bytestokey":148,"inherits":193,"safe-buffer":269}],42:[function(require,module,exports){
+},{"./aes":38,"./authCipher":39,"./modes":51,"./streamCipher":54,"cipher-base":106,"evp_bytestokey":149,"inherits":194,"safe-buffer":270}],43:[function(require,module,exports){
 var Buffer = require('safe-buffer').Buffer
 var ZEROES = Buffer.alloc(16, 0)
 
@@ -19954,7 +20596,7 @@ GHASH.prototype.final = function (abl, bl) {
 
 module.exports = GHASH
 
-},{"safe-buffer":269}],43:[function(require,module,exports){
+},{"safe-buffer":270}],44:[function(require,module,exports){
 function incr32 (iv) {
   var len = iv.length
   var item
@@ -19971,7 +20613,7 @@ function incr32 (iv) {
 }
 module.exports = incr32
 
-},{}],44:[function(require,module,exports){
+},{}],45:[function(require,module,exports){
 var xor = require('buffer-xor')
 
 exports.encrypt = function (self, block) {
@@ -19990,7 +20632,7 @@ exports.decrypt = function (self, block) {
   return xor(out, pad)
 }
 
-},{"buffer-xor":67}],45:[function(require,module,exports){
+},{"buffer-xor":68}],46:[function(require,module,exports){
 var Buffer = require('safe-buffer').Buffer
 var xor = require('buffer-xor')
 
@@ -20025,7 +20667,7 @@ exports.encrypt = function (self, data, decrypt) {
   return out
 }
 
-},{"buffer-xor":67,"safe-buffer":269}],46:[function(require,module,exports){
+},{"buffer-xor":68,"safe-buffer":270}],47:[function(require,module,exports){
 var Buffer = require('safe-buffer').Buffer
 
 function encryptByte (self, byteParam, decrypt) {
@@ -20069,7 +20711,7 @@ exports.encrypt = function (self, chunk, decrypt) {
   return out
 }
 
-},{"safe-buffer":269}],47:[function(require,module,exports){
+},{"safe-buffer":270}],48:[function(require,module,exports){
 var Buffer = require('safe-buffer').Buffer
 
 function encryptByte (self, byteParam, decrypt) {
@@ -20096,7 +20738,7 @@ exports.encrypt = function (self, chunk, decrypt) {
   return out
 }
 
-},{"safe-buffer":269}],48:[function(require,module,exports){
+},{"safe-buffer":270}],49:[function(require,module,exports){
 var xor = require('buffer-xor')
 var Buffer = require('safe-buffer').Buffer
 var incr32 = require('../incr32')
@@ -20128,7 +20770,7 @@ exports.encrypt = function (self, chunk) {
   return xor(chunk, pad)
 }
 
-},{"../incr32":43,"buffer-xor":67,"safe-buffer":269}],49:[function(require,module,exports){
+},{"../incr32":44,"buffer-xor":68,"safe-buffer":270}],50:[function(require,module,exports){
 exports.encrypt = function (self, block) {
   return self._cipher.encryptBlock(block)
 }
@@ -20137,7 +20779,7 @@ exports.decrypt = function (self, block) {
   return self._cipher.decryptBlock(block)
 }
 
-},{}],50:[function(require,module,exports){
+},{}],51:[function(require,module,exports){
 var modeModules = {
   ECB: require('./ecb'),
   CBC: require('./cbc'),
@@ -20157,7 +20799,7 @@ for (var key in modes) {
 
 module.exports = modes
 
-},{"./cbc":44,"./cfb":45,"./cfb1":46,"./cfb8":47,"./ctr":48,"./ecb":49,"./list.json":51,"./ofb":52}],51:[function(require,module,exports){
+},{"./cbc":45,"./cfb":46,"./cfb1":47,"./cfb8":48,"./ctr":49,"./ecb":50,"./list.json":52,"./ofb":53}],52:[function(require,module,exports){
 module.exports={
   "aes-128-ecb": {
     "cipher": "AES",
@@ -20350,7 +20992,7 @@ module.exports={
   }
 }
 
-},{}],52:[function(require,module,exports){
+},{}],53:[function(require,module,exports){
 (function (Buffer){(function (){
 var xor = require('buffer-xor')
 
@@ -20370,7 +21012,7 @@ exports.encrypt = function (self, chunk) {
 }
 
 }).call(this)}).call(this,require("buffer").Buffer)
-},{"buffer":68,"buffer-xor":67}],53:[function(require,module,exports){
+},{"buffer":69,"buffer-xor":68}],54:[function(require,module,exports){
 var aes = require('./aes')
 var Buffer = require('safe-buffer').Buffer
 var Transform = require('cipher-base')
@@ -20399,7 +21041,7 @@ StreamCipher.prototype._final = function () {
 
 module.exports = StreamCipher
 
-},{"./aes":37,"cipher-base":105,"inherits":193,"safe-buffer":269}],54:[function(require,module,exports){
+},{"./aes":38,"cipher-base":106,"inherits":194,"safe-buffer":270}],55:[function(require,module,exports){
 var DES = require('browserify-des')
 var aes = require('browserify-aes/browser')
 var aesModes = require('browserify-aes/modes')
@@ -20468,7 +21110,7 @@ exports.createDecipher = exports.Decipher = createDecipher
 exports.createDecipheriv = exports.Decipheriv = createDecipheriv
 exports.listCiphers = exports.getCiphers = getCiphers
 
-},{"browserify-aes/browser":39,"browserify-aes/modes":50,"browserify-des":55,"browserify-des/modes":56,"evp_bytestokey":148}],55:[function(require,module,exports){
+},{"browserify-aes/browser":40,"browserify-aes/modes":51,"browserify-des":56,"browserify-des/modes":57,"evp_bytestokey":149}],56:[function(require,module,exports){
 var CipherBase = require('cipher-base')
 var des = require('des.js')
 var inherits = require('inherits')
@@ -20520,7 +21162,7 @@ DES.prototype._final = function () {
   return Buffer.from(this._des.final())
 }
 
-},{"cipher-base":105,"des.js":117,"inherits":193,"safe-buffer":269}],56:[function(require,module,exports){
+},{"cipher-base":106,"des.js":118,"inherits":194,"safe-buffer":270}],57:[function(require,module,exports){
 exports['des-ecb'] = {
   key: 8,
   iv: 0
@@ -20546,7 +21188,7 @@ exports['des-ede'] = {
   iv: 0
 }
 
-},{}],57:[function(require,module,exports){
+},{}],58:[function(require,module,exports){
 (function (Buffer){(function (){
 var BN = require('bn.js')
 var randomBytes = require('randombytes')
@@ -20585,10 +21227,10 @@ crt.getr = getr
 module.exports = crt
 
 }).call(this)}).call(this,require("buffer").Buffer)
-},{"bn.js":34,"buffer":68,"randombytes":251}],58:[function(require,module,exports){
+},{"bn.js":35,"buffer":69,"randombytes":252}],59:[function(require,module,exports){
 module.exports = require('./browser/algorithms.json')
 
-},{"./browser/algorithms.json":59}],59:[function(require,module,exports){
+},{"./browser/algorithms.json":60}],60:[function(require,module,exports){
 module.exports={
   "sha224WithRSAEncryption": {
     "sign": "rsa",
@@ -20742,7 +21384,7 @@ module.exports={
   }
 }
 
-},{}],60:[function(require,module,exports){
+},{}],61:[function(require,module,exports){
 module.exports={
   "1.3.132.0.10": "secp256k1",
   "1.3.132.0.33": "p224",
@@ -20752,7 +21394,7 @@ module.exports={
   "1.3.132.0.35": "p521"
 }
 
-},{}],61:[function(require,module,exports){
+},{}],62:[function(require,module,exports){
 var Buffer = require('safe-buffer').Buffer
 var createHash = require('create-hash')
 var stream = require('readable-stream')
@@ -20846,7 +21488,7 @@ module.exports = {
   createVerify: createVerify
 }
 
-},{"./algorithms.json":59,"./sign":62,"./verify":63,"create-hash":109,"inherits":193,"readable-stream":267,"safe-buffer":269}],62:[function(require,module,exports){
+},{"./algorithms.json":60,"./sign":63,"./verify":64,"create-hash":110,"inherits":194,"readable-stream":268,"safe-buffer":270}],63:[function(require,module,exports){
 // much of this based on https://github.com/indutny/self-signed/blob/gh-pages/lib/rsa.js
 var Buffer = require('safe-buffer').Buffer
 var createHmac = require('create-hmac')
@@ -20991,7 +21633,7 @@ module.exports = sign
 module.exports.getKey = getKey
 module.exports.makeKey = makeKey
 
-},{"./curves.json":60,"bn.js":34,"browserify-rsa":57,"create-hmac":111,"elliptic":129,"parse-asn1":230,"safe-buffer":269}],63:[function(require,module,exports){
+},{"./curves.json":61,"bn.js":35,"browserify-rsa":58,"create-hmac":112,"elliptic":130,"parse-asn1":231,"safe-buffer":270}],64:[function(require,module,exports){
 // much of this based on https://github.com/indutny/self-signed/blob/gh-pages/lib/rsa.js
 var Buffer = require('safe-buffer').Buffer
 var BN = require('bn.js')
@@ -21077,7 +21719,7 @@ function checkValue (b, q) {
 
 module.exports = verify
 
-},{"./curves.json":60,"bn.js":34,"elliptic":129,"parse-asn1":230,"safe-buffer":269}],64:[function(require,module,exports){
+},{"./curves.json":61,"bn.js":35,"elliptic":130,"parse-asn1":231,"safe-buffer":270}],65:[function(require,module,exports){
 (function (process,Buffer){(function (){
 'use strict';
 /* eslint camelcase: "off" */
@@ -21489,7 +22131,7 @@ Zlib.prototype._reset = function () {
 
 exports.Zlib = Zlib;
 }).call(this)}).call(this,require('_process'),require("buffer").Buffer)
-},{"_process":239,"assert":27,"buffer":68,"pako/lib/zlib/constants":217,"pako/lib/zlib/deflate.js":219,"pako/lib/zlib/inflate.js":221,"pako/lib/zlib/zstream":225}],65:[function(require,module,exports){
+},{"_process":240,"assert":28,"buffer":69,"pako/lib/zlib/constants":218,"pako/lib/zlib/deflate.js":220,"pako/lib/zlib/inflate.js":222,"pako/lib/zlib/zstream":226}],66:[function(require,module,exports){
 (function (process){(function (){
 'use strict';
 
@@ -22101,9 +22743,9 @@ util.inherits(DeflateRaw, Zlib);
 util.inherits(InflateRaw, Zlib);
 util.inherits(Unzip, Zlib);
 }).call(this)}).call(this,require('_process'))
-},{"./binding":64,"_process":239,"assert":27,"buffer":68,"stream":279,"util":292}],66:[function(require,module,exports){
-arguments[4][36][0].apply(exports,arguments)
-},{"dup":36}],67:[function(require,module,exports){
+},{"./binding":65,"_process":240,"assert":28,"buffer":69,"stream":280,"util":293}],67:[function(require,module,exports){
+arguments[4][37][0].apply(exports,arguments)
+},{"dup":37}],68:[function(require,module,exports){
 (function (Buffer){(function (){
 module.exports = function xor (a, b) {
   var length = Math.min(a.length, b.length)
@@ -22117,7 +22759,7 @@ module.exports = function xor (a, b) {
 }
 
 }).call(this)}).call(this,require("buffer").Buffer)
-},{"buffer":68}],68:[function(require,module,exports){
+},{"buffer":69}],69:[function(require,module,exports){
 (function (Buffer){(function (){
 /*!
  * The buffer module from node.js, for the browser.
@@ -23898,7 +24540,7 @@ function numberIsNaN (obj) {
 }
 
 }).call(this)}).call(this,require("buffer").Buffer)
-},{"base64-js":33,"buffer":68,"ieee754":192}],69:[function(require,module,exports){
+},{"base64-js":34,"buffer":69,"ieee754":193}],70:[function(require,module,exports){
 module.exports = {
   "100": "Continue",
   "101": "Switching Protocols",
@@ -23964,7 +24606,7 @@ module.exports = {
   "511": "Network Authentication Required"
 }
 
-},{}],70:[function(require,module,exports){
+},{}],71:[function(require,module,exports){
 'use strict';
 
 var GetIntrinsic = require('get-intrinsic');
@@ -23981,7 +24623,7 @@ module.exports = function callBoundIntrinsic(name, allowMissing) {
 	return intrinsic;
 };
 
-},{"./":71,"get-intrinsic":153}],71:[function(require,module,exports){
+},{"./":72,"get-intrinsic":154}],72:[function(require,module,exports){
 'use strict';
 
 var bind = require('function-bind');
@@ -24030,10 +24672,10 @@ if ($defineProperty) {
 	module.exports.apply = applyBind;
 }
 
-},{"function-bind":151,"get-intrinsic":153}],72:[function(require,module,exports){
+},{"function-bind":152,"get-intrinsic":154}],73:[function(require,module,exports){
 module.exports = require('./lib/chai');
 
-},{"./lib/chai":73}],73:[function(require,module,exports){
+},{"./lib/chai":74}],74:[function(require,module,exports){
 /*!
  * chai
  * Copyright(c) 2011-2014 Jake Luer <jake@alogicalparadox.com>
@@ -24127,7 +24769,7 @@ exports.use(should);
 var assert = require('./chai/interface/assert');
 exports.use(assert);
 
-},{"./chai/assertion":74,"./chai/config":75,"./chai/core/assertions":76,"./chai/interface/assert":77,"./chai/interface/expect":78,"./chai/interface/should":79,"./chai/utils":93,"assertion-error":31}],74:[function(require,module,exports){
+},{"./chai/assertion":75,"./chai/config":76,"./chai/core/assertions":77,"./chai/interface/assert":78,"./chai/interface/expect":79,"./chai/interface/should":80,"./chai/utils":94,"assertion-error":32}],75:[function(require,module,exports){
 /*!
  * chai
  * http://chaijs.com
@@ -24304,7 +24946,7 @@ module.exports = function (_chai, util) {
   });
 };
 
-},{"./config":75}],75:[function(require,module,exports){
+},{"./config":76}],76:[function(require,module,exports){
 module.exports = {
 
   /**
@@ -24400,7 +25042,7 @@ module.exports = {
   proxyExcludedKeys: ['then', 'catch', 'inspect', 'toJSON']
 };
 
-},{}],76:[function(require,module,exports){
+},{}],77:[function(require,module,exports){
 /*!
  * chai
  * http://chaijs.com
@@ -28255,7 +28897,7 @@ module.exports = function (chai, _) {
   });
 };
 
-},{}],77:[function(require,module,exports){
+},{}],78:[function(require,module,exports){
 /*!
  * chai
  * Copyright(c) 2011-2014 Jake Luer <jake@alogicalparadox.com>
@@ -31370,7 +32012,7 @@ module.exports = function (chai, util) {
   ('isNotEmpty', 'notEmpty');
 };
 
-},{}],78:[function(require,module,exports){
+},{}],79:[function(require,module,exports){
 /*!
  * chai
  * Copyright(c) 2011-2014 Jake Luer <jake@alogicalparadox.com>
@@ -31419,7 +32061,7 @@ module.exports = function (chai, util) {
   };
 };
 
-},{}],79:[function(require,module,exports){
+},{}],80:[function(require,module,exports){
 /*!
  * chai
  * Copyright(c) 2011-2014 Jake Luer <jake@alogicalparadox.com>
@@ -31640,7 +32282,7 @@ module.exports = function (chai, util) {
   chai.Should = loadShould;
 };
 
-},{}],80:[function(require,module,exports){
+},{}],81:[function(require,module,exports){
 /*!
  * Chai - addChainingMethod utility
  * Copyright(c) 2012-2014 Jake Luer <jake@alogicalparadox.com>
@@ -31794,7 +32436,7 @@ module.exports = function addChainableMethod(ctx, name, method, chainingBehavior
   });
 };
 
-},{"../../chai":73,"./addLengthGuard":81,"./flag":86,"./proxify":101,"./transferFlags":103}],81:[function(require,module,exports){
+},{"../../chai":74,"./addLengthGuard":82,"./flag":87,"./proxify":102,"./transferFlags":104}],82:[function(require,module,exports){
 var fnLengthDesc = Object.getOwnPropertyDescriptor(function () {}, 'length');
 
 /*!
@@ -31856,7 +32498,7 @@ module.exports = function addLengthGuard (fn, assertionName, isChainable) {
   return fn;
 };
 
-},{}],82:[function(require,module,exports){
+},{}],83:[function(require,module,exports){
 /*!
  * Chai - addMethod utility
  * Copyright(c) 2012-2014 Jake Luer <jake@alogicalparadox.com>
@@ -31926,7 +32568,7 @@ module.exports = function addMethod(ctx, name, method) {
   ctx[name] = proxify(methodWrapper, name);
 };
 
-},{"../../chai":73,"./addLengthGuard":81,"./flag":86,"./proxify":101,"./transferFlags":103}],83:[function(require,module,exports){
+},{"../../chai":74,"./addLengthGuard":82,"./flag":87,"./proxify":102,"./transferFlags":104}],84:[function(require,module,exports){
 /*!
  * Chai - addProperty utility
  * Copyright(c) 2012-2014 Jake Luer <jake@alogicalparadox.com>
@@ -32000,7 +32642,7 @@ module.exports = function addProperty(ctx, name, getter) {
   });
 };
 
-},{"../../chai":73,"./flag":86,"./isProxyEnabled":96,"./transferFlags":103}],84:[function(require,module,exports){
+},{"../../chai":74,"./flag":87,"./isProxyEnabled":97,"./transferFlags":104}],85:[function(require,module,exports){
 /*!
  * Chai - compareByInspect utility
  * Copyright(c) 2011-2016 Jake Luer <jake@alogicalparadox.com>
@@ -32033,7 +32675,7 @@ module.exports = function compareByInspect(a, b) {
   return inspect(a) < inspect(b) ? -1 : 1;
 };
 
-},{"./inspect":94}],85:[function(require,module,exports){
+},{"./inspect":95}],86:[function(require,module,exports){
 /*!
  * Chai - expectTypes utility
  * Copyright(c) 2012-2014 Jake Luer <jake@alogicalparadox.com>
@@ -32086,7 +32728,7 @@ module.exports = function expectTypes(obj, types) {
   }
 };
 
-},{"./flag":86,"assertion-error":31,"type-detect":286}],86:[function(require,module,exports){
+},{"./flag":87,"assertion-error":32,"type-detect":287}],87:[function(require,module,exports){
 /*!
  * Chai - flag utility
  * Copyright(c) 2012-2014 Jake Luer <jake@alogicalparadox.com>
@@ -32121,7 +32763,7 @@ module.exports = function flag(obj, key, value) {
   }
 };
 
-},{}],87:[function(require,module,exports){
+},{}],88:[function(require,module,exports){
 /*!
  * Chai - getActual utility
  * Copyright(c) 2012-2014 Jake Luer <jake@alogicalparadox.com>
@@ -32143,7 +32785,7 @@ module.exports = function getActual(obj, args) {
   return args.length > 4 ? args[4] : obj._obj;
 };
 
-},{}],88:[function(require,module,exports){
+},{}],89:[function(require,module,exports){
 /*!
  * Chai - message composition utility
  * Copyright(c) 2012-2014 Jake Luer <jake@alogicalparadox.com>
@@ -32195,7 +32837,7 @@ module.exports = function getMessage(obj, args) {
   return flagMsg ? flagMsg + ': ' + msg : msg;
 };
 
-},{"./flag":86,"./getActual":87,"./objDisplay":97}],89:[function(require,module,exports){
+},{"./flag":87,"./getActual":88,"./objDisplay":98}],90:[function(require,module,exports){
 var type = require('type-detect');
 
 var flag = require('./flag');
@@ -32252,7 +32894,7 @@ module.exports = function getOperator(obj, args) {
   return isObject ? 'deepStrictEqual' : 'strictEqual';
 };
 
-},{"./flag":86,"type-detect":286}],90:[function(require,module,exports){
+},{"./flag":87,"type-detect":287}],91:[function(require,module,exports){
 /*!
  * Chai - getOwnEnumerableProperties utility
  * Copyright(c) 2011-2016 Jake Luer <jake@alogicalparadox.com>
@@ -32283,7 +32925,7 @@ module.exports = function getOwnEnumerableProperties(obj) {
   return Object.keys(obj).concat(getOwnEnumerablePropertySymbols(obj));
 };
 
-},{"./getOwnEnumerablePropertySymbols":91}],91:[function(require,module,exports){
+},{"./getOwnEnumerablePropertySymbols":92}],92:[function(require,module,exports){
 /*!
  * Chai - getOwnEnumerablePropertySymbols utility
  * Copyright(c) 2011-2016 Jake Luer <jake@alogicalparadox.com>
@@ -32312,7 +32954,7 @@ module.exports = function getOwnEnumerablePropertySymbols(obj) {
   });
 };
 
-},{}],92:[function(require,module,exports){
+},{}],93:[function(require,module,exports){
 /*!
  * Chai - getProperties utility
  * Copyright(c) 2012-2014 Jake Luer <jake@alogicalparadox.com>
@@ -32350,7 +32992,7 @@ module.exports = function getProperties(object) {
   return result;
 };
 
-},{}],93:[function(require,module,exports){
+},{}],94:[function(require,module,exports){
 /*!
  * chai
  * Copyright(c) 2011 Jake Luer <jake@alogicalparadox.com>
@@ -32529,7 +33171,7 @@ exports.isNaN = require('./isNaN');
  */
 
 exports.getOperator = require('./getOperator');
-},{"./addChainableMethod":80,"./addLengthGuard":81,"./addMethod":82,"./addProperty":83,"./compareByInspect":84,"./expectTypes":85,"./flag":86,"./getActual":87,"./getMessage":88,"./getOperator":89,"./getOwnEnumerableProperties":90,"./getOwnEnumerablePropertySymbols":91,"./inspect":94,"./isNaN":95,"./isProxyEnabled":96,"./objDisplay":97,"./overwriteChainableMethod":98,"./overwriteMethod":99,"./overwriteProperty":100,"./proxify":101,"./test":102,"./transferFlags":103,"check-error":104,"deep-eql":116,"get-func-name":152,"pathval":232,"type-detect":286}],94:[function(require,module,exports){
+},{"./addChainableMethod":81,"./addLengthGuard":82,"./addMethod":83,"./addProperty":84,"./compareByInspect":85,"./expectTypes":86,"./flag":87,"./getActual":88,"./getMessage":89,"./getOperator":90,"./getOwnEnumerableProperties":91,"./getOwnEnumerablePropertySymbols":92,"./inspect":95,"./isNaN":96,"./isProxyEnabled":97,"./objDisplay":98,"./overwriteChainableMethod":99,"./overwriteMethod":100,"./overwriteProperty":101,"./proxify":102,"./test":103,"./transferFlags":104,"check-error":105,"deep-eql":117,"get-func-name":153,"pathval":233,"type-detect":287}],95:[function(require,module,exports){
 // This is (almost) directly from Node.js utils
 // https://github.com/joyent/node/blob/f8c335d0caf47f16d31413f89aa28eda3878e3aa/lib/util.js
 
@@ -32564,7 +33206,7 @@ function inspect(obj, showHidden, depth, colors) {
   return loupe.inspect(obj, options);
 }
 
-},{"../config":75,"get-func-name":152,"loupe":197}],95:[function(require,module,exports){
+},{"../config":76,"get-func-name":153,"loupe":198}],96:[function(require,module,exports){
 /*!
  * Chai - isNaN utility
  * Copyright(c) 2012-2015 Sakthipriyan Vairamani <thechargingvolcano@gmail.com>
@@ -32592,7 +33234,7 @@ function isNaN(value) {
 // If ECMAScript 6's Number.isNaN is present, prefer that.
 module.exports = Number.isNaN || isNaN;
 
-},{}],96:[function(require,module,exports){
+},{}],97:[function(require,module,exports){
 var config = require('../config');
 
 /*!
@@ -32618,7 +33260,7 @@ module.exports = function isProxyEnabled() {
     typeof Reflect !== 'undefined';
 };
 
-},{"../config":75}],97:[function(require,module,exports){
+},{"../config":76}],98:[function(require,module,exports){
 /*!
  * Chai - flag utility
  * Copyright(c) 2012-2014 Jake Luer <jake@alogicalparadox.com>
@@ -32670,7 +33312,7 @@ module.exports = function objDisplay(obj) {
   }
 };
 
-},{"../config":75,"./inspect":94}],98:[function(require,module,exports){
+},{"../config":76,"./inspect":95}],99:[function(require,module,exports){
 /*!
  * Chai - overwriteChainableMethod utility
  * Copyright(c) 2012-2014 Jake Luer <jake@alogicalparadox.com>
@@ -32741,7 +33383,7 @@ module.exports = function overwriteChainableMethod(ctx, name, method, chainingBe
   };
 };
 
-},{"../../chai":73,"./transferFlags":103}],99:[function(require,module,exports){
+},{"../../chai":74,"./transferFlags":104}],100:[function(require,module,exports){
 /*!
  * Chai - overwriteMethod utility
  * Copyright(c) 2012-2014 Jake Luer <jake@alogicalparadox.com>
@@ -32835,7 +33477,7 @@ module.exports = function overwriteMethod(ctx, name, method) {
   ctx[name] = proxify(overwritingMethodWrapper, name);
 };
 
-},{"../../chai":73,"./addLengthGuard":81,"./flag":86,"./proxify":101,"./transferFlags":103}],100:[function(require,module,exports){
+},{"../../chai":74,"./addLengthGuard":82,"./flag":87,"./proxify":102,"./transferFlags":104}],101:[function(require,module,exports){
 /*!
  * Chai - overwriteProperty utility
  * Copyright(c) 2012-2014 Jake Luer <jake@alogicalparadox.com>
@@ -32929,7 +33571,7 @@ module.exports = function overwriteProperty(ctx, name, getter) {
   });
 };
 
-},{"../../chai":73,"./flag":86,"./isProxyEnabled":96,"./transferFlags":103}],101:[function(require,module,exports){
+},{"../../chai":74,"./flag":87,"./isProxyEnabled":97,"./transferFlags":104}],102:[function(require,module,exports){
 var config = require('../config');
 var flag = require('./flag');
 var getProperties = require('./getProperties');
@@ -33078,7 +33720,7 @@ function stringDistanceCapped(strA, strB, cap) {
   return memo[strA.length][strB.length];
 }
 
-},{"../config":75,"./flag":86,"./getProperties":92,"./isProxyEnabled":96}],102:[function(require,module,exports){
+},{"../config":76,"./flag":87,"./getProperties":93,"./isProxyEnabled":97}],103:[function(require,module,exports){
 /*!
  * Chai - test utility
  * Copyright(c) 2012-2014 Jake Luer <jake@alogicalparadox.com>
@@ -33108,7 +33750,7 @@ module.exports = function test(obj, args) {
   return negate ? !expr : expr;
 };
 
-},{"./flag":86}],103:[function(require,module,exports){
+},{"./flag":87}],104:[function(require,module,exports){
 /*!
  * Chai - transferFlags utility
  * Copyright(c) 2012-2014 Jake Luer <jake@alogicalparadox.com>
@@ -33155,7 +33797,7 @@ module.exports = function transferFlags(assertion, object, includeAll) {
   }
 };
 
-},{}],104:[function(require,module,exports){
+},{}],105:[function(require,module,exports){
 'use strict';
 
 /* !
@@ -33329,7 +33971,7 @@ module.exports = {
   getConstructorName: getConstructorName,
 };
 
-},{}],105:[function(require,module,exports){
+},{}],106:[function(require,module,exports){
 var Buffer = require('safe-buffer').Buffer
 var Transform = require('stream').Transform
 var StringDecoder = require('string_decoder').StringDecoder
@@ -33430,7 +34072,7 @@ CipherBase.prototype._toString = function (value, enc, fin) {
 
 module.exports = CipherBase
 
-},{"inherits":193,"safe-buffer":269,"stream":279,"string_decoder":284}],106:[function(require,module,exports){
+},{"inherits":194,"safe-buffer":270,"stream":280,"string_decoder":285}],107:[function(require,module,exports){
 /*!
  * cookie
  * Copyright(c) 2012-2014 Roman Shtylman
@@ -33634,7 +34276,7 @@ function tryDecode(str, decode) {
   }
 }
 
-},{}],107:[function(require,module,exports){
+},{}],108:[function(require,module,exports){
 (function (Buffer){(function (){
 var elliptic = require('elliptic')
 var BN = require('bn.js')
@@ -33762,9 +34404,9 @@ function formatReturnValue (bn, enc, len) {
 }
 
 }).call(this)}).call(this,require("buffer").Buffer)
-},{"bn.js":108,"buffer":68,"elliptic":129}],108:[function(require,module,exports){
-arguments[4][26][0].apply(exports,arguments)
-},{"buffer":36,"dup":26}],109:[function(require,module,exports){
+},{"bn.js":109,"buffer":69,"elliptic":130}],109:[function(require,module,exports){
+arguments[4][27][0].apply(exports,arguments)
+},{"buffer":37,"dup":27}],110:[function(require,module,exports){
 'use strict'
 var inherits = require('inherits')
 var MD5 = require('md5.js')
@@ -33796,14 +34438,14 @@ module.exports = function createHash (alg) {
   return new Hash(sha(alg))
 }
 
-},{"cipher-base":105,"inherits":193,"md5.js":198,"ripemd160":268,"sha.js":272}],110:[function(require,module,exports){
+},{"cipher-base":106,"inherits":194,"md5.js":199,"ripemd160":269,"sha.js":273}],111:[function(require,module,exports){
 var MD5 = require('md5.js')
 
 module.exports = function (buffer) {
   return new MD5().update(buffer).digest()
 }
 
-},{"md5.js":198}],111:[function(require,module,exports){
+},{"md5.js":199}],112:[function(require,module,exports){
 'use strict'
 var inherits = require('inherits')
 var Legacy = require('./legacy')
@@ -33867,7 +34509,7 @@ module.exports = function createHmac (alg, key) {
   return new Hmac(alg, key)
 }
 
-},{"./legacy":112,"cipher-base":105,"create-hash/md5":110,"inherits":193,"ripemd160":268,"safe-buffer":269,"sha.js":272}],112:[function(require,module,exports){
+},{"./legacy":113,"cipher-base":106,"create-hash/md5":111,"inherits":194,"ripemd160":269,"safe-buffer":270,"sha.js":273}],113:[function(require,module,exports){
 'use strict'
 var inherits = require('inherits')
 var Buffer = require('safe-buffer').Buffer
@@ -33915,7 +34557,7 @@ Hmac.prototype._final = function () {
 }
 module.exports = Hmac
 
-},{"cipher-base":105,"inherits":193,"safe-buffer":269}],113:[function(require,module,exports){
+},{"cipher-base":106,"inherits":194,"safe-buffer":270}],114:[function(require,module,exports){
 'use strict'
 
 exports.randomBytes = exports.rng = exports.pseudoRandomBytes = exports.prng = require('randombytes')
@@ -34014,7 +34656,7 @@ exports.constants = {
   'POINT_CONVERSION_HYBRID': 6
 }
 
-},{"browserify-cipher":54,"browserify-sign":61,"browserify-sign/algos":58,"create-ecdh":107,"create-hash":109,"create-hmac":111,"diffie-hellman":123,"pbkdf2":233,"public-encrypt":240,"randombytes":251,"randomfill":252}],114:[function(require,module,exports){
+},{"browserify-cipher":55,"browserify-sign":62,"browserify-sign/algos":59,"create-ecdh":108,"create-hash":110,"create-hmac":112,"diffie-hellman":124,"pbkdf2":234,"public-encrypt":241,"randombytes":252,"randomfill":253}],115:[function(require,module,exports){
 (function (process){(function (){
 "use strict";
 
@@ -34198,7 +34840,7 @@ formatters.j = function (v) {
 
 
 }).call(this)}).call(this,require('_process'))
-},{"./common":115,"_process":239}],115:[function(require,module,exports){
+},{"./common":116,"_process":240}],116:[function(require,module,exports){
 "use strict";
 
 /**
@@ -34449,7 +35091,7 @@ function setup(env) {
 module.exports = setup;
 
 
-},{"ms":203}],116:[function(require,module,exports){
+},{"ms":204}],117:[function(require,module,exports){
 'use strict';
 /* globals Symbol: false, Uint8Array: false, WeakMap: false */
 /*!
@@ -34906,7 +35548,7 @@ function isPrimitive(value) {
   return value === null || typeof value !== 'object';
 }
 
-},{"type-detect":286}],117:[function(require,module,exports){
+},{"type-detect":287}],118:[function(require,module,exports){
 'use strict';
 
 exports.utils = require('./des/utils');
@@ -34915,7 +35557,7 @@ exports.DES = require('./des/des');
 exports.CBC = require('./des/cbc');
 exports.EDE = require('./des/ede');
 
-},{"./des/cbc":118,"./des/cipher":119,"./des/des":120,"./des/ede":121,"./des/utils":122}],118:[function(require,module,exports){
+},{"./des/cbc":119,"./des/cipher":120,"./des/des":121,"./des/ede":122,"./des/utils":123}],119:[function(require,module,exports){
 'use strict';
 
 var assert = require('minimalistic-assert');
@@ -34982,7 +35624,7 @@ proto._update = function _update(inp, inOff, out, outOff) {
   }
 };
 
-},{"inherits":193,"minimalistic-assert":201}],119:[function(require,module,exports){
+},{"inherits":194,"minimalistic-assert":202}],120:[function(require,module,exports){
 'use strict';
 
 var assert = require('minimalistic-assert');
@@ -35125,7 +35767,7 @@ Cipher.prototype._finalDecrypt = function _finalDecrypt() {
   return this._unpad(out);
 };
 
-},{"minimalistic-assert":201}],120:[function(require,module,exports){
+},{"minimalistic-assert":202}],121:[function(require,module,exports){
 'use strict';
 
 var assert = require('minimalistic-assert');
@@ -35269,7 +35911,7 @@ DES.prototype._decrypt = function _decrypt(state, lStart, rStart, out, off) {
   utils.rip(l, r, out, off);
 };
 
-},{"./cipher":119,"./utils":122,"inherits":193,"minimalistic-assert":201}],121:[function(require,module,exports){
+},{"./cipher":120,"./utils":123,"inherits":194,"minimalistic-assert":202}],122:[function(require,module,exports){
 'use strict';
 
 var assert = require('minimalistic-assert');
@@ -35325,7 +35967,7 @@ EDE.prototype._update = function _update(inp, inOff, out, outOff) {
 EDE.prototype._pad = DES.prototype._pad;
 EDE.prototype._unpad = DES.prototype._unpad;
 
-},{"./cipher":119,"./des":120,"inherits":193,"minimalistic-assert":201}],122:[function(require,module,exports){
+},{"./cipher":120,"./des":121,"inherits":194,"minimalistic-assert":202}],123:[function(require,module,exports){
 'use strict';
 
 exports.readUInt32BE = function readUInt32BE(bytes, off) {
@@ -35583,7 +36225,7 @@ exports.padSplit = function padSplit(num, size, group) {
   return out.join(' ');
 };
 
-},{}],123:[function(require,module,exports){
+},{}],124:[function(require,module,exports){
 (function (Buffer){(function (){
 var generatePrime = require('./lib/generatePrime')
 var primes = require('./lib/primes.json')
@@ -35629,7 +36271,7 @@ exports.DiffieHellmanGroup = exports.createDiffieHellmanGroup = exports.getDiffi
 exports.createDiffieHellman = exports.DiffieHellman = createDiffieHellman
 
 }).call(this)}).call(this,require("buffer").Buffer)
-},{"./lib/dh":124,"./lib/generatePrime":125,"./lib/primes.json":126,"buffer":68}],124:[function(require,module,exports){
+},{"./lib/dh":125,"./lib/generatePrime":126,"./lib/primes.json":127,"buffer":69}],125:[function(require,module,exports){
 (function (Buffer){(function (){
 var BN = require('bn.js');
 var MillerRabin = require('miller-rabin');
@@ -35797,7 +36439,7 @@ function formatReturnValue(bn, enc) {
 }
 
 }).call(this)}).call(this,require("buffer").Buffer)
-},{"./generatePrime":125,"bn.js":127,"buffer":68,"miller-rabin":199,"randombytes":251}],125:[function(require,module,exports){
+},{"./generatePrime":126,"bn.js":128,"buffer":69,"miller-rabin":200,"randombytes":252}],126:[function(require,module,exports){
 var randomBytes = require('randombytes');
 module.exports = findPrime;
 findPrime.simpleSieve = simpleSieve;
@@ -35904,7 +36546,7 @@ function findPrime(bits, gen) {
 
 }
 
-},{"bn.js":127,"miller-rabin":199,"randombytes":251}],126:[function(require,module,exports){
+},{"bn.js":128,"miller-rabin":200,"randombytes":252}],127:[function(require,module,exports){
 module.exports={
     "modp1": {
         "gen": "02",
@@ -35939,9 +36581,9 @@ module.exports={
         "prime": "ffffffffffffffffc90fdaa22168c234c4c6628b80dc1cd129024e088a67cc74020bbea63b139b22514a08798e3404ddef9519b3cd3a431b302b0a6df25f14374fe1356d6d51c245e485b576625e7ec6f44c42e9a637ed6b0bff5cb6f406b7edee386bfb5a899fa5ae9f24117c4b1fe649286651ece45b3dc2007cb8a163bf0598da48361c55d39a69163fa8fd24cf5f83655d23dca3ad961c62f356208552bb9ed529077096966d670c354e4abc9804f1746c08ca18217c32905e462e36ce3be39e772c180e86039b2783a2ec07a28fb5c55df06f4c52c9de2bcbf6955817183995497cea956ae515d2261898fa051015728e5a8aaac42dad33170d04507a33a85521abdf1cba64ecfb850458dbef0a8aea71575d060c7db3970f85a6e1e4c7abf5ae8cdb0933d71e8c94e04a25619dcee3d2261ad2ee6bf12ffa06d98a0864d87602733ec86a64521f2b18177b200cbbe117577a615d6c770988c0bad946e208e24fa074e5ab3143db5bfce0fd108e4b82d120a92108011a723c12a787e6d788719a10bdba5b2699c327186af4e23c1a946834b6150bda2583e9ca2ad44ce8dbbbc2db04de8ef92e8efc141fbecaa6287c59474e6bc05d99b2964fa090c3a2233ba186515be7ed1f612970cee2d7afb81bdd762170481cd0069127d5b05aa993b4ea988d8fddc186ffb7dc90a6c08f4df435c93402849236c3fab4d27c7026c1d4dcb2602646dec9751e763dba37bdf8ff9406ad9e530ee5db382f413001aeb06a53ed9027d831179727b0865a8918da3edbebcf9b14ed44ce6cbaced4bb1bdb7f1447e6cc254b332051512bd7af426fb8f401378cd2bf5983ca01c64b92ecf032ea15d1721d03f482d7ce6e74fef6d55e702f46980c82b5a84031900b1c9e59e7c97fbec7e8f323a97a7e36cc88be0f1d45b7ff585ac54bd407b22b4154aacc8f6d7ebf48e1d814cc5ed20f8037e0a79715eef29be32806a1d58bb7c5da76f550aa3d8a1fbff0eb19ccb1a313d55cda56c9ec2ef29632387fe8d76e3c0468043e8f663f4860ee12bf2d5b0b7474d6e694f91e6dbe115974a3926f12fee5e438777cb6a932df8cd8bec4d073b931ba3bc832b68d9dd300741fa7bf8afc47ed2576f6936ba424663aab639c5ae4f5683423b4742bf1c978238f16cbe39d652de3fdb8befc848ad922222e04a4037c0713eb57a81a23f0c73473fc646cea306b4bcbc8862f8385ddfa9d4b7fa2c087e879683303ed5bdd3a062b3cf5b3a278a66d2a13f83f44f82ddf310ee074ab6a364597e899a0255dc164f31cc50846851df9ab48195ded7ea1b1d510bd7ee74d73faf36bc31ecfa268359046f4eb879f924009438b481c6cd7889a002ed5ee382bc9190da6fc026e479558e4475677e9aa9e3050e2765694dfc81f56e880b96e7160c980dd98edd3dfffffffffffffffff"
     }
 }
-},{}],127:[function(require,module,exports){
-arguments[4][26][0].apply(exports,arguments)
-},{"buffer":36,"dup":26}],128:[function(require,module,exports){
+},{}],128:[function(require,module,exports){
+arguments[4][27][0].apply(exports,arguments)
+},{"buffer":37,"dup":27}],129:[function(require,module,exports){
 (function (process){(function (){
 const fs = require('fs')
 const path = require('path')
@@ -36054,7 +36696,7 @@ module.exports.parse = DotenvModule.parse
 module.exports = DotenvModule
 
 }).call(this)}).call(this,require('_process'))
-},{"_process":239,"fs":66,"os":214,"path":231}],129:[function(require,module,exports){
+},{"_process":240,"fs":67,"os":215,"path":232}],130:[function(require,module,exports){
 'use strict';
 
 var elliptic = exports;
@@ -36069,7 +36711,7 @@ elliptic.curves = require('./elliptic/curves');
 elliptic.ec = require('./elliptic/ec');
 elliptic.eddsa = require('./elliptic/eddsa');
 
-},{"../package.json":145,"./elliptic/curve":132,"./elliptic/curves":135,"./elliptic/ec":136,"./elliptic/eddsa":139,"./elliptic/utils":143,"brorand":35}],130:[function(require,module,exports){
+},{"../package.json":146,"./elliptic/curve":133,"./elliptic/curves":136,"./elliptic/ec":137,"./elliptic/eddsa":140,"./elliptic/utils":144,"brorand":36}],131:[function(require,module,exports){
 'use strict';
 
 var BN = require('bn.js');
@@ -36452,7 +37094,7 @@ BasePoint.prototype.dblp = function dblp(k) {
   return r;
 };
 
-},{"../utils":143,"bn.js":144}],131:[function(require,module,exports){
+},{"../utils":144,"bn.js":145}],132:[function(require,module,exports){
 'use strict';
 
 var utils = require('../utils');
@@ -36889,7 +37531,7 @@ Point.prototype.eqXToP = function eqXToP(x) {
 Point.prototype.toP = Point.prototype.normalize;
 Point.prototype.mixedAdd = Point.prototype.add;
 
-},{"../utils":143,"./base":130,"bn.js":144,"inherits":193}],132:[function(require,module,exports){
+},{"../utils":144,"./base":131,"bn.js":145,"inherits":194}],133:[function(require,module,exports){
 'use strict';
 
 var curve = exports;
@@ -36899,7 +37541,7 @@ curve.short = require('./short');
 curve.mont = require('./mont');
 curve.edwards = require('./edwards');
 
-},{"./base":130,"./edwards":131,"./mont":133,"./short":134}],133:[function(require,module,exports){
+},{"./base":131,"./edwards":132,"./mont":134,"./short":135}],134:[function(require,module,exports){
 'use strict';
 
 var BN = require('bn.js');
@@ -37079,7 +37721,7 @@ Point.prototype.getX = function getX() {
   return this.x.fromRed();
 };
 
-},{"../utils":143,"./base":130,"bn.js":144,"inherits":193}],134:[function(require,module,exports){
+},{"../utils":144,"./base":131,"bn.js":145,"inherits":194}],135:[function(require,module,exports){
 'use strict';
 
 var utils = require('../utils');
@@ -38019,7 +38661,7 @@ JPoint.prototype.isInfinity = function isInfinity() {
   return this.z.cmpn(0) === 0;
 };
 
-},{"../utils":143,"./base":130,"bn.js":144,"inherits":193}],135:[function(require,module,exports){
+},{"../utils":144,"./base":131,"bn.js":145,"inherits":194}],136:[function(require,module,exports){
 'use strict';
 
 var curves = exports;
@@ -38227,7 +38869,7 @@ defineCurve('secp256k1', {
   ],
 });
 
-},{"./curve":132,"./precomputed/secp256k1":142,"./utils":143,"hash.js":159}],136:[function(require,module,exports){
+},{"./curve":133,"./precomputed/secp256k1":143,"./utils":144,"hash.js":160}],137:[function(require,module,exports){
 'use strict';
 
 var BN = require('bn.js');
@@ -38472,7 +39114,7 @@ EC.prototype.getKeyRecoveryParam = function(e, signature, Q, enc) {
   throw new Error('Unable to find valid recovery factor');
 };
 
-},{"../curves":135,"../utils":143,"./key":137,"./signature":138,"bn.js":144,"brorand":35,"hmac-drbg":171}],137:[function(require,module,exports){
+},{"../curves":136,"../utils":144,"./key":138,"./signature":139,"bn.js":145,"brorand":36,"hmac-drbg":172}],138:[function(require,module,exports){
 'use strict';
 
 var BN = require('bn.js');
@@ -38595,7 +39237,7 @@ KeyPair.prototype.inspect = function inspect() {
          ' pub: ' + (this.pub && this.pub.inspect()) + ' >';
 };
 
-},{"../utils":143,"bn.js":144}],138:[function(require,module,exports){
+},{"../utils":144,"bn.js":145}],139:[function(require,module,exports){
 'use strict';
 
 var BN = require('bn.js');
@@ -38763,7 +39405,7 @@ Signature.prototype.toDER = function toDER(enc) {
   return utils.encode(res, enc);
 };
 
-},{"../utils":143,"bn.js":144}],139:[function(require,module,exports){
+},{"../utils":144,"bn.js":145}],140:[function(require,module,exports){
 'use strict';
 
 var hash = require('hash.js');
@@ -38883,7 +39525,7 @@ EDDSA.prototype.isPoint = function isPoint(val) {
   return val instanceof this.pointClass;
 };
 
-},{"../curves":135,"../utils":143,"./key":140,"./signature":141,"hash.js":159}],140:[function(require,module,exports){
+},{"../curves":136,"../utils":144,"./key":141,"./signature":142,"hash.js":160}],141:[function(require,module,exports){
 'use strict';
 
 var utils = require('../utils');
@@ -38980,7 +39622,7 @@ KeyPair.prototype.getPublic = function getPublic(enc) {
 
 module.exports = KeyPair;
 
-},{"../utils":143}],141:[function(require,module,exports){
+},{"../utils":144}],142:[function(require,module,exports){
 'use strict';
 
 var BN = require('bn.js');
@@ -39047,7 +39689,7 @@ Signature.prototype.toHex = function toHex() {
 
 module.exports = Signature;
 
-},{"../utils":143,"bn.js":144}],142:[function(require,module,exports){
+},{"../utils":144,"bn.js":145}],143:[function(require,module,exports){
 module.exports = {
   doubles: {
     step: 4,
@@ -39829,7 +40471,7 @@ module.exports = {
   },
 };
 
-},{}],143:[function(require,module,exports){
+},{}],144:[function(require,module,exports){
 'use strict';
 
 var utils = exports;
@@ -39950,14 +40592,14 @@ function intFromLE(bytes) {
 utils.intFromLE = intFromLE;
 
 
-},{"bn.js":144,"minimalistic-assert":201,"minimalistic-crypto-utils":202}],144:[function(require,module,exports){
-arguments[4][26][0].apply(exports,arguments)
-},{"buffer":36,"dup":26}],145:[function(require,module,exports){
+},{"bn.js":145,"minimalistic-assert":202,"minimalistic-crypto-utils":203}],145:[function(require,module,exports){
+arguments[4][27][0].apply(exports,arguments)
+},{"buffer":37,"dup":27}],146:[function(require,module,exports){
 module.exports={
   "_args": [
     [
       "elliptic@6.5.4",
-      "/Users/abhis/Documents/GitHub/splunk-sdk-javascript"
+      "/Users/abhis/Documents/JS/splunk-sdk-javascript"
     ]
   ],
   "_development": true,
@@ -39983,7 +40625,7 @@ module.exports={
   ],
   "_resolved": "https://registry.npmjs.org/elliptic/-/elliptic-6.5.4.tgz",
   "_spec": "6.5.4",
-  "_where": "/Users/abhis/Documents/GitHub/splunk-sdk-javascript",
+  "_where": "/Users/abhis/Documents/JS/splunk-sdk-javascript",
   "author": {
     "name": "Fedor Indutny",
     "email": "fedor@indutny.com"
@@ -40043,7 +40685,7 @@ module.exports={
   "version": "6.5.4"
 }
 
-},{}],146:[function(require,module,exports){
+},{}],147:[function(require,module,exports){
 'use strict';
 
 var GetIntrinsic = require('get-intrinsic');
@@ -40060,7 +40702,7 @@ if ($gOPD) {
 
 module.exports = $gOPD;
 
-},{"get-intrinsic":153}],147:[function(require,module,exports){
+},{"get-intrinsic":154}],148:[function(require,module,exports){
 // Copyright Joyent, Inc. and other Node contributors.
 //
 // Permission is hereby granted, free of charge, to any person obtaining a
@@ -40559,7 +41201,7 @@ function eventTargetAgnosticAddListener(emitter, name, listener, flags) {
   }
 }
 
-},{}],148:[function(require,module,exports){
+},{}],149:[function(require,module,exports){
 var Buffer = require('safe-buffer').Buffer
 var MD5 = require('md5.js')
 
@@ -40606,7 +41248,7 @@ function EVP_BytesToKey (password, salt, keyBits, ivLen) {
 
 module.exports = EVP_BytesToKey
 
-},{"md5.js":198,"safe-buffer":269}],149:[function(require,module,exports){
+},{"md5.js":199,"safe-buffer":270}],150:[function(require,module,exports){
 
 var hasOwn = Object.prototype.hasOwnProperty;
 var toString = Object.prototype.toString;
@@ -40630,7 +41272,7 @@ module.exports = function forEach (obj, fn, ctx) {
 };
 
 
-},{}],150:[function(require,module,exports){
+},{}],151:[function(require,module,exports){
 'use strict';
 
 /* eslint no-invalid-this: 1 */
@@ -40684,14 +41326,14 @@ module.exports = function bind(that) {
     return bound;
 };
 
-},{}],151:[function(require,module,exports){
+},{}],152:[function(require,module,exports){
 'use strict';
 
 var implementation = require('./implementation');
 
 module.exports = Function.prototype.bind || implementation;
 
-},{"./implementation":150}],152:[function(require,module,exports){
+},{"./implementation":151}],153:[function(require,module,exports){
 'use strict';
 
 /* !
@@ -40737,7 +41379,7 @@ function getFuncName(aFunc) {
 
 module.exports = getFuncName;
 
-},{}],153:[function(require,module,exports){
+},{}],154:[function(require,module,exports){
 'use strict';
 
 var undefined;
@@ -41069,7 +41711,7 @@ module.exports = function GetIntrinsic(name, allowMissing) {
 	return value;
 };
 
-},{"function-bind":151,"has":157,"has-symbols":154}],154:[function(require,module,exports){
+},{"function-bind":152,"has":158,"has-symbols":155}],155:[function(require,module,exports){
 'use strict';
 
 var origSymbol = typeof Symbol !== 'undefined' && Symbol;
@@ -41084,7 +41726,7 @@ module.exports = function hasNativeSymbols() {
 	return hasSymbolSham();
 };
 
-},{"./shams":155}],155:[function(require,module,exports){
+},{"./shams":156}],156:[function(require,module,exports){
 'use strict';
 
 /* eslint complexity: [2, 18], max-statements: [2, 33] */
@@ -41128,7 +41770,7 @@ module.exports = function hasSymbols() {
 	return true;
 };
 
-},{}],156:[function(require,module,exports){
+},{}],157:[function(require,module,exports){
 'use strict';
 
 var hasSymbols = require('has-symbols/shams');
@@ -41137,14 +41779,14 @@ module.exports = function hasToStringTagShams() {
 	return hasSymbols() && !!Symbol.toStringTag;
 };
 
-},{"has-symbols/shams":155}],157:[function(require,module,exports){
+},{"has-symbols/shams":156}],158:[function(require,module,exports){
 'use strict';
 
 var bind = require('function-bind');
 
 module.exports = bind.call(Function.call, Object.prototype.hasOwnProperty);
 
-},{"function-bind":151}],158:[function(require,module,exports){
+},{"function-bind":152}],159:[function(require,module,exports){
 'use strict'
 var Buffer = require('safe-buffer').Buffer
 var Transform = require('readable-stream').Transform
@@ -41241,7 +41883,7 @@ HashBase.prototype._digest = function () {
 
 module.exports = HashBase
 
-},{"inherits":193,"readable-stream":267,"safe-buffer":269}],159:[function(require,module,exports){
+},{"inherits":194,"readable-stream":268,"safe-buffer":270}],160:[function(require,module,exports){
 var hash = exports;
 
 hash.utils = require('./hash/utils');
@@ -41258,7 +41900,7 @@ hash.sha384 = hash.sha.sha384;
 hash.sha512 = hash.sha.sha512;
 hash.ripemd160 = hash.ripemd.ripemd160;
 
-},{"./hash/common":160,"./hash/hmac":161,"./hash/ripemd":162,"./hash/sha":163,"./hash/utils":170}],160:[function(require,module,exports){
+},{"./hash/common":161,"./hash/hmac":162,"./hash/ripemd":163,"./hash/sha":164,"./hash/utils":171}],161:[function(require,module,exports){
 'use strict';
 
 var utils = require('./utils');
@@ -41352,7 +41994,7 @@ BlockHash.prototype._pad = function pad() {
   return res;
 };
 
-},{"./utils":170,"minimalistic-assert":201}],161:[function(require,module,exports){
+},{"./utils":171,"minimalistic-assert":202}],162:[function(require,module,exports){
 'use strict';
 
 var utils = require('./utils');
@@ -41401,7 +42043,7 @@ Hmac.prototype.digest = function digest(enc) {
   return this.outer.digest(enc);
 };
 
-},{"./utils":170,"minimalistic-assert":201}],162:[function(require,module,exports){
+},{"./utils":171,"minimalistic-assert":202}],163:[function(require,module,exports){
 'use strict';
 
 var utils = require('./utils');
@@ -41549,7 +42191,7 @@ var sh = [
   8, 5, 12, 9, 12, 5, 14, 6, 8, 13, 6, 5, 15, 13, 11, 11
 ];
 
-},{"./common":160,"./utils":170}],163:[function(require,module,exports){
+},{"./common":161,"./utils":171}],164:[function(require,module,exports){
 'use strict';
 
 exports.sha1 = require('./sha/1');
@@ -41558,7 +42200,7 @@ exports.sha256 = require('./sha/256');
 exports.sha384 = require('./sha/384');
 exports.sha512 = require('./sha/512');
 
-},{"./sha/1":164,"./sha/224":165,"./sha/256":166,"./sha/384":167,"./sha/512":168}],164:[function(require,module,exports){
+},{"./sha/1":165,"./sha/224":166,"./sha/256":167,"./sha/384":168,"./sha/512":169}],165:[function(require,module,exports){
 'use strict';
 
 var utils = require('../utils');
@@ -41634,7 +42276,7 @@ SHA1.prototype._digest = function digest(enc) {
     return utils.split32(this.h, 'big');
 };
 
-},{"../common":160,"../utils":170,"./common":169}],165:[function(require,module,exports){
+},{"../common":161,"../utils":171,"./common":170}],166:[function(require,module,exports){
 'use strict';
 
 var utils = require('../utils');
@@ -41666,7 +42308,7 @@ SHA224.prototype._digest = function digest(enc) {
 };
 
 
-},{"../utils":170,"./256":166}],166:[function(require,module,exports){
+},{"../utils":171,"./256":167}],167:[function(require,module,exports){
 'use strict';
 
 var utils = require('../utils');
@@ -41773,7 +42415,7 @@ SHA256.prototype._digest = function digest(enc) {
     return utils.split32(this.h, 'big');
 };
 
-},{"../common":160,"../utils":170,"./common":169,"minimalistic-assert":201}],167:[function(require,module,exports){
+},{"../common":161,"../utils":171,"./common":170,"minimalistic-assert":202}],168:[function(require,module,exports){
 'use strict';
 
 var utils = require('../utils');
@@ -41810,7 +42452,7 @@ SHA384.prototype._digest = function digest(enc) {
     return utils.split32(this.h.slice(0, 12), 'big');
 };
 
-},{"../utils":170,"./512":168}],168:[function(require,module,exports){
+},{"../utils":171,"./512":169}],169:[function(require,module,exports){
 'use strict';
 
 var utils = require('../utils');
@@ -42142,7 +42784,7 @@ function g1_512_lo(xh, xl) {
   return r;
 }
 
-},{"../common":160,"../utils":170,"minimalistic-assert":201}],169:[function(require,module,exports){
+},{"../common":161,"../utils":171,"minimalistic-assert":202}],170:[function(require,module,exports){
 'use strict';
 
 var utils = require('../utils');
@@ -42193,7 +42835,7 @@ function g1_256(x) {
 }
 exports.g1_256 = g1_256;
 
-},{"../utils":170}],170:[function(require,module,exports){
+},{"../utils":171}],171:[function(require,module,exports){
 'use strict';
 
 var assert = require('minimalistic-assert');
@@ -42473,7 +43115,7 @@ function shr64_lo(ah, al, num) {
 }
 exports.shr64_lo = shr64_lo;
 
-},{"inherits":193,"minimalistic-assert":201}],171:[function(require,module,exports){
+},{"inherits":194,"minimalistic-assert":202}],172:[function(require,module,exports){
 'use strict';
 
 var hash = require('hash.js');
@@ -42588,7 +43230,7 @@ HmacDRBG.prototype.generate = function generate(len, enc, add, addEnc) {
   return utils.encode(res, enc);
 };
 
-},{"hash.js":159,"minimalistic-assert":201,"minimalistic-crypto-utils":202}],172:[function(require,module,exports){
+},{"hash.js":160,"minimalistic-assert":202,"minimalistic-crypto-utils":203}],173:[function(require,module,exports){
 var http = require('http')
 var url = require('url')
 
@@ -42621,7 +43263,7 @@ function validateParams (params) {
   return params
 }
 
-},{"http":280,"url":287}],173:[function(require,module,exports){
+},{"http":281,"url":288}],174:[function(require,module,exports){
 "use strict";
 var Buffer = require("safer-buffer").Buffer;
 
@@ -43178,7 +43820,7 @@ function findIdx(table, val) {
 }
 
 
-},{"safer-buffer":270}],174:[function(require,module,exports){
+},{"safer-buffer":271}],175:[function(require,module,exports){
 "use strict";
 
 // Description of supported double byte encodings and aliases.
@@ -43356,7 +43998,7 @@ module.exports = {
     'xxbig5': 'big5hkscs',
 };
 
-},{"./tables/big5-added.json":180,"./tables/cp936.json":181,"./tables/cp949.json":182,"./tables/cp950.json":183,"./tables/eucjp.json":184,"./tables/gb18030-ranges.json":185,"./tables/gbk-added.json":186,"./tables/shiftjis.json":187}],175:[function(require,module,exports){
+},{"./tables/big5-added.json":181,"./tables/cp936.json":182,"./tables/cp949.json":183,"./tables/cp950.json":184,"./tables/eucjp.json":185,"./tables/gb18030-ranges.json":186,"./tables/gbk-added.json":187,"./tables/shiftjis.json":188}],176:[function(require,module,exports){
 "use strict";
 
 // Update this array if you add/rename/remove files in this directory.
@@ -43380,7 +44022,7 @@ for (var i = 0; i < modules.length; i++) {
             exports[enc] = module[enc];
 }
 
-},{"./dbcs-codec":173,"./dbcs-data":174,"./internal":176,"./sbcs-codec":177,"./sbcs-data":179,"./sbcs-data-generated":178,"./utf16":188,"./utf7":189}],176:[function(require,module,exports){
+},{"./dbcs-codec":174,"./dbcs-data":175,"./internal":177,"./sbcs-codec":178,"./sbcs-data":180,"./sbcs-data-generated":179,"./utf16":189,"./utf7":190}],177:[function(require,module,exports){
 "use strict";
 var Buffer = require("safer-buffer").Buffer;
 
@@ -43570,7 +44212,7 @@ InternalDecoderCesu8.prototype.end = function() {
     return res;
 }
 
-},{"safer-buffer":270,"string_decoder":284}],177:[function(require,module,exports){
+},{"safer-buffer":271,"string_decoder":285}],178:[function(require,module,exports){
 "use strict";
 var Buffer = require("safer-buffer").Buffer;
 
@@ -43644,7 +44286,7 @@ SBCSDecoder.prototype.write = function(buf) {
 SBCSDecoder.prototype.end = function() {
 }
 
-},{"safer-buffer":270}],178:[function(require,module,exports){
+},{"safer-buffer":271}],179:[function(require,module,exports){
 "use strict";
 
 // Generated data for sbcs codec. Don't edit manually. Regenerate using generation/gen-sbcs.js script.
@@ -44096,7 +44738,7 @@ module.exports = {
     "chars": "���������������������������������กขฃคฅฆงจฉชซฌญฎฏฐฑฒณดตถทธนบปผฝพฟภมยรฤลฦวศษสหฬอฮฯะัาำิีึืฺุู����฿เแโใไๅๆ็่้๊๋์ํ๎๏๐๑๒๓๔๕๖๗๘๙๚๛����"
   }
 }
-},{}],179:[function(require,module,exports){
+},{}],180:[function(require,module,exports){
 "use strict";
 
 // Manually added data to be used by sbcs codec in addition to generated one.
@@ -44272,7 +44914,7 @@ module.exports = {
 };
 
 
-},{}],180:[function(require,module,exports){
+},{}],181:[function(require,module,exports){
 module.exports=[
 ["8740","䏰䰲䘃䖦䕸𧉧䵷䖳𧲱䳢𧳅㮕䜶䝄䱇䱀𤊿𣘗𧍒𦺋𧃒䱗𪍑䝏䗚䲅𧱬䴇䪤䚡𦬣爥𥩔𡩣𣸆𣽡晍囻"],
 ["8767","綕夝𨮹㷴霴𧯯寛𡵞媤㘥𩺰嫑宷峼杮薓𩥅瑡璝㡵𡵓𣚞𦀡㻬"],
@@ -44396,7 +45038,7 @@ module.exports=[
 ["fea1","𤅟𤩹𨮏孆𨰃𡢞瓈𡦈甎瓩甞𨻙𡩋寗𨺬鎅畍畊畧畮𤾂㼄𤴓疎瑝疞疴瘂瘬癑癏癯癶𦏵皐臯㟸𦤑𦤎皡皥皷盌𦾟葢𥂝𥅽𡸜眞眦着撯𥈠睘𣊬瞯𨥤𨥨𡛁矴砉𡍶𤨒棊碯磇磓隥礮𥗠磗礴碱𧘌辸袄𨬫𦂃𢘜禆褀椂禀𥡗禝𧬹礼禩渪𧄦㺨秆𩄍秔"]
 ]
 
-},{}],181:[function(require,module,exports){
+},{}],182:[function(require,module,exports){
 module.exports=[
 ["0","\u0000",127,"€"],
 ["8140","丂丄丅丆丏丒丗丟丠両丣並丩丮丯丱丳丵丷丼乀乁乂乄乆乊乑乕乗乚乛乢乣乤乥乧乨乪",5,"乲乴",9,"乿",6,"亇亊"],
@@ -44662,7 +45304,7 @@ module.exports=[
 ["fe40","兀嗀﨎﨏﨑﨓﨔礼﨟蘒﨡﨣﨤﨧﨨﨩"]
 ]
 
-},{}],182:[function(require,module,exports){
+},{}],183:[function(require,module,exports){
 module.exports=[
 ["0","\u0000",127],
 ["8141","갂갃갅갆갋",4,"갘갞갟갡갢갣갥",6,"갮갲갳갴"],
@@ -44937,7 +45579,7 @@ module.exports=[
 ["fda1","爻肴酵驍侯候厚后吼喉嗅帿後朽煦珝逅勛勳塤壎焄熏燻薰訓暈薨喧暄煊萱卉喙毁彙徽揮暉煇諱輝麾休携烋畦虧恤譎鷸兇凶匈洶胸黑昕欣炘痕吃屹紇訖欠欽歆吸恰洽翕興僖凞喜噫囍姬嬉希憙憘戱晞曦熙熹熺犧禧稀羲詰"]
 ]
 
-},{}],183:[function(require,module,exports){
+},{}],184:[function(require,module,exports){
 module.exports=[
 ["0","\u0000",127],
 ["a140","　，、。．‧；：？！︰…‥﹐﹑﹒·﹔﹕﹖﹗｜–︱—︳╴︴﹏（）︵︶｛｝︷︸〔〕︹︺【】︻︼《》︽︾〈〉︿﹀「」﹁﹂『』﹃﹄﹙﹚"],
@@ -45116,7 +45758,7 @@ module.exports=[
 ["f9a1","龤灨灥糷虪蠾蠽蠿讞貜躩軉靋顳顴飌饡馫驤驦驧鬤鸕鸗齈戇欞爧虌躨钂钀钁驩驨鬮鸙爩虋讟钃鱹麷癵驫鱺鸝灩灪麤齾齉龘碁銹裏墻恒粧嫺╔╦╗╠╬╣╚╩╝╒╤╕╞╪╡╘╧╛╓╥╖╟╫╢╙╨╜║═╭╮╰╯▓"]
 ]
 
-},{}],184:[function(require,module,exports){
+},{}],185:[function(require,module,exports){
 module.exports=[
 ["0","\u0000",127],
 ["8ea1","｡",62],
@@ -45300,9 +45942,9 @@ module.exports=[
 ["8feda1","黸黿鼂鼃鼉鼏鼐鼑鼒鼔鼖鼗鼙鼚鼛鼟鼢鼦鼪鼫鼯鼱鼲鼴鼷鼹鼺鼼鼽鼿齁齃",4,"齓齕齖齗齘齚齝齞齨齩齭",4,"齳齵齺齽龏龐龑龒龔龖龗龞龡龢龣龥"]
 ]
 
-},{}],185:[function(require,module,exports){
-module.exports={"uChars":[128,165,169,178,184,216,226,235,238,244,248,251,253,258,276,284,300,325,329,334,364,463,465,467,469,471,473,475,477,506,594,610,712,716,730,930,938,962,970,1026,1104,1106,8209,8215,8218,8222,8231,8241,8244,8246,8252,8365,8452,8454,8458,8471,8482,8556,8570,8596,8602,8713,8720,8722,8726,8731,8737,8740,8742,8748,8751,8760,8766,8777,8781,8787,8802,8808,8816,8854,8858,8870,8896,8979,9322,9372,9548,9588,9616,9622,9634,9652,9662,9672,9676,9680,9702,9735,9738,9793,9795,11906,11909,11913,11917,11928,11944,11947,11951,11956,11960,11964,11979,12284,12292,12312,12319,12330,12351,12436,12447,12535,12543,12586,12842,12850,12964,13200,13215,13218,13253,13263,13267,13270,13384,13428,13727,13839,13851,14617,14703,14801,14816,14964,15183,15471,15585,16471,16736,17208,17325,17330,17374,17623,17997,18018,18212,18218,18301,18318,18760,18811,18814,18820,18823,18844,18848,18872,19576,19620,19738,19887,40870,59244,59336,59367,59413,59417,59423,59431,59437,59443,59452,59460,59478,59493,63789,63866,63894,63976,63986,64016,64018,64021,64025,64034,64037,64042,65074,65093,65107,65112,65127,65132,65375,65510,65536],"gbChars":[0,36,38,45,50,81,89,95,96,100,103,104,105,109,126,133,148,172,175,179,208,306,307,308,309,310,311,312,313,341,428,443,544,545,558,741,742,749,750,805,819,820,7922,7924,7925,7927,7934,7943,7944,7945,7950,8062,8148,8149,8152,8164,8174,8236,8240,8262,8264,8374,8380,8381,8384,8388,8390,8392,8393,8394,8396,8401,8406,8416,8419,8424,8437,8439,8445,8482,8485,8496,8521,8603,8936,8946,9046,9050,9063,9066,9076,9092,9100,9108,9111,9113,9131,9162,9164,9218,9219,11329,11331,11334,11336,11346,11361,11363,11366,11370,11372,11375,11389,11682,11686,11687,11692,11694,11714,11716,11723,11725,11730,11736,11982,11989,12102,12336,12348,12350,12384,12393,12395,12397,12510,12553,12851,12962,12973,13738,13823,13919,13933,14080,14298,14585,14698,15583,15847,16318,16434,16438,16481,16729,17102,17122,17315,17320,17402,17418,17859,17909,17911,17915,17916,17936,17939,17961,18664,18703,18814,18962,19043,33469,33470,33471,33484,33485,33490,33497,33501,33505,33513,33520,33536,33550,37845,37921,37948,38029,38038,38064,38065,38066,38069,38075,38076,38078,39108,39109,39113,39114,39115,39116,39265,39394,189000]}
 },{}],186:[function(require,module,exports){
+module.exports={"uChars":[128,165,169,178,184,216,226,235,238,244,248,251,253,258,276,284,300,325,329,334,364,463,465,467,469,471,473,475,477,506,594,610,712,716,730,930,938,962,970,1026,1104,1106,8209,8215,8218,8222,8231,8241,8244,8246,8252,8365,8452,8454,8458,8471,8482,8556,8570,8596,8602,8713,8720,8722,8726,8731,8737,8740,8742,8748,8751,8760,8766,8777,8781,8787,8802,8808,8816,8854,8858,8870,8896,8979,9322,9372,9548,9588,9616,9622,9634,9652,9662,9672,9676,9680,9702,9735,9738,9793,9795,11906,11909,11913,11917,11928,11944,11947,11951,11956,11960,11964,11979,12284,12292,12312,12319,12330,12351,12436,12447,12535,12543,12586,12842,12850,12964,13200,13215,13218,13253,13263,13267,13270,13384,13428,13727,13839,13851,14617,14703,14801,14816,14964,15183,15471,15585,16471,16736,17208,17325,17330,17374,17623,17997,18018,18212,18218,18301,18318,18760,18811,18814,18820,18823,18844,18848,18872,19576,19620,19738,19887,40870,59244,59336,59367,59413,59417,59423,59431,59437,59443,59452,59460,59478,59493,63789,63866,63894,63976,63986,64016,64018,64021,64025,64034,64037,64042,65074,65093,65107,65112,65127,65132,65375,65510,65536],"gbChars":[0,36,38,45,50,81,89,95,96,100,103,104,105,109,126,133,148,172,175,179,208,306,307,308,309,310,311,312,313,341,428,443,544,545,558,741,742,749,750,805,819,820,7922,7924,7925,7927,7934,7943,7944,7945,7950,8062,8148,8149,8152,8164,8174,8236,8240,8262,8264,8374,8380,8381,8384,8388,8390,8392,8393,8394,8396,8401,8406,8416,8419,8424,8437,8439,8445,8482,8485,8496,8521,8603,8936,8946,9046,9050,9063,9066,9076,9092,9100,9108,9111,9113,9131,9162,9164,9218,9219,11329,11331,11334,11336,11346,11361,11363,11366,11370,11372,11375,11389,11682,11686,11687,11692,11694,11714,11716,11723,11725,11730,11736,11982,11989,12102,12336,12348,12350,12384,12393,12395,12397,12510,12553,12851,12962,12973,13738,13823,13919,13933,14080,14298,14585,14698,15583,15847,16318,16434,16438,16481,16729,17102,17122,17315,17320,17402,17418,17859,17909,17911,17915,17916,17936,17939,17961,18664,18703,18814,18962,19043,33469,33470,33471,33484,33485,33490,33497,33501,33505,33513,33520,33536,33550,37845,37921,37948,38029,38038,38064,38065,38066,38069,38075,38076,38078,39108,39109,39113,39114,39115,39116,39265,39394,189000]}
+},{}],187:[function(require,module,exports){
 module.exports=[
 ["a140","",62],
 ["a180","",32],
@@ -45359,7 +46001,7 @@ module.exports=[
 ["fe80","䜣䜩䝼䞍⻊䥇䥺䥽䦂䦃䦅䦆䦟䦛䦷䦶䲣䲟䲠䲡䱷䲢䴓",6,"䶮",93]
 ]
 
-},{}],187:[function(require,module,exports){
+},{}],188:[function(require,module,exports){
 module.exports=[
 ["0","\u0000",128],
 ["a1","｡",62],
@@ -45486,7 +46128,7 @@ module.exports=[
 ["fc40","髜魵魲鮏鮱鮻鰀鵰鵫鶴鸙黑"]
 ]
 
-},{}],188:[function(require,module,exports){
+},{}],189:[function(require,module,exports){
 "use strict";
 var Buffer = require("safer-buffer").Buffer;
 
@@ -45665,7 +46307,7 @@ function detectEncoding(buf, defaultEncoding) {
 
 
 
-},{"safer-buffer":270}],189:[function(require,module,exports){
+},{"safer-buffer":271}],190:[function(require,module,exports){
 "use strict";
 var Buffer = require("safer-buffer").Buffer;
 
@@ -45957,7 +46599,7 @@ Utf7IMAPDecoder.prototype.end = function() {
 
 
 
-},{"safer-buffer":270}],190:[function(require,module,exports){
+},{"safer-buffer":271}],191:[function(require,module,exports){
 "use strict";
 
 var BOMChar = '\uFEFF';
@@ -46011,7 +46653,7 @@ StripBOMWrapper.prototype.end = function() {
 }
 
 
-},{}],191:[function(require,module,exports){
+},{}],192:[function(require,module,exports){
 (function (process){(function (){
 "use strict";
 
@@ -46168,7 +46810,7 @@ if ("Ā" != "\u0100") {
 }
 
 }).call(this)}).call(this,require('_process'))
-},{"../encodings":175,"./bom-handling":190,"./extend-node":36,"./streams":36,"_process":239,"safer-buffer":270}],192:[function(require,module,exports){
+},{"../encodings":176,"./bom-handling":191,"./extend-node":37,"./streams":37,"_process":240,"safer-buffer":271}],193:[function(require,module,exports){
 /*! ieee754. BSD-3-Clause License. Feross Aboukhadijeh <https://feross.org/opensource> */
 exports.read = function (buffer, offset, isLE, mLen, nBytes) {
   var e, m
@@ -46255,7 +46897,7 @@ exports.write = function (buffer, value, offset, isLE, mLen, nBytes) {
   buffer[offset + i - d] |= s * 128
 }
 
-},{}],193:[function(require,module,exports){
+},{}],194:[function(require,module,exports){
 if (typeof Object.create === 'function') {
   // implementation from standard node.js 'util' module
   module.exports = function inherits(ctor, superCtor) {
@@ -46284,7 +46926,7 @@ if (typeof Object.create === 'function') {
   }
 }
 
-},{}],194:[function(require,module,exports){
+},{}],195:[function(require,module,exports){
 'use strict';
 
 var hasToStringTag = require('has-tostringtag/shams')();
@@ -46319,7 +46961,7 @@ isStandardArguments.isLegacyArguments = isLegacyArguments; // for tests
 
 module.exports = supportsStandardArguments ? isStandardArguments : isLegacyArguments;
 
-},{"call-bind/callBound":70,"has-tostringtag/shams":156}],195:[function(require,module,exports){
+},{"call-bind/callBound":71,"has-tostringtag/shams":157}],196:[function(require,module,exports){
 'use strict';
 
 var toStr = Object.prototype.toString;
@@ -46359,7 +47001,7 @@ module.exports = function isGeneratorFunction(fn) {
 	return getProto(fn) === GeneratorFunction;
 };
 
-},{"has-tostringtag/shams":156}],196:[function(require,module,exports){
+},{"has-tostringtag/shams":157}],197:[function(require,module,exports){
 (function (global){(function (){
 'use strict';
 
@@ -46422,7 +47064,7 @@ module.exports = function isTypedArray(value) {
 };
 
 }).call(this)}).call(this,typeof global !== "undefined" ? global : typeof self !== "undefined" ? self : typeof window !== "undefined" ? window : {})
-},{"available-typed-arrays":32,"call-bind/callBound":70,"es-abstract/helpers/getOwnPropertyDescriptor":146,"foreach":149,"has-tostringtag/shams":156}],197:[function(require,module,exports){
+},{"available-typed-arrays":33,"call-bind/callBound":71,"es-abstract/helpers/getOwnPropertyDescriptor":147,"foreach":150,"has-tostringtag/shams":157}],198:[function(require,module,exports){
 (function (process,Buffer){(function (){
 (function (global, factory) {
   typeof exports === 'object' && typeof module !== 'undefined' ? factory(exports) :
@@ -47278,7 +47920,7 @@ module.exports = function isTypedArray(value) {
 })));
 
 }).call(this)}).call(this,require('_process'),require("buffer").Buffer)
-},{"_process":239,"buffer":68,"util":36}],198:[function(require,module,exports){
+},{"_process":240,"buffer":69,"util":37}],199:[function(require,module,exports){
 'use strict'
 var inherits = require('inherits')
 var HashBase = require('hash-base')
@@ -47426,7 +48068,7 @@ function fnI (a, b, c, d, m, k, s) {
 
 module.exports = MD5
 
-},{"hash-base":158,"inherits":193,"safe-buffer":269}],199:[function(require,module,exports){
+},{"hash-base":159,"inherits":194,"safe-buffer":270}],200:[function(require,module,exports){
 var bn = require('bn.js');
 var brorand = require('brorand');
 
@@ -47543,9 +48185,9 @@ MillerRabin.prototype.getDivisor = function getDivisor(n, k) {
   return false;
 };
 
-},{"bn.js":200,"brorand":35}],200:[function(require,module,exports){
-arguments[4][26][0].apply(exports,arguments)
-},{"buffer":36,"dup":26}],201:[function(require,module,exports){
+},{"bn.js":201,"brorand":36}],201:[function(require,module,exports){
+arguments[4][27][0].apply(exports,arguments)
+},{"buffer":37,"dup":27}],202:[function(require,module,exports){
 module.exports = assert;
 
 function assert(val, msg) {
@@ -47558,7 +48200,7 @@ assert.equal = function assertEqual(l, r, msg) {
     throw new Error(msg || ('Assertion failed: ' + l + ' != ' + r));
 };
 
-},{}],202:[function(require,module,exports){
+},{}],203:[function(require,module,exports){
 'use strict';
 
 var utils = exports;
@@ -47618,7 +48260,7 @@ utils.encode = function encode(arr, enc) {
     return arr;
 };
 
-},{}],203:[function(require,module,exports){
+},{}],204:[function(require,module,exports){
 /**
  * Helpers.
  */
@@ -47782,7 +48424,7 @@ function plural(ms, msAbs, n, name) {
   return Math.round(ms / n) + ' ' + name + (isPlural ? 's' : '');
 }
 
-},{}],204:[function(require,module,exports){
+},{}],205:[function(require,module,exports){
 (function (Buffer){(function (){
 var createHash = require('crypto').createHash;
 
@@ -47898,7 +48540,7 @@ module.exports = {
 }
 
 }).call(this)}).call(this,require("buffer").Buffer)
-},{"buffer":68,"crypto":113}],205:[function(require,module,exports){
+},{"buffer":69,"crypto":114}],206:[function(require,module,exports){
 
 //  Simple cookie handling implementation based on the standard RFC 6265.
 //
@@ -47979,7 +48621,7 @@ exports.read = parseSetCookieHeader;
 // writes a cookie string header
 exports.write = writeCookieString;
 
-},{"querystring":250}],206:[function(require,module,exports){
+},{"querystring":251}],207:[function(require,module,exports){
 var iconv,
     inherits  = require('util').inherits,
     stream    = require('stream');
@@ -48034,7 +48676,7 @@ module.exports = function(charset) {
     return new stream.PassThrough;
 }
 
-},{"iconv-lite":191,"stream":279,"util":292}],207:[function(require,module,exports){
+},{"iconv-lite":192,"stream":280,"util":293}],208:[function(require,module,exports){
 (function (Buffer){(function (){
 var readFile = require('fs').readFile,
     basename = require('path').basename;
@@ -48136,7 +48778,7 @@ function flatten(object, into, prefix) {
 }
 
 }).call(this)}).call(this,require("buffer").Buffer)
-},{"buffer":68,"fs":66,"path":231}],208:[function(require,module,exports){
+},{"buffer":69,"fs":67,"path":232}],209:[function(require,module,exports){
 (function (process,Buffer){(function (){
 //////////////////////////////////////////
 // Needle -- HTTP Client for Node.js
@@ -49019,7 +49661,7 @@ module.exports.request = function(method, uri, data, opts, callback) {
 };
 
 }).call(this)}).call(this,require('_process'),require("buffer").Buffer)
-},{"../package.json":212,"./auth":204,"./cookies":205,"./decoder":206,"./multipart":207,"./parsers":209,"./querystring":210,"_process":239,"buffer":68,"debug":114,"fs":66,"http":280,"https":172,"stream":279,"url":287,"util":292,"zlib":65}],209:[function(require,module,exports){
+},{"../package.json":213,"./auth":205,"./cookies":206,"./decoder":207,"./multipart":208,"./parsers":210,"./querystring":211,"_process":240,"buffer":69,"debug":115,"fs":67,"http":281,"https":173,"stream":280,"url":288,"util":293,"zlib":66}],210:[function(require,module,exports){
 (function (Buffer){(function (){
 //////////////////////////////////////////
 // Defines mappings between content-type
@@ -49144,7 +49786,7 @@ module.exports = parsers;
 module.exports.use = buildParser;
 
 }).call(this)}).call(this,require("buffer").Buffer)
-},{"buffer":68,"sax":211,"stream":279}],210:[function(require,module,exports){
+},{"buffer":69,"sax":212,"stream":280}],211:[function(require,module,exports){
 // based on the qs module, but handles null objects as expected
 // fixes by Tomas Pollak.
 
@@ -49195,7 +49837,7 @@ function stringifyObject(obj, prefix) {
 
 exports.build = stringify;
 
-},{}],211:[function(require,module,exports){
+},{}],212:[function(require,module,exports){
 (function (Buffer){(function (){
 ;(function (sax) { // wrapper for non-node envs
   sax.parser = function (strict, opt) { return new SAXParser(strict, opt) }
@@ -50764,12 +51406,12 @@ exports.build = stringify;
 })(typeof exports === 'undefined' ? this.sax = {} : exports)
 
 }).call(this)}).call(this,require("buffer").Buffer)
-},{"buffer":68,"stream":279,"string_decoder":284}],212:[function(require,module,exports){
+},{"buffer":69,"stream":280,"string_decoder":285}],213:[function(require,module,exports){
 module.exports={
   "_args": [
     [
       "needle@3.0.0",
-      "/Users/abhis/Documents/GitHub/splunk-sdk-javascript"
+      "/Users/abhis/Documents/JS/splunk-sdk-javascript"
     ]
   ],
   "_from": "needle@3.0.0",
@@ -50793,7 +51435,7 @@ module.exports={
   ],
   "_resolved": "https://registry.npmjs.org/needle/-/needle-3.0.0.tgz",
   "_spec": "3.0.0",
-  "_where": "/Users/abhis/Documents/GitHub/splunk-sdk-javascript",
+  "_where": "/Users/abhis/Documents/JS/splunk-sdk-javascript",
   "author": {
     "name": "Tomás Pollak",
     "email": "tomas@forkhq.com"
@@ -50872,7 +51514,7 @@ module.exports={
   "version": "3.0.0"
 }
 
-},{}],213:[function(require,module,exports){
+},{}],214:[function(require,module,exports){
 /*
 object-assign
 (c) Sindre Sorhus
@@ -50964,7 +51606,7 @@ module.exports = shouldUseNative() ? Object.assign : function (target, source) {
 	return to;
 };
 
-},{}],214:[function(require,module,exports){
+},{}],215:[function(require,module,exports){
 exports.endianness = function () { return 'LE' };
 
 exports.hostname = function () {
@@ -51015,7 +51657,7 @@ exports.homedir = function () {
 	return '/'
 };
 
-},{}],215:[function(require,module,exports){
+},{}],216:[function(require,module,exports){
 'use strict';
 
 
@@ -51122,7 +51764,7 @@ exports.setTyped = function (on) {
 
 exports.setTyped(TYPED_OK);
 
-},{}],216:[function(require,module,exports){
+},{}],217:[function(require,module,exports){
 'use strict';
 
 // Note: adler32 takes 12% for level 0 and 2% for level 6.
@@ -51175,7 +51817,7 @@ function adler32(adler, buf, len, pos) {
 
 module.exports = adler32;
 
-},{}],217:[function(require,module,exports){
+},{}],218:[function(require,module,exports){
 'use strict';
 
 // (C) 1995-2013 Jean-loup Gailly and Mark Adler
@@ -51245,7 +51887,7 @@ module.exports = {
   //Z_NULL:                 null // Use -1 or null inline, depending on var type
 };
 
-},{}],218:[function(require,module,exports){
+},{}],219:[function(require,module,exports){
 'use strict';
 
 // Note: we can't get significant speed boost here.
@@ -51306,7 +51948,7 @@ function crc32(crc, buf, len, pos) {
 
 module.exports = crc32;
 
-},{}],219:[function(require,module,exports){
+},{}],220:[function(require,module,exports){
 'use strict';
 
 // (C) 1995-2013 Jean-loup Gailly and Mark Adler
@@ -53182,7 +53824,7 @@ exports.deflatePrime = deflatePrime;
 exports.deflateTune = deflateTune;
 */
 
-},{"../utils/common":215,"./adler32":216,"./crc32":218,"./messages":223,"./trees":224}],220:[function(require,module,exports){
+},{"../utils/common":216,"./adler32":217,"./crc32":219,"./messages":224,"./trees":225}],221:[function(require,module,exports){
 'use strict';
 
 // (C) 1995-2013 Jean-loup Gailly and Mark Adler
@@ -53529,7 +54171,7 @@ module.exports = function inflate_fast(strm, start) {
   return;
 };
 
-},{}],221:[function(require,module,exports){
+},{}],222:[function(require,module,exports){
 'use strict';
 
 // (C) 1995-2013 Jean-loup Gailly and Mark Adler
@@ -55087,7 +55729,7 @@ exports.inflateSyncPoint = inflateSyncPoint;
 exports.inflateUndermine = inflateUndermine;
 */
 
-},{"../utils/common":215,"./adler32":216,"./crc32":218,"./inffast":220,"./inftrees":222}],222:[function(require,module,exports){
+},{"../utils/common":216,"./adler32":217,"./crc32":219,"./inffast":221,"./inftrees":223}],223:[function(require,module,exports){
 'use strict';
 
 // (C) 1995-2013 Jean-loup Gailly and Mark Adler
@@ -55432,7 +56074,7 @@ module.exports = function inflate_table(type, lens, lens_index, codes, table, ta
   return 0;
 };
 
-},{"../utils/common":215}],223:[function(require,module,exports){
+},{"../utils/common":216}],224:[function(require,module,exports){
 'use strict';
 
 // (C) 1995-2013 Jean-loup Gailly and Mark Adler
@@ -55466,7 +56108,7 @@ module.exports = {
   '-6':   'incompatible version' /* Z_VERSION_ERROR (-6) */
 };
 
-},{}],224:[function(require,module,exports){
+},{}],225:[function(require,module,exports){
 'use strict';
 
 // (C) 1995-2013 Jean-loup Gailly and Mark Adler
@@ -56690,7 +57332,7 @@ exports._tr_flush_block  = _tr_flush_block;
 exports._tr_tally = _tr_tally;
 exports._tr_align = _tr_align;
 
-},{"../utils/common":215}],225:[function(require,module,exports){
+},{"../utils/common":216}],226:[function(require,module,exports){
 'use strict';
 
 // (C) 1995-2013 Jean-loup Gailly and Mark Adler
@@ -56739,7 +57381,7 @@ function ZStream() {
 
 module.exports = ZStream;
 
-},{}],226:[function(require,module,exports){
+},{}],227:[function(require,module,exports){
 module.exports={"2.16.840.1.101.3.4.1.1": "aes-128-ecb",
 "2.16.840.1.101.3.4.1.2": "aes-128-cbc",
 "2.16.840.1.101.3.4.1.3": "aes-128-ofb",
@@ -56753,7 +57395,7 @@ module.exports={"2.16.840.1.101.3.4.1.1": "aes-128-ecb",
 "2.16.840.1.101.3.4.1.43": "aes-256-ofb",
 "2.16.840.1.101.3.4.1.44": "aes-256-cfb"
 }
-},{}],227:[function(require,module,exports){
+},{}],228:[function(require,module,exports){
 // from https://github.com/indutny/self-signed/blob/gh-pages/lib/asn1.js
 // Fedor, you are amazing.
 'use strict'
@@ -56877,7 +57519,7 @@ exports.signature = asn1.define('signature', function () {
   )
 })
 
-},{"./certificate":228,"asn1.js":12}],228:[function(require,module,exports){
+},{"./certificate":229,"asn1.js":13}],229:[function(require,module,exports){
 // from https://github.com/Rantanen/node-dtls/blob/25a7dc861bda38cfeac93a723500eea4f0ac2e86/Certificate.js
 // thanks to @Rantanen
 
@@ -56968,7 +57610,7 @@ var X509Certificate = asn.define('X509Certificate', function () {
 
 module.exports = X509Certificate
 
-},{"asn1.js":12}],229:[function(require,module,exports){
+},{"asn1.js":13}],230:[function(require,module,exports){
 // adapted from https://github.com/apatil/pemstrip
 var findProc = /Proc-Type: 4,ENCRYPTED[\n\r]+DEK-Info: AES-((?:128)|(?:192)|(?:256))-CBC,([0-9A-H]+)[\n\r]+([0-9A-z\n\r+/=]+)[\n\r]+/m
 var startRegex = /^-----BEGIN ((?:.*? KEY)|CERTIFICATE)-----/m
@@ -57001,7 +57643,7 @@ module.exports = function (okey, password) {
   }
 }
 
-},{"browserify-aes":39,"evp_bytestokey":148,"safe-buffer":269}],230:[function(require,module,exports){
+},{"browserify-aes":40,"evp_bytestokey":149,"safe-buffer":270}],231:[function(require,module,exports){
 var asn1 = require('./asn1')
 var aesid = require('./aesid.json')
 var fixProc = require('./fixProc')
@@ -57110,7 +57752,7 @@ function decrypt (data, password) {
   return Buffer.concat(out)
 }
 
-},{"./aesid.json":226,"./asn1":227,"./fixProc":229,"browserify-aes":39,"pbkdf2":233,"safe-buffer":269}],231:[function(require,module,exports){
+},{"./aesid.json":227,"./asn1":228,"./fixProc":230,"browserify-aes":40,"pbkdf2":234,"safe-buffer":270}],232:[function(require,module,exports){
 (function (process){(function (){
 // 'path' module extracted from Node.js v8.11.1 (only the posix part)
 // transplited with Babel
@@ -57643,7 +58285,7 @@ posix.posix = posix;
 module.exports = posix;
 
 }).call(this)}).call(this,require('_process'))
-},{"_process":239}],232:[function(require,module,exports){
+},{"_process":240}],233:[function(require,module,exports){
 'use strict';
 
 /* !
@@ -57946,11 +58588,11 @@ module.exports = {
   setPathValue: setPathValue,
 };
 
-},{}],233:[function(require,module,exports){
+},{}],234:[function(require,module,exports){
 exports.pbkdf2 = require('./lib/async')
 exports.pbkdf2Sync = require('./lib/sync')
 
-},{"./lib/async":234,"./lib/sync":237}],234:[function(require,module,exports){
+},{"./lib/async":235,"./lib/sync":238}],235:[function(require,module,exports){
 (function (global){(function (){
 var Buffer = require('safe-buffer').Buffer
 
@@ -58072,7 +58714,7 @@ module.exports = function (password, salt, iterations, keylen, digest, callback)
 }
 
 }).call(this)}).call(this,typeof global !== "undefined" ? global : typeof self !== "undefined" ? self : typeof window !== "undefined" ? window : {})
-},{"./default-encoding":235,"./precondition":236,"./sync":237,"./to-buffer":238,"safe-buffer":269}],235:[function(require,module,exports){
+},{"./default-encoding":236,"./precondition":237,"./sync":238,"./to-buffer":239,"safe-buffer":270}],236:[function(require,module,exports){
 (function (process,global){(function (){
 var defaultEncoding
 /* istanbul ignore next */
@@ -58088,7 +58730,7 @@ if (global.process && global.process.browser) {
 module.exports = defaultEncoding
 
 }).call(this)}).call(this,require('_process'),typeof global !== "undefined" ? global : typeof self !== "undefined" ? self : typeof window !== "undefined" ? window : {})
-},{"_process":239}],236:[function(require,module,exports){
+},{"_process":240}],237:[function(require,module,exports){
 var MAX_ALLOC = Math.pow(2, 30) - 1 // default in iojs
 
 module.exports = function (iterations, keylen) {
@@ -58109,7 +58751,7 @@ module.exports = function (iterations, keylen) {
   }
 }
 
-},{}],237:[function(require,module,exports){
+},{}],238:[function(require,module,exports){
 var md5 = require('create-hash/md5')
 var RIPEMD160 = require('ripemd160')
 var sha = require('sha.js')
@@ -58216,7 +58858,7 @@ function pbkdf2 (password, salt, iterations, keylen, digest) {
 
 module.exports = pbkdf2
 
-},{"./default-encoding":235,"./precondition":236,"./to-buffer":238,"create-hash/md5":110,"ripemd160":268,"safe-buffer":269,"sha.js":272}],238:[function(require,module,exports){
+},{"./default-encoding":236,"./precondition":237,"./to-buffer":239,"create-hash/md5":111,"ripemd160":269,"safe-buffer":270,"sha.js":273}],239:[function(require,module,exports){
 var Buffer = require('safe-buffer').Buffer
 
 module.exports = function (thing, encoding, name) {
@@ -58231,7 +58873,7 @@ module.exports = function (thing, encoding, name) {
   }
 }
 
-},{"safe-buffer":269}],239:[function(require,module,exports){
+},{"safe-buffer":270}],240:[function(require,module,exports){
 // shim for using process in browser
 var process = module.exports = {};
 
@@ -58417,7 +59059,7 @@ process.chdir = function (dir) {
 };
 process.umask = function() { return 0; };
 
-},{}],240:[function(require,module,exports){
+},{}],241:[function(require,module,exports){
 exports.publicEncrypt = require('./publicEncrypt')
 exports.privateDecrypt = require('./privateDecrypt')
 
@@ -58429,7 +59071,7 @@ exports.publicDecrypt = function publicDecrypt (key, buf) {
   return exports.privateDecrypt(key, buf, true)
 }
 
-},{"./privateDecrypt":243,"./publicEncrypt":244}],241:[function(require,module,exports){
+},{"./privateDecrypt":244,"./publicEncrypt":245}],242:[function(require,module,exports){
 var createHash = require('create-hash')
 var Buffer = require('safe-buffer').Buffer
 
@@ -58450,9 +59092,9 @@ function i2ops (c) {
   return out
 }
 
-},{"create-hash":109,"safe-buffer":269}],242:[function(require,module,exports){
-arguments[4][26][0].apply(exports,arguments)
-},{"buffer":36,"dup":26}],243:[function(require,module,exports){
+},{"create-hash":110,"safe-buffer":270}],243:[function(require,module,exports){
+arguments[4][27][0].apply(exports,arguments)
+},{"buffer":37,"dup":27}],244:[function(require,module,exports){
 var parseKeys = require('parse-asn1')
 var mgf = require('./mgf')
 var xor = require('./xor')
@@ -58559,7 +59201,7 @@ function compare (a, b) {
   return dif
 }
 
-},{"./mgf":241,"./withPublic":245,"./xor":246,"bn.js":242,"browserify-rsa":57,"create-hash":109,"parse-asn1":230,"safe-buffer":269}],244:[function(require,module,exports){
+},{"./mgf":242,"./withPublic":246,"./xor":247,"bn.js":243,"browserify-rsa":58,"create-hash":110,"parse-asn1":231,"safe-buffer":270}],245:[function(require,module,exports){
 var parseKeys = require('parse-asn1')
 var randomBytes = require('randombytes')
 var createHash = require('create-hash')
@@ -58649,7 +59291,7 @@ function nonZero (len) {
   return out
 }
 
-},{"./mgf":241,"./withPublic":245,"./xor":246,"bn.js":242,"browserify-rsa":57,"create-hash":109,"parse-asn1":230,"randombytes":251,"safe-buffer":269}],245:[function(require,module,exports){
+},{"./mgf":242,"./withPublic":246,"./xor":247,"bn.js":243,"browserify-rsa":58,"create-hash":110,"parse-asn1":231,"randombytes":252,"safe-buffer":270}],246:[function(require,module,exports){
 var BN = require('bn.js')
 var Buffer = require('safe-buffer').Buffer
 
@@ -58663,7 +59305,7 @@ function withPublic (paddedMsg, key) {
 
 module.exports = withPublic
 
-},{"bn.js":242,"safe-buffer":269}],246:[function(require,module,exports){
+},{"bn.js":243,"safe-buffer":270}],247:[function(require,module,exports){
 module.exports = function xor (a, b) {
   var len = a.length
   var i = -1
@@ -58673,7 +59315,7 @@ module.exports = function xor (a, b) {
   return a
 }
 
-},{}],247:[function(require,module,exports){
+},{}],248:[function(require,module,exports){
 (function (global){(function (){
 /*! https://mths.be/punycode v1.4.1 by @mathias */
 ;(function(root) {
@@ -59210,7 +59852,7 @@ module.exports = function xor (a, b) {
 }(this));
 
 }).call(this)}).call(this,typeof global !== "undefined" ? global : typeof self !== "undefined" ? self : typeof window !== "undefined" ? window : {})
-},{}],248:[function(require,module,exports){
+},{}],249:[function(require,module,exports){
 // Copyright Joyent, Inc. and other Node contributors.
 //
 // Permission is hereby granted, free of charge, to any person obtaining a
@@ -59296,7 +59938,7 @@ var isArray = Array.isArray || function (xs) {
   return Object.prototype.toString.call(xs) === '[object Array]';
 };
 
-},{}],249:[function(require,module,exports){
+},{}],250:[function(require,module,exports){
 // Copyright Joyent, Inc. and other Node contributors.
 //
 // Permission is hereby granted, free of charge, to any person obtaining a
@@ -59383,13 +60025,13 @@ var objectKeys = Object.keys || function (obj) {
   return res;
 };
 
-},{}],250:[function(require,module,exports){
+},{}],251:[function(require,module,exports){
 'use strict';
 
 exports.decode = exports.parse = require('./decode');
 exports.encode = exports.stringify = require('./encode');
 
-},{"./decode":248,"./encode":249}],251:[function(require,module,exports){
+},{"./decode":249,"./encode":250}],252:[function(require,module,exports){
 (function (process,global){(function (){
 'use strict'
 
@@ -59443,7 +60085,7 @@ function randomBytes (size, cb) {
 }
 
 }).call(this)}).call(this,require('_process'),typeof global !== "undefined" ? global : typeof self !== "undefined" ? self : typeof window !== "undefined" ? window : {})
-},{"_process":239,"safe-buffer":269}],252:[function(require,module,exports){
+},{"_process":240,"safe-buffer":270}],253:[function(require,module,exports){
 (function (process,global){(function (){
 'use strict'
 
@@ -59555,7 +60197,7 @@ function randomFillSync (buf, offset, size) {
 }
 
 }).call(this)}).call(this,require('_process'),typeof global !== "undefined" ? global : typeof self !== "undefined" ? self : typeof window !== "undefined" ? window : {})
-},{"_process":239,"randombytes":251,"safe-buffer":269}],253:[function(require,module,exports){
+},{"_process":240,"randombytes":252,"safe-buffer":270}],254:[function(require,module,exports){
 'use strict';
 
 function _inheritsLoose(subClass, superClass) { subClass.prototype = Object.create(superClass.prototype); subClass.prototype.constructor = subClass; subClass.__proto__ = superClass; }
@@ -59684,7 +60326,7 @@ createErrorType('ERR_UNKNOWN_ENCODING', function (arg) {
 createErrorType('ERR_STREAM_UNSHIFT_AFTER_END_EVENT', 'stream.unshift() after end event');
 module.exports.codes = codes;
 
-},{}],254:[function(require,module,exports){
+},{}],255:[function(require,module,exports){
 (function (process){(function (){
 // Copyright Joyent, Inc. and other Node contributors.
 //
@@ -59826,7 +60468,7 @@ Object.defineProperty(Duplex.prototype, 'destroyed', {
   }
 });
 }).call(this)}).call(this,require('_process'))
-},{"./_stream_readable":256,"./_stream_writable":258,"_process":239,"inherits":193}],255:[function(require,module,exports){
+},{"./_stream_readable":257,"./_stream_writable":259,"_process":240,"inherits":194}],256:[function(require,module,exports){
 // Copyright Joyent, Inc. and other Node contributors.
 //
 // Permission is hereby granted, free of charge, to any person obtaining a
@@ -59866,7 +60508,7 @@ function PassThrough(options) {
 PassThrough.prototype._transform = function (chunk, encoding, cb) {
   cb(null, chunk);
 };
-},{"./_stream_transform":257,"inherits":193}],256:[function(require,module,exports){
+},{"./_stream_transform":258,"inherits":194}],257:[function(require,module,exports){
 (function (process,global){(function (){
 // Copyright Joyent, Inc. and other Node contributors.
 //
@@ -60993,7 +61635,7 @@ function indexOf(xs, x) {
   return -1;
 }
 }).call(this)}).call(this,require('_process'),typeof global !== "undefined" ? global : typeof self !== "undefined" ? self : typeof window !== "undefined" ? window : {})
-},{"../errors":253,"./_stream_duplex":254,"./internal/streams/async_iterator":259,"./internal/streams/buffer_list":260,"./internal/streams/destroy":261,"./internal/streams/from":263,"./internal/streams/state":265,"./internal/streams/stream":266,"_process":239,"buffer":68,"events":147,"inherits":193,"string_decoder/":284,"util":36}],257:[function(require,module,exports){
+},{"../errors":254,"./_stream_duplex":255,"./internal/streams/async_iterator":260,"./internal/streams/buffer_list":261,"./internal/streams/destroy":262,"./internal/streams/from":264,"./internal/streams/state":266,"./internal/streams/stream":267,"_process":240,"buffer":69,"events":148,"inherits":194,"string_decoder/":285,"util":37}],258:[function(require,module,exports){
 // Copyright Joyent, Inc. and other Node contributors.
 //
 // Permission is hereby granted, free of charge, to any person obtaining a
@@ -61195,7 +61837,7 @@ function done(stream, er, data) {
   if (stream._transformState.transforming) throw new ERR_TRANSFORM_ALREADY_TRANSFORMING();
   return stream.push(null);
 }
-},{"../errors":253,"./_stream_duplex":254,"inherits":193}],258:[function(require,module,exports){
+},{"../errors":254,"./_stream_duplex":255,"inherits":194}],259:[function(require,module,exports){
 (function (process,global){(function (){
 // Copyright Joyent, Inc. and other Node contributors.
 //
@@ -61895,7 +62537,7 @@ Writable.prototype._destroy = function (err, cb) {
   cb(err);
 };
 }).call(this)}).call(this,require('_process'),typeof global !== "undefined" ? global : typeof self !== "undefined" ? self : typeof window !== "undefined" ? window : {})
-},{"../errors":253,"./_stream_duplex":254,"./internal/streams/destroy":261,"./internal/streams/state":265,"./internal/streams/stream":266,"_process":239,"buffer":68,"inherits":193,"util-deprecate":289}],259:[function(require,module,exports){
+},{"../errors":254,"./_stream_duplex":255,"./internal/streams/destroy":262,"./internal/streams/state":266,"./internal/streams/stream":267,"_process":240,"buffer":69,"inherits":194,"util-deprecate":290}],260:[function(require,module,exports){
 (function (process){(function (){
 'use strict';
 
@@ -62105,7 +62747,7 @@ var createReadableStreamAsyncIterator = function createReadableStreamAsyncIterat
 
 module.exports = createReadableStreamAsyncIterator;
 }).call(this)}).call(this,require('_process'))
-},{"./end-of-stream":262,"_process":239}],260:[function(require,module,exports){
+},{"./end-of-stream":263,"_process":240}],261:[function(require,module,exports){
 'use strict';
 
 function ownKeys(object, enumerableOnly) { var keys = Object.keys(object); if (Object.getOwnPropertySymbols) { var symbols = Object.getOwnPropertySymbols(object); if (enumerableOnly) symbols = symbols.filter(function (sym) { return Object.getOwnPropertyDescriptor(object, sym).enumerable; }); keys.push.apply(keys, symbols); } return keys; }
@@ -62316,7 +62958,7 @@ function () {
 
   return BufferList;
 }();
-},{"buffer":68,"util":36}],261:[function(require,module,exports){
+},{"buffer":69,"util":37}],262:[function(require,module,exports){
 (function (process){(function (){
 'use strict'; // undocumented cb() API, needed for core, not for public API
 
@@ -62424,7 +63066,7 @@ module.exports = {
   errorOrDestroy: errorOrDestroy
 };
 }).call(this)}).call(this,require('_process'))
-},{"_process":239}],262:[function(require,module,exports){
+},{"_process":240}],263:[function(require,module,exports){
 // Ported from https://github.com/mafintosh/end-of-stream with
 // permission from the author, Mathias Buus (@mafintosh).
 'use strict';
@@ -62529,12 +63171,12 @@ function eos(stream, opts, callback) {
 }
 
 module.exports = eos;
-},{"../../../errors":253}],263:[function(require,module,exports){
+},{"../../../errors":254}],264:[function(require,module,exports){
 module.exports = function () {
   throw new Error('Readable.from is not available in the browser')
 };
 
-},{}],264:[function(require,module,exports){
+},{}],265:[function(require,module,exports){
 // Ported from https://github.com/mafintosh/pump with
 // permission from the author, Mathias Buus (@mafintosh).
 'use strict';
@@ -62632,7 +63274,7 @@ function pipeline() {
 }
 
 module.exports = pipeline;
-},{"../../../errors":253,"./end-of-stream":262}],265:[function(require,module,exports){
+},{"../../../errors":254,"./end-of-stream":263}],266:[function(require,module,exports){
 'use strict';
 
 var ERR_INVALID_OPT_VALUE = require('../../../errors').codes.ERR_INVALID_OPT_VALUE;
@@ -62660,10 +63302,10 @@ function getHighWaterMark(state, options, duplexKey, isDuplex) {
 module.exports = {
   getHighWaterMark: getHighWaterMark
 };
-},{"../../../errors":253}],266:[function(require,module,exports){
+},{"../../../errors":254}],267:[function(require,module,exports){
 module.exports = require('events').EventEmitter;
 
-},{"events":147}],267:[function(require,module,exports){
+},{"events":148}],268:[function(require,module,exports){
 exports = module.exports = require('./lib/_stream_readable.js');
 exports.Stream = exports;
 exports.Readable = exports;
@@ -62674,7 +63316,7 @@ exports.PassThrough = require('./lib/_stream_passthrough.js');
 exports.finished = require('./lib/internal/streams/end-of-stream.js');
 exports.pipeline = require('./lib/internal/streams/pipeline.js');
 
-},{"./lib/_stream_duplex.js":254,"./lib/_stream_passthrough.js":255,"./lib/_stream_readable.js":256,"./lib/_stream_transform.js":257,"./lib/_stream_writable.js":258,"./lib/internal/streams/end-of-stream.js":262,"./lib/internal/streams/pipeline.js":264}],268:[function(require,module,exports){
+},{"./lib/_stream_duplex.js":255,"./lib/_stream_passthrough.js":256,"./lib/_stream_readable.js":257,"./lib/_stream_transform.js":258,"./lib/_stream_writable.js":259,"./lib/internal/streams/end-of-stream.js":263,"./lib/internal/streams/pipeline.js":265}],269:[function(require,module,exports){
 'use strict'
 var Buffer = require('buffer').Buffer
 var inherits = require('inherits')
@@ -62839,7 +63481,7 @@ function fn5 (a, b, c, d, e, m, k, s) {
 
 module.exports = RIPEMD160
 
-},{"buffer":68,"hash-base":158,"inherits":193}],269:[function(require,module,exports){
+},{"buffer":69,"hash-base":159,"inherits":194}],270:[function(require,module,exports){
 /*! safe-buffer. MIT License. Feross Aboukhadijeh <https://feross.org/opensource> */
 /* eslint-disable node/no-deprecated-api */
 var buffer = require('buffer')
@@ -62906,7 +63548,7 @@ SafeBuffer.allocUnsafeSlow = function (size) {
   return buffer.SlowBuffer(size)
 }
 
-},{"buffer":68}],270:[function(require,module,exports){
+},{"buffer":69}],271:[function(require,module,exports){
 (function (process){(function (){
 /* eslint-disable node/no-deprecated-api */
 
@@ -62987,7 +63629,7 @@ if (!safer.constants) {
 module.exports = safer
 
 }).call(this)}).call(this,require('_process'))
-},{"_process":239,"buffer":68}],271:[function(require,module,exports){
+},{"_process":240,"buffer":69}],272:[function(require,module,exports){
 var Buffer = require('safe-buffer').Buffer
 
 // prototype class for hash functions
@@ -63070,7 +63712,7 @@ Hash.prototype._update = function () {
 
 module.exports = Hash
 
-},{"safe-buffer":269}],272:[function(require,module,exports){
+},{"safe-buffer":270}],273:[function(require,module,exports){
 var exports = module.exports = function SHA (algorithm) {
   algorithm = algorithm.toLowerCase()
 
@@ -63087,7 +63729,7 @@ exports.sha256 = require('./sha256')
 exports.sha384 = require('./sha384')
 exports.sha512 = require('./sha512')
 
-},{"./sha":273,"./sha1":274,"./sha224":275,"./sha256":276,"./sha384":277,"./sha512":278}],273:[function(require,module,exports){
+},{"./sha":274,"./sha1":275,"./sha224":276,"./sha256":277,"./sha384":278,"./sha512":279}],274:[function(require,module,exports){
 /*
  * A JavaScript implementation of the Secure Hash Algorithm, SHA-0, as defined
  * in FIPS PUB 180-1
@@ -63183,7 +63825,7 @@ Sha.prototype._hash = function () {
 
 module.exports = Sha
 
-},{"./hash":271,"inherits":193,"safe-buffer":269}],274:[function(require,module,exports){
+},{"./hash":272,"inherits":194,"safe-buffer":270}],275:[function(require,module,exports){
 /*
  * A JavaScript implementation of the Secure Hash Algorithm, SHA-1, as defined
  * in FIPS PUB 180-1
@@ -63284,7 +63926,7 @@ Sha1.prototype._hash = function () {
 
 module.exports = Sha1
 
-},{"./hash":271,"inherits":193,"safe-buffer":269}],275:[function(require,module,exports){
+},{"./hash":272,"inherits":194,"safe-buffer":270}],276:[function(require,module,exports){
 /**
  * A JavaScript implementation of the Secure Hash Algorithm, SHA-256, as defined
  * in FIPS 180-2
@@ -63339,7 +63981,7 @@ Sha224.prototype._hash = function () {
 
 module.exports = Sha224
 
-},{"./hash":271,"./sha256":276,"inherits":193,"safe-buffer":269}],276:[function(require,module,exports){
+},{"./hash":272,"./sha256":277,"inherits":194,"safe-buffer":270}],277:[function(require,module,exports){
 /**
  * A JavaScript implementation of the Secure Hash Algorithm, SHA-256, as defined
  * in FIPS 180-2
@@ -63476,7 +64118,7 @@ Sha256.prototype._hash = function () {
 
 module.exports = Sha256
 
-},{"./hash":271,"inherits":193,"safe-buffer":269}],277:[function(require,module,exports){
+},{"./hash":272,"inherits":194,"safe-buffer":270}],278:[function(require,module,exports){
 var inherits = require('inherits')
 var SHA512 = require('./sha512')
 var Hash = require('./hash')
@@ -63535,7 +64177,7 @@ Sha384.prototype._hash = function () {
 
 module.exports = Sha384
 
-},{"./hash":271,"./sha512":278,"inherits":193,"safe-buffer":269}],278:[function(require,module,exports){
+},{"./hash":272,"./sha512":279,"inherits":194,"safe-buffer":270}],279:[function(require,module,exports){
 var inherits = require('inherits')
 var Hash = require('./hash')
 var Buffer = require('safe-buffer').Buffer
@@ -63797,7 +64439,7 @@ Sha512.prototype._hash = function () {
 
 module.exports = Sha512
 
-},{"./hash":271,"inherits":193,"safe-buffer":269}],279:[function(require,module,exports){
+},{"./hash":272,"inherits":194,"safe-buffer":270}],280:[function(require,module,exports){
 // Copyright Joyent, Inc. and other Node contributors.
 //
 // Permission is hereby granted, free of charge, to any person obtaining a
@@ -63928,7 +64570,7 @@ Stream.prototype.pipe = function(dest, options) {
   return dest;
 };
 
-},{"events":147,"inherits":193,"readable-stream/lib/_stream_duplex.js":254,"readable-stream/lib/_stream_passthrough.js":255,"readable-stream/lib/_stream_readable.js":256,"readable-stream/lib/_stream_transform.js":257,"readable-stream/lib/_stream_writable.js":258,"readable-stream/lib/internal/streams/end-of-stream.js":262,"readable-stream/lib/internal/streams/pipeline.js":264}],280:[function(require,module,exports){
+},{"events":148,"inherits":194,"readable-stream/lib/_stream_duplex.js":255,"readable-stream/lib/_stream_passthrough.js":256,"readable-stream/lib/_stream_readable.js":257,"readable-stream/lib/_stream_transform.js":258,"readable-stream/lib/_stream_writable.js":259,"readable-stream/lib/internal/streams/end-of-stream.js":263,"readable-stream/lib/internal/streams/pipeline.js":265}],281:[function(require,module,exports){
 (function (global){(function (){
 var ClientRequest = require('./lib/request')
 var response = require('./lib/response')
@@ -64016,7 +64658,7 @@ http.METHODS = [
 	'UNSUBSCRIBE'
 ]
 }).call(this)}).call(this,typeof global !== "undefined" ? global : typeof self !== "undefined" ? self : typeof window !== "undefined" ? window : {})
-},{"./lib/request":282,"./lib/response":283,"builtin-status-codes":69,"url":287,"xtend":294}],281:[function(require,module,exports){
+},{"./lib/request":283,"./lib/response":284,"builtin-status-codes":70,"url":288,"xtend":295}],282:[function(require,module,exports){
 (function (global){(function (){
 exports.fetch = isFunction(global.fetch) && isFunction(global.ReadableStream)
 
@@ -64079,7 +64721,7 @@ function isFunction (value) {
 xhr = null // Help gc
 
 }).call(this)}).call(this,typeof global !== "undefined" ? global : typeof self !== "undefined" ? self : typeof window !== "undefined" ? window : {})
-},{}],282:[function(require,module,exports){
+},{}],283:[function(require,module,exports){
 (function (process,global,Buffer){(function (){
 var capability = require('./capability')
 var inherits = require('inherits')
@@ -64435,7 +65077,7 @@ var unsafeHeaders = [
 ]
 
 }).call(this)}).call(this,require('_process'),typeof global !== "undefined" ? global : typeof self !== "undefined" ? self : typeof window !== "undefined" ? window : {},require("buffer").Buffer)
-},{"./capability":281,"./response":283,"_process":239,"buffer":68,"inherits":193,"readable-stream":267}],283:[function(require,module,exports){
+},{"./capability":282,"./response":284,"_process":240,"buffer":69,"inherits":194,"readable-stream":268}],284:[function(require,module,exports){
 (function (process,global,Buffer){(function (){
 var capability = require('./capability')
 var inherits = require('inherits')
@@ -64650,7 +65292,7 @@ IncomingMessage.prototype._onXHRProgress = function (resetTimers) {
 }
 
 }).call(this)}).call(this,require('_process'),typeof global !== "undefined" ? global : typeof self !== "undefined" ? self : typeof window !== "undefined" ? window : {},require("buffer").Buffer)
-},{"./capability":281,"_process":239,"buffer":68,"inherits":193,"readable-stream":267}],284:[function(require,module,exports){
+},{"./capability":282,"_process":240,"buffer":69,"inherits":194,"readable-stream":268}],285:[function(require,module,exports){
 // Copyright Joyent, Inc. and other Node contributors.
 //
 // Permission is hereby granted, free of charge, to any person obtaining a
@@ -64947,7 +65589,7 @@ function simpleWrite(buf) {
 function simpleEnd(buf) {
   return buf && buf.length ? this.write(buf) : '';
 }
-},{"safe-buffer":269}],285:[function(require,module,exports){
+},{"safe-buffer":270}],286:[function(require,module,exports){
 exports.isatty = function () { return false; };
 
 function ReadStream() {
@@ -64960,7 +65602,7 @@ function WriteStream() {
 }
 exports.WriteStream = WriteStream;
 
-},{}],286:[function(require,module,exports){
+},{}],287:[function(require,module,exports){
 (function (global){(function (){
 (function (global, factory) {
 	typeof exports === 'object' && typeof module !== 'undefined' ? module.exports = factory() :
@@ -65352,7 +65994,7 @@ return typeDetect;
 })));
 
 }).call(this)}).call(this,typeof global !== "undefined" ? global : typeof self !== "undefined" ? self : typeof window !== "undefined" ? window : {})
-},{}],287:[function(require,module,exports){
+},{}],288:[function(require,module,exports){
 // Copyright Joyent, Inc. and other Node contributors.
 //
 // Permission is hereby granted, free of charge, to any person obtaining a
@@ -66086,7 +66728,7 @@ Url.prototype.parseHost = function() {
   if (host) this.hostname = host;
 };
 
-},{"./util":288,"punycode":247,"querystring":250}],288:[function(require,module,exports){
+},{"./util":289,"punycode":248,"querystring":251}],289:[function(require,module,exports){
 'use strict';
 
 module.exports = {
@@ -66104,7 +66746,7 @@ module.exports = {
   }
 };
 
-},{}],289:[function(require,module,exports){
+},{}],290:[function(require,module,exports){
 (function (global){(function (){
 
 /**
@@ -66175,9 +66817,9 @@ function config (name) {
 }
 
 }).call(this)}).call(this,typeof global !== "undefined" ? global : typeof self !== "undefined" ? self : typeof window !== "undefined" ? window : {})
-},{}],290:[function(require,module,exports){
-arguments[4][29][0].apply(exports,arguments)
-},{"dup":29}],291:[function(require,module,exports){
+},{}],291:[function(require,module,exports){
+arguments[4][30][0].apply(exports,arguments)
+},{"dup":30}],292:[function(require,module,exports){
 // Currently in sync with Node.js lib/internal/util/types.js
 // https://github.com/nodejs/node/commit/112cc7c27551254aa2b17098fb774867f05ed0d9
 
@@ -66513,7 +67155,7 @@ exports.isAnyArrayBuffer = isAnyArrayBuffer;
   });
 });
 
-},{"is-arguments":194,"is-generator-function":195,"is-typed-array":196,"which-typed-array":293}],292:[function(require,module,exports){
+},{"is-arguments":195,"is-generator-function":196,"is-typed-array":197,"which-typed-array":294}],293:[function(require,module,exports){
 (function (process){(function (){
 // Copyright Joyent, Inc. and other Node contributors.
 //
@@ -67232,7 +67874,7 @@ function callbackify(original) {
 exports.callbackify = callbackify;
 
 }).call(this)}).call(this,require('_process'))
-},{"./support/isBuffer":290,"./support/types":291,"_process":239,"inherits":193}],293:[function(require,module,exports){
+},{"./support/isBuffer":291,"./support/types":292,"_process":240,"inherits":194}],294:[function(require,module,exports){
 (function (global){(function (){
 'use strict';
 
@@ -67290,7 +67932,7 @@ module.exports = function whichTypedArray(value) {
 };
 
 }).call(this)}).call(this,typeof global !== "undefined" ? global : typeof self !== "undefined" ? self : typeof window !== "undefined" ? window : {})
-},{"available-typed-arrays":32,"call-bind/callBound":70,"es-abstract/helpers/getOwnPropertyDescriptor":146,"foreach":149,"has-tostringtag/shams":156,"is-typed-array":196}],294:[function(require,module,exports){
+},{"available-typed-arrays":33,"call-bind/callBound":71,"es-abstract/helpers/getOwnPropertyDescriptor":147,"foreach":150,"has-tostringtag/shams":157,"is-typed-array":197}],295:[function(require,module,exports){
 module.exports = extend
 
 var hasOwnProperty = Object.prototype.hasOwnProperty;
@@ -67311,10 +67953,10 @@ function extend() {
     return target
 }
 
-},{}],295:[function(require,module,exports){
+},{}],296:[function(require,module,exports){
 module.exports={
     "name": "splunk-sdk",
-    "version": "1.12.0",
+    "version": "1.12.1",
     "description": "SDK for usage with the Splunk REST API",
     "homepage": "http://dev.splunk.com",
     "main": "index.js",
@@ -67364,7 +68006,7 @@ module.exports={
     }
 }
 
-},{}],296:[function(require,module,exports){
+},{}],297:[function(require,module,exports){
 (function (process,__dirname){(function (){
 // Copyright 2011 Splunk, Inc.
 //
@@ -67475,12 +68117,13 @@ module.exports={
     };
 })();
 }).call(this)}).call(this,require('_process'),"/tests")
-},{"../contrib/commander":1,"../lib/utils":11,"_process":239,"fs":66,"path":231}],297:[function(require,module,exports){
+},{"../contrib/commander":1,"../lib/utils":12,"_process":240,"fs":67,"path":232}],298:[function(require,module,exports){
 (function (process,__filename){(function (){
 var assert = require('chai').assert;
 
 var splunkjs = require('../../index');
 
+var Async = splunkjs.Async;
 var utils = splunkjs.Utils;
 var idCounter = 0;
 
@@ -67491,116 +68134,167 @@ var getNextId = function () {
 exports.setup = function (svc) {
 
     return (
-        describe("App tests", () => {
-            beforeEach(function (){
+        describe("App tests", function (done) {
+            beforeEach(function (done) {
                 this.service = svc;
+                done();
             });
 
-            it("List applications", async function () {
-                let apps = this.service.apps();
-                let response = await apps.fetch();
-                let appList = response.list()
-                assert.ok(appList.length > 0);
-            });
-
-            it("Contains applications", async function () {
-                let apps = this.service.apps();
-                let response = await apps.fetch();
-                let app = response.item("search");
-                assert.ok(app);
-            });
-
-            it("Create, contains app", async function () {
-                let name = "jssdk_testapp_" + getNextId();
-                let apps = this.service.apps();
-                let app = await apps.create({ name: name });
-                let appName = app.name;
-                let response = await apps.fetch();
-                let entity = response.item(appName);
-                assert.ok(entity);
-                await app.remove();
-            });
-
-            it("Create, modify app", async function () {
-                let DESCRIPTION = "TEST DESCRIPTION";
-                let VERSION = "1.1.0";
-
-                let name = "jssdk_testapp_" + getNextId();
-                let apps = this.service.apps();
-
-                let app = await apps.create({ name: name });
-                assert.ok(app);
-                assert.strictEqual(app.name, name);
-                let versionMatches = app.properties().version === "1.0" ||
-                    app.properties().version === "1.0.0";
-                assert.ok(versionMatches);
-                app = await app.update({
-                    description: DESCRIPTION,
-                    version: VERSION
+            it("Callback#list applications", function (done) {
+                var apps = this.service.apps();
+                apps.fetch(function (err, apps) {
+                    var appList = apps.list();
+                    assert.ok(appList.length > 0);
+                    done();
                 });
-                assert.ok(app);
-                let properties = app.properties();
-
-                assert.strictEqual(properties.description, DESCRIPTION);
-                assert.strictEqual(properties.version, VERSION);
-                await app.remove();
             });
 
-            it("Delete test applications", async function () {
-                let apps = this.service.apps();
-                let response = await apps.fetch();
-                let appList = response.list();
-                let err = await utils.parallelEach(
-                    appList,
-                    async function (app, idx) {
-                        if (utils.startsWith(app.name, "jssdk_")) {
-                            await app.remove();
-                        }
+            it("Callback#contains applications", function (done) {
+                var apps = this.service.apps();
+                apps.fetch(function (err, apps) {
+                    var app = apps.item("search");
+                    assert.ok(app);
+                    done();
+                });
+            });
+
+            it("Callback#create + contains app", function (done) {
+                var name = "jssdk_testapp_" + getNextId();
+                var apps = this.service.apps();
+
+                apps.create({ name: name }, function (err, app) {
+                    var appName = app.name;
+                    apps.fetch(function (err, apps) {
+                        var entity = apps.item(appName);
+                        assert.ok(entity);
+                        app.remove(function () {
+                            done();
+                        });
+                    });
+                });
+            });
+
+            it("Callback#create + modify app", function (done) {
+                var DESCRIPTION = "TEST DESCRIPTION";
+                var VERSION = "1.1.0";
+
+                var name = "jssdk_testapp_" + getNextId();
+                var apps = this.service.apps();
+
+                Async.chain([
+                    function (callback) {
+                        apps.create({ name: name }, callback);
+                    },
+                    function (app, callback) {
+                        assert.ok(app);
+                        assert.strictEqual(app.name, name);
+                        var versionMatches = app.properties().version === "1.0" ||
+                            app.properties().version === "1.0.0";
+                        assert.ok(versionMatches);
+
+                        app.update({
+                            description: DESCRIPTION,
+                            version: VERSION
+                        }, callback);
+                    },
+                    function (app, callback) {
+                        assert.ok(app);
+                        var properties = app.properties();
+
+                        assert.strictEqual(properties.description, DESCRIPTION);
+                        assert.strictEqual(properties.version, VERSION);
+
+                        app.remove(callback);
                     }
-                );
-                assert.ok(!err);
+                ], function (err) {
+                    assert.ok(!err);
+                    done();
+                });
             });
 
-            it("list applications with cookies as authentication", async function () {
-                let info = await this.service.serverInfo();
-                let majorVersion = parseInt(info.properties().version.split(".")[0], 10);
-                let minorVersion = parseInt(info.properties().version.split(".")[1], 10);
-                // Skip cookie test if Splunk older than 6.2
-                if (majorVersion < 6 || (majorVersion === 6 && minorVersion < 2)) {
-                    splunkjs.Logger.log("Skipping cookie test...");
-                    return;
-                }
-                let service = new splunkjs.Service({
-                    scheme: svc.scheme,
-                    host: svc.host,
-                    port: svc.port,
-                    username: svc.username,
-                    password: svc.password,
-                    version: svc.version
+            it("Callback#delete test applications", function (done) {
+
+                var apps = this.service.apps();
+                apps.fetch(function (err, apps) {
+
+                    var appList = apps.list();
+
+                    Async.parallelEach(appList,
+
+                        function (app, idx, callback) {
+                            if (utils.startsWith(app.name, "jssdk_")) {
+                                app.remove(callback);
+                            }
+                            else {
+                                callback();
+                            }
+                        }, function (err) {
+                            assert.ok(!err);
+                            done();
+                        }
+                    );
                 });
-                let service2 = new splunkjs.Service({
-                    scheme: svc.scheme,
-                    host: svc.host,
-                    port: svc.port,
-                    version: svc.version
-                });
+            });
 
-                await service.login();
-                // Save the cookie store
-                let cookieStore = service.http._cookieStore;
-                // Test that there are cookies
-                assert.ok(!utils.isEmpty(cookieStore));
+            it("list applications with cookies as authentication", function (done) {
+                this.service.serverInfo(function (err, info) {
+                    // Cookie authentication was added in splunk 6.2
+                    var majorVersion = parseInt(info.properties().version.split(".")[0], 10);
+                    var minorVersion = parseInt(info.properties().version.split(".")[1], 10);
+                    // Skip cookie test if Splunk older than 6.2
+                    if (majorVersion < 6 || (majorVersion === 6 && minorVersion < 2)) {
+                        splunkjs.Logger.log("Skipping cookie test...");
+                        done();
+                        return;
+                    }
 
-                // Add the cookies to a service with no other authenitcation information
-                service2.http._cookieStore = cookieStore;
+                    var service = new splunkjs.Service(
+                        {
+                            scheme: svc.scheme,
+                            host: svc.host,
+                            port: svc.port,
+                            username: svc.username,
+                            password: svc.password,
+                            version: svc.version
+                        });
 
-                let apps = service2.apps();
-                let response = await apps.fetch();
+                    var service2 = new splunkjs.Service(
+                        {
+                            scheme: svc.scheme,
+                            host: svc.host,
+                            port: svc.port,
+                            version: svc.version
+                        });
 
-                let appList = response.list();
-                assert.ok(appList.length > 0);
-                assert.ok(!utils.isEmpty(service2.http._cookieStore));
+                    Async.chain([
+                        function (done) {
+                            service.login(done);
+                        },
+                        function (job, done) {
+                            // Save the cookie store
+                            var cookieStore = service.http._cookieStore;
+                            // Test that there are cookies
+                            assert.ok(!utils.isEmpty(cookieStore));
 
+                            // Add the cookies to a service with no other authenitcation information
+                            service2.http._cookieStore = cookieStore;
+
+                            var apps = service2.apps();
+                            apps.fetch(done);
+                        },
+                        function (apps, done) {
+                            var appList = apps.list();
+                            assert.ok(appList.length > 0);
+                            assert.ok(!utils.isEmpty(service2.http._cookieStore));
+                            done();
+                        }
+                    ],
+                        function (err) {
+                            // Test that no errors were returned
+                            assert.ok(!err);
+                            done();
+                        });
+                })
             })
         })
     )
@@ -67610,14 +68304,14 @@ if (module.id === __filename && module.parent.id.includes('mocha')) {
     var splunkjs = require('../../index');
     var options = require('../cmdline');
 
-    let cmdline = options.create().parse(process.argv);
+    var cmdline = options.create().parse(process.argv);
 
     // If there is no command line, we should return
     if (!cmdline) {
         throw new Error("Error in parsing command line parameters");
     }
 
-    let svc = new splunkjs.Service({
+    var svc = new splunkjs.Service({
         scheme: cmdline.opts.scheme,
         host: cmdline.opts.host,
         port: cmdline.opts.port,
@@ -67627,18 +68321,18 @@ if (module.id === __filename && module.parent.id.includes('mocha')) {
     });
 
     // Exports tests on a successful login
-    module.exports = new Promise(async (resolve, reject) => {
-        try {
-            await svc.login();
-            return resolve(exports.setup(svc))
-        } catch (error) {
-            throw new Error("Login failed - not running tests", error || "");
-        }
+    module.exports = new Promise((resolve, reject) => {
+        svc.login(function (err, success) {
+            if (err || !success) {
+                throw new Error("Login failed - not running tests", err || "");
+            }
+            return resolve(exports.setup(svc));
+        });
     });
 }
 
 }).call(this)}).call(this,require('_process'),"/tests/service_tests/app.js")
-},{"../../index":2,"../cmdline":296,"_process":239,"chai":72}],298:[function(require,module,exports){
+},{"../../index":2,"../cmdline":297,"_process":240,"chai":73}],299:[function(require,module,exports){
 (function (process,__filename){(function (){
 var assert = require('chai').assert;
 
@@ -67647,14 +68341,15 @@ var splunkjs = require('../../index');
 exports.setup = function (svc, loggedOutSvc) {
 
     return (
-        describe("Collection tests", () => {
-            beforeEach(function() {
+        describe("Collection tests", function (done) {
+            beforeEach(function (done) {
                 this.service = svc;
                 this.loggedOutService = loggedOutSvc;
+                done();
             });
 
             it("Methods to be overridden throw", function (done) {
-                let coll = new splunkjs.Service.Collection(
+                var coll = new splunkjs.Service.Collection(
                     this.service,
                     "/data/indexes",
                     {
@@ -67670,7 +68365,7 @@ exports.setup = function (svc, loggedOutSvc) {
             });
 
             it("Accessors work", function (done) {
-                let coll = new splunkjs.Service.Collection(
+                var coll = new splunkjs.Service.Collection(
                     this.service,
                     "/data/indexes",
                     {
@@ -67686,7 +68381,7 @@ exports.setup = function (svc, loggedOutSvc) {
             });
 
             it("Contains throws without a good id", function (done) {
-                let coll = new splunkjs.Service.Collection(
+                var coll = new splunkjs.Service.Collection(
                     this.service,
                     "/data/indexes",
                     {
@@ -67713,7 +68408,7 @@ if (module.id === __filename && module.parent.id.includes('mocha')) {
         throw new Error("Error in parsing command line parameters");
     }
 
-    let svc = new splunkjs.Service({
+    var svc = new splunkjs.Service({
         scheme: cmdline.opts.scheme,
         host: cmdline.opts.host,
         port: cmdline.opts.port,
@@ -67722,7 +68417,7 @@ if (module.id === __filename && module.parent.id.includes('mocha')) {
         version: cmdline.opts.version
     });
 
-    let loggedOutSvc = new splunkjs.Service({
+    var loggedOutSvc = new splunkjs.Service({
         scheme: cmdline.opts.scheme,
         host: cmdline.opts.host,
         port: cmdline.opts.port,
@@ -67732,23 +68427,24 @@ if (module.id === __filename && module.parent.id.includes('mocha')) {
     });
 
     // Exports tests on a successful login
-    module.exports = new Promise(async (resolve, reject) => {
-        try {
-            await svc.login();
-            return resolve(exports.setup(svc,loggedOutSvc))
-        } catch (error) {
-            throw new Error("Login failed - not running tests", error || "");
-        }
+    module.exports = new Promise((resolve, reject) => {
+        svc.login(function (err, success) {
+            if (err || !success) {
+                throw new Error("Login failed - not running tests", err || "");
+            }
+            return resolve(exports.setup(svc, loggedOutSvc));
+        });
     });
 }
 
 }).call(this)}).call(this,require('_process'),"/tests/service_tests/collection.js")
-},{"../../index":2,"../cmdline":296,"_process":239,"chai":72}],299:[function(require,module,exports){
+},{"../../index":2,"../cmdline":297,"_process":240,"chai":73}],300:[function(require,module,exports){
 (function (process,__filename){(function (){
 var assert = require('chai').assert;
 
 var splunkjs = require('../../index');
 
+var Async = splunkjs.Async;
 var idCounter = 0;
 var getNextId = function () {
     return "id" + (idCounter++) + "_" + ((new Date()).valueOf());
@@ -67757,159 +68453,257 @@ var getNextId = function () {
 exports.setup = function (svc) {
 
     return (
-        describe("Configuration tests", () => {
-            beforeEach(function () {
+        describe("Configuration tests", function (done) {
+            beforeEach(function (done) {
                 this.service = svc;
+                done();
             });
 
-            it("List configurations", async function () {
+            it("Callback#list", function (done) {
                 var that = this;
-                let namespace = { owner: "admin", app: "search" };
-                let props = await that.service.configurations(namespace).fetch();
-                let files = props.list();
-                assert.ok(files.length > 0);
+                var namespace = { owner: "admin", app: "search" };
+
+                Async.chain([
+                    function (done) { that.service.configurations(namespace).fetch(done); },
+                    function (props, done) {
+                        var files = props.list();
+                        assert.ok(files.length > 0);
+                        done();
+                    }
+                ],
+                    function (err) {
+                        assert.ok(!err);
+                        done();
+                    });
             });
 
-            it("Contains configurations", async function () {
+            it("Callback#contains", function (done) {
                 var that = this;
-                let namespace = { owner: "admin", app: "search" };
+                var namespace = { owner: "admin", app: "search" };
 
-                let props = await that.service.configurations(namespace).fetch();
-                let file = props.item("web");
-                assert.ok(file);
-                let fileFetched = await file.fetch();
-                assert.strictEqual(fileFetched.name, "web");
+                Async.chain([
+                    function (done) { that.service.configurations(namespace).fetch(done); },
+                    function (props, done) {
+                        var file = props.item("web");
+                        assert.ok(file);
+                        file.fetch(done);
+                    },
+                    function (file, done) {
+                        assert.strictEqual(file.name, "web");
+                        done();
+                    }
+                ],
+                    function (err) {
+                        assert.ok(!err);
+                        done();
+                    });
             });
 
-            it("Contains stanza", async function () {
+            it("Callback#contains stanza", function (done) {
                 var that = this;
-                let namespace = { owner: "admin", app: "search" };
+                var namespace = { owner: "admin", app: "search" };
 
-                let props = await that.service.configurations(namespace).fetch();
-                let file = props.item("web");
-                assert.ok(file);
-                file = await file.fetch();
-                assert.strictEqual(file.name, "web");
-                let stanza = file.item("settings");
-                assert.ok(stanza);
-                stanza = await stanza.fetch();
-                assert.ok(stanza.properties().hasOwnProperty("httpport"));
+                Async.chain([
+                    function (done) { that.service.configurations(namespace).fetch(done); },
+                    function (props, done) {
+                        var file = props.item("web");
+                        assert.ok(file);
+                        file.fetch(done);
+                    },
+                    function (file, done) {
+                        assert.strictEqual(file.name, "web");
+
+                        var stanza = file.item("settings");
+                        assert.ok(stanza);
+                        stanza.fetch(done);
+                    },
+                    function (stanza, done) {
+                        assert.ok(stanza.properties().hasOwnProperty("httpport"));
+                        done();
+                    }
+                ],
+                    function (err) {
+                        assert.ok(!err);
+                        done();
+                    });
             });
 
-            it("Configurations init", async function () {
-                let res
-                try {
-                    res = new splunkjs.Service.Configurations(
+            it("Callback#configurations init", function (done) {
+                assert.throws(function () {
+                    var confs = new splunkjs.Service.Configurations(
                         this.service,
                         { owner: "-", app: "-", sharing: "system" }
                     );
-                } catch (error) {
-                    assert.ok(error);
-                }
-                assert.ok(!res);
+                });
+                done();
             });
 
-            it("Create file, create stanza, update stanza", async function () {
-                let namespace = { owner: "nobody", app: "system" };
-                let fileName = "jssdk_file_" + getNextId();
-                let value = "barfoo_" + getNextId();
+            it("Callback#create file + create stanza + update stanza", function (done) {
+                var that = this;
+                var namespace = { owner: "nobody", app: "system" };
+                var fileName = "jssdk_file_" + getNextId();
+                var value = "barfoo_" + getNextId();
 
-                let configs = svc.configurations(namespace);
-                configs = await configs.fetch();
-                let file = await configs.create({ __conf: fileName });
-                if (file.item("stanza")) {
-                    await file.item("stanza").remove();
-                }
-                let stanza = await file.create("stanza");
-                let stanzaUpdated = await stanza.update({ "jssdk_foobar": value });
-                assert.strictEqual(stanzaUpdated.properties()["jssdk_foobar"], value);
-
-                let fileFetched = new splunkjs.Service.ConfigurationFile(svc, fileName);
-                fileFetched = await fileFetched.fetch();
-
-                let stanzaFetched = fileFetched.item("stanza");
-                assert.ok(stanzaFetched);
-                await stanzaFetched.remove();
+                Async.chain([
+                    function (done) {
+                        var configs = svc.configurations(namespace);
+                        configs.fetch(done);
+                    },
+                    function (configs, done) {
+                        configs.create({ __conf: fileName }, done);
+                    },
+                    function (file, done) {
+                        if (file.item("stanza")) {
+                            file.item("stanza").remove();
+                        }
+                        file.create("stanza", done);
+                    },
+                    function (stanza, done) {
+                        stanza.update({ "jssdk_foobar": value }, done);
+                    },
+                    function (stanza, done) {
+                        assert.strictEqual(stanza.properties()["jssdk_foobar"], value);
+                        done();
+                    },
+                    function (done) {
+                        var file = new splunkjs.Service.ConfigurationFile(svc, fileName);
+                        file.fetch(done);
+                    },
+                    function (file, done) {
+                        var stanza = file.item("stanza");
+                        assert.ok(stanza);
+                        stanza.remove(done);
+                    }
+                ],
+                    function (err) {
+                        assert.ok(!err);
+                        done();
+                    });
             });
 
-            it("CreateAsync", async function () {
-                let namespace = { owner: "nobody", app: "system" };
-                let filename = "jssdk_file_new_" + getNextId();
-                let stanza = "install"
-                let property1 = "state"
-                let value1 = "enabled";
-                let property2 = "python.version"
-                let value2 = "python3";
+            it("Callback#createAsync", function (done) {
+                var that = this;
+                var namespace = { owner: "nobody", app: "system" };
+                var filename = "jssdk_file_new_" + getNextId();
+                var stanza = "install"
+                var property1 = "state"
+                var value1 = "enabled";
+                var property2 = "python.version"
+                var value2 = "python3";
 
-                let configs = svc.configurations(namespace);
-                configs = await configs.fetch();
-                let keyValueMap = {}
-                keyValueMap[property1] = value1;
-                keyValueMap[property2] = value2;
-                await configs.createAsync(filename, stanza, keyValueMap);
-                configs = svc.configurations(namespace);
-                await configs.fetch();
+                Async.chain([
+                    function (done) {
+                        var configs = svc.configurations(namespace);
+                        configs.fetch(done);
+                    },
+                    function (configs, done) {
+                        var keyValueMap = {}
+                        keyValueMap[property1] = value1;
+                        keyValueMap[property2] = value2;
+                        configs.createAsync(filename, stanza, keyValueMap, done);
+                    },
+                    async function (done) {
+                        var configs = svc.configurations(namespace);
+                        configs.fetch();
 
-                // a. File exists: Positive
-                let configFile = await configs.getConfFile(filename);
-                assert.ok(configFile);
+                        // a. File exists: Positive
+                        var configFile = await configs.getConfFile(filename);
+                        assert.ok(configFile);
+                        
+                        // b. Stanza exists: Positive
+                        configFile = await configFile.fetchAsync();
+                        var configStanza = await configs.getStanza(configFile, stanza);
+                        assert.ok(configStanza);
+                        assert.ok(configStanza._properties);
+                        assert.strictEqual(configStanza._properties[property1], value1 );
+                        assert.strictEqual(configStanza._properties[property2], value2 );
 
-                // b. Stanza exists: Positive
-                configFile = await configFile.fetchAsync();
-                let configStanza = await configs.getStanza(configFile, stanza);
-                assert.ok(configStanza);
-                assert.ok(configStanza._properties);
-                assert.strictEqual(configStanza._properties[property1], value1);
-                assert.strictEqual(configStanza._properties[property2], value2);
+                        // c. File exists: Negative
+                        var invalidConfigFile = await configs.getConfFile("invalid_filename");
+                        assert.ok(!invalidConfigFile);
+                        
+                        // d. Stanza exists: Negative
+                        var invalidConfigStanza = await configs.getStanza(configFile, "invalid_stanza_name");
+                        assert.ok(!invalidConfigStanza);
 
-                // c. File exists: Negative
-                let invalidConfigFile = await configs.getConfFile("invalid_filename");
-                assert.ok(!invalidConfigFile);
-
-                // d. Stanza exists: Negative
-                let invalidConfigStanza = await configs.getStanza(configFile, "invalid_stanza_name");
-                assert.ok(!invalidConfigStanza);
+                        done();
+                    },
+                ],
+                function (err) {
+                    assert.ok(!err);
+                    done();
+                });
             });
 
-            it("Get default stanza", async function () {
-                let that = this;
-                let namespace = { owner: "admin", app: "search" };
+            it("Callback#can get default stanza", function (done) {
+                var that = this;
+                var namespace = { owner: "admin", app: "search" };
 
-                let props = await that.service.configurations(namespace).fetch();
-                let file = props.item("savedsearches");
-                assert.strictEqual(namespace, file.namespace);
-                assert.ok(file);
-                file = await file.fetch();
-                assert.strictEqual(namespace, file.namespace);
-                let stanza = await file.getDefaultStanza().fetch();
-                assert.strictEqual(stanza.name, "default");
-                assert.strictEqual(namespace, stanza.namespace);
+                Async.chain([
+                    function (done) { that.service.configurations(namespace).fetch(done); },
+                    function (props, done) {
+                        var file = props.item("savedsearches");
+                        assert.strictEqual(namespace, file.namespace);
+                        assert.ok(file);
+                        file.fetch(done);
+                    },
+                    function (file, done) {
+                        assert.strictEqual(namespace, file.namespace);
+                        file.getDefaultStanza().fetch(done);
+                    },
+                    function (stanza, done) {
+                        assert.strictEqual(stanza.name, "default");
+                        assert.strictEqual(namespace, stanza.namespace);
+                        done();
+                    }
+                ],
+                    function (err) {
+                        assert.ok(!err);
+                        done();
+                    });
             });
 
-            it("Updating default stanza is noop", async function () {
-                let that = this;
-                let namespace = { owner: "admin", app: "search" };
-                let backup = null;
-                let invalid = "this won't work";
+            it("Callback#updating default stanza is noop", function (done) {
+                var that = this;
+                var namespace = { owner: "admin", app: "search" };
+                var backup = null;
+                var invalid = "this won't work";
 
-                let props = await that.service.configurations(namespace).fetch();
-                let file = props.item("savedsearches");
-                assert.strictEqual(namespace, file.namespace);
-                assert.ok(file);
-                file = await file.fetch();
-                assert.strictEqual(namespace, file.namespace);
-                let stanza = await file.getDefaultStanza().fetch();
-                assert.ok(stanza._properties.hasOwnProperty("max_concurrent"));
-                assert.strictEqual(namespace, stanza.namespace);
-                backup = stanza._properties.max_concurrent;
-                stanza = await stanza.update({ "max_concurrent": invalid });
-                assert.ok(stanza.properties().hasOwnProperty("max_concurrent"));
-                assert.strictEqual(stanza.properties()["max_concurrent"], backup);
-                assert.notStrictEqual(stanza.properties()["max_concurrent"], invalid);
-                stanza = await stanza.fetch();
-                assert.ok(stanza.properties().hasOwnProperty("max_concurrent"));
-                assert.strictEqual(stanza.properties()["max_concurrent"], backup);
-                assert.notStrictEqual(stanza.properties()["max_concurrent"], invalid);
+                Async.chain([
+                    function (done) { that.service.configurations(namespace).fetch(done); },
+                    function (props, done) {
+                        var file = props.item("savedsearches");
+                        assert.strictEqual(namespace, file.namespace);
+                        assert.ok(file);
+                        file.fetch(done);
+                    },
+                    function (file, done) {
+                        assert.strictEqual(namespace, file.namespace);
+                        file.getDefaultStanza().fetch(done);
+                    },
+                    function (stanza, done) {
+                        assert.ok(stanza._properties.hasOwnProperty("max_concurrent"));
+                        assert.strictEqual(namespace, stanza.namespace);
+                        backup = stanza._properties.max_concurrent;
+                        stanza.update({ "max_concurrent": invalid }, done);
+                    },
+                    function (stanza, done) {
+                        assert.ok(stanza.properties().hasOwnProperty("max_concurrent"));
+                        assert.strictEqual(stanza.properties()["max_concurrent"], backup);
+                        assert.notStrictEqual(stanza.properties()["max_concurrent"], invalid);
+                        stanza.fetch(done);
+                    },
+                    function (stanza, done) {
+                        assert.ok(stanza.properties().hasOwnProperty("max_concurrent"));
+                        assert.strictEqual(stanza.properties()["max_concurrent"], backup);
+                        assert.notStrictEqual(stanza.properties()["max_concurrent"], invalid);
+                        done();
+                    }
+                ],
+                    function (err) {
+                        assert.ok(!err);
+                        done();
+                    });
             })
         })
     )
@@ -67919,14 +68713,14 @@ if (module.id === __filename && module.parent.id.includes('mocha')) {
     var splunkjs = require('../../index');
     var options = require('../cmdline');
 
-    let cmdline = options.create().parse(process.argv);
+    var cmdline = options.create().parse(process.argv);
 
     // If there is no command line, we should return
     if (!cmdline) {
         throw new Error("Error in parsing command line parameters");
     }
 
-    let svc = new splunkjs.Service({
+    var svc = new splunkjs.Service({
         scheme: cmdline.opts.scheme,
         host: cmdline.opts.host,
         port: cmdline.opts.port,
@@ -67936,23 +68730,25 @@ if (module.id === __filename && module.parent.id.includes('mocha')) {
     });
 
     // Exports tests on a successful login
-    module.exports = new Promise(async (resolve, reject) => {
-        try {
-            await svc.login();
-            return resolve(exports.setup(svc))
-        } catch (error) {
-            throw new Error("Login failed - not running tests", error || "");
-        }
+    module.exports = new Promise((resolve, reject) => {
+        svc.login(function (err, success) {
+            if (err || !success) {
+                throw new Error("Login failed - not running tests", err || "");
+            }
+            return resolve(exports.setup(svc));
+        });
     });
 }
 
 }).call(this)}).call(this,require('_process'),"/tests/service_tests/configuration.js")
-},{"../../index":2,"../cmdline":296,"_process":239,"chai":72}],300:[function(require,module,exports){
+},{"../../index":2,"../cmdline":297,"_process":240,"chai":73}],301:[function(require,module,exports){
 (function (process,__filename){(function (){
 var assert = require('chai').assert;
 
 var splunkjs = require('../../index');
 var tutils = require('../utils');
+
+var Async = splunkjs.Async;
 var utils = splunkjs.Utils;
 
 var idCounter = 0;
@@ -67962,693 +68758,1065 @@ var getNextId = function () {
 
 exports.setup = function (svc) {
     return (
-        describe("Datamodels test", () => {
-            beforeEach(async function () {
+        describe("Datamodels test", function (done) {
+            beforeEach(function (done) {
                 this.service = svc;
                 this.dataModels = svc.dataModels();
                 this.skip = false;
                 var that = this;
-                let info = await this.service.serverInfo();
-                if (parseInt(info.properties().version.split(".")[0], 10) < 6) {
-                    that.skip = true;
-                    splunkjs.Logger.log("Skipping data model tests...");
-                }
+                this.service.serverInfo(function (err, info) {
+                    if (parseInt(info.properties().version.split(".")[0], 10) < 6) {
+                        that.skip = true;
+                        splunkjs.Logger.log("Skipping data model tests...");
+                    }
+                    done(err);
+                });
             });
 
-            it("DataModels - fetch a built-in data model", async function () {
+            it("Callback#DataModels - fetch a built-in data model", function (done) {
                 if (this.skip) {
+                    done();
                     return;
                 }
                 var that = this;
-                let dataModels = await that.dataModels.fetch();
-                let dm = dataModels.item("internal_audit_logs");
-                // Check for the 3 objects we expect
-                assert.ok(dm.objectByName("Audit"));
-                assert.ok(dm.objectByName("searches"));
-                assert.ok(dm.objectByName("modify"));
+                Async.chain([
+                    function (done) {
+                        that.dataModels.fetch(done);
+                    },
+                    function (dataModels, done) {
+                        var dm = dataModels.item("internal_audit_logs");
+                        // Check for the 3 objects we expect
+                        assert.ok(dm.objectByName("Audit"));
+                        assert.ok(dm.objectByName("searches"));
+                        assert.ok(dm.objectByName("modify"));
 
-                // Check for an object that shouldn't exist
-                assert.strictEqual(null, dm.objectByName(getNextId()));
+                        // Check for an object that shouldn't exist
+                        assert.strictEqual(null, dm.objectByName(getNextId()));
+                        done();
+                    }
+                ],
+                    function (err) {
+                        assert.ok(!err);
+                        done();
+                    }
+                );
             });
 
-            it("DataModels - create & delete an empty data model", async function () {
+            it("Callback#DataModels - create & delete an empty data model", function (done) {
                 if (this.skip) {
+                    done();
                     return;
                 }
-                let args;
+                var args;
                 try {
                     args = JSON.parse(utils.readFile(__filename, "../../data/empty_data_model.json"));
                 }
                 catch (err) {
                     // Fail if we can't read the file, likely to occur in the browser
                     assert.ok(!err);
+                    done();
                 }
-                let name = "delete-me-" + getNextId();
+                var name = "delete-me-" + getNextId();
 
+                var initialSize;
                 var that = this;
-                let dataModels = await that.dataModels.fetch();
-                let initialSize = dataModels.list().length;
-                let dataModel = await dataModels.create(name, args);
-                let updatedDataModels = await that.dataModels.fetch();
-                // Make sure we have 1 more data model than we started with
-                assert.strictEqual(initialSize + 1, updatedDataModels.list().length);
-                // Delete the data model we just created, by name.
-                await updatedDataModels.item(name).remove();
-                let newDataModels = await that.dataModels.fetch();
-                assert.strictEqual(initialSize, newDataModels.list().length);
+                Async.chain([
+                    function (done) {
+                        that.dataModels.fetch(done);
+                    },
+                    function (dataModels, done) {
+                        initialSize = dataModels.list().length;
+                        dataModels.create(name, args, done);
+                    },
+                    function (dataModel, done) {
+                        that.dataModels.fetch(done);
+                    },
+                    function (dataModels, done) {
+                        // Make sure we have 1 more data model than we started with
+                        assert.strictEqual(initialSize + 1, dataModels.list().length);
+                        // Delete the data model we just created, by name.
+                        dataModels.item(name).remove(done);
+                    },
+                    function (done) {
+                        that.dataModels.fetch(done);
+                    },
+                    function (dataModels, done) {
+                        // Make sure we have as many data models as we started with
+                        assert.strictEqual(initialSize, dataModels.list().length);
+                        done();
+                    }
+                ],
+                    function (err) {
+                        assert.ok(!err);
+                        done();
+                    }
+                );
             });
 
-            it("DataModels - create a data model with spaces in the name, which are swapped for -'s", async function () {
+            it("Callback#DataModels - create a data model with spaces in the name, which are swapped for -'s", function (done) {
                 if (this.skip) {
+                    done();
                     return;
                 }
-                let args;
+                var args;
                 try {
                     args = JSON.parse(utils.readFile(__filename, "../../data/empty_data_model.json"));
                 }
                 catch (err) {
                     // Fail if we can't read the file, likely to occur in the browser
                     assert.ok(!err);
+                    done();
                 }
-                let name = "delete-me- " + getNextId();
+                var name = "delete-me- " + getNextId();
 
                 var that = this;
-                let dataModel = await that.dataModels.create(name, args);
-                assert.strictEqual(name.replace(" ", "_"), dataModel.name);
+                Async.chain([
+                    function (done) {
+                        that.dataModels.create(name, args, done);
+                    },
+                    function (dataModel, done) {
+                        assert.strictEqual(name.replace(" ", "_"), dataModel.name);
+                        done();
+                    }
+                ],
+                    function (err) {
+                        assert.ok(!err);
+                        done();
+                    }
+                );
             });
 
-            it("DataModels - create a data model with 0 objects", async function () {
+            it("Callback#DataModels - create a data model with 0 objects", function (done) {
                 if (this.skip) {
+                    done();
                     return;
                 }
-                let args;
+                var args;
                 try {
                     args = JSON.parse(utils.readFile(__filename, "../../data/empty_data_model.json"));
                 }
                 catch (err) {
                     // Fail if we can't read the file, likely to occur in the browser
                     assert.ok(!err);
+                    done();
                 }
-                let name = "delete-me-" + getNextId();
+                var name = "delete-me-" + getNextId();
+
                 var that = this;
-                let dataModel = await that.dataModels.create(name, args);
-                // Check for 0 objects before fetch
-                assert.strictEqual(0, dataModel.objects.length);
-                let dataModels = await that.dataModels.fetch();
-                assert.strictEqual(0, dataModels.item(name).objects.length);
+                Async.chain([
+                    function (done) {
+                        that.dataModels.create(name, args, done);
+                    },
+                    function (dataModel, done) {
+                        // Check for 0 objects before fetch
+                        assert.strictEqual(0, dataModel.objects.length);
+                        that.dataModels.fetch(done);
+                    },
+                    function (dataModels, done) {
+                        // Check for 0 objects after fetch
+                        assert.strictEqual(0, dataModels.item(name).objects.length);
+                        done();
+                    }
+                ],
+                    function (err) {
+                        assert.ok(!err);
+                        done();
+                    }
+                );
             });
 
-            it("DataModels - create a data model with 1 search object", async function () {
+            it("Callback#DataModels - create a data model with 1 search object", function (done) {
                 if (this.skip) {
+                    done();
                     return;
                 }
-                let dataModels = this.service.dataModels();
+                var dataModels = this.service.dataModels();
 
-                let args;
+
+                var args;
                 try {
                     args = JSON.parse(utils.readFile(__filename, "../../data/object_with_one_search.json"));
                 }
                 catch (err) {
                     // Fail if we can't read the file, likely to occur in the browser
                     assert.ok(!err);
+                    done();
                 }
-                let name = "delete-me-" + getNextId();
+                var name = "delete-me-" + getNextId();
 
                 var that = this;
-                let dataModel = await that.dataModels.create(name, args);
-                // Check for 1 object before fetch
-                assert.strictEqual(1, dataModel.objects.length);
-                dataModels = await that.dataModels.fetch();
-                // Check for 1 object after fetch
-                assert.strictEqual(1, dataModels.item(name).objects.length);
+                Async.chain([
+                    function (done) {
+                        that.dataModels.create(name, args, done);
+                    },
+                    function (dataModel, done) {
+                        // Check for 1 object before fetch
+                        assert.strictEqual(1, dataModel.objects.length);
+                        that.dataModels.fetch(done);
+                    },
+                    function (dataModels, done) {
+                        // Check for 1 object after fetch
+                        assert.strictEqual(1, dataModels.item(name).objects.length);
+                        done();
+                    }
+                ],
+                    function (err) {
+                        assert.ok(!err);
+                        done();
+                    }
+                );
             });
 
-            it("DataModels - create a data model with 2 search objects", async function () {
+            it("Callback#DataModels - create a data model with 2 search objects", function (done) {
                 if (this.skip) {
+                    done();
                     return;
                 }
-                let args;
+                var args;
                 try {
                     args = JSON.parse(utils.readFile(__filename, "../../data/object_with_two_searches.json"));
                 }
                 catch (err) {
                     // Fail if we can't read the file, likely to occur in the browser
                     assert.ok(!err);
+                    done();
                 }
-                let name = "delete-me-" + getNextId();
+                var name = "delete-me-" + getNextId();
 
                 var that = this;
-                let dataModel = await that.dataModels.create(name, args);
-                // Check for 2 objects before fetch
-                assert.strictEqual(2, dataModel.objects.length);
-                dataModels = await that.dataModels.fetch();
-                // Check for 2 objects after fetch
-                assert.strictEqual(2, dataModels.item(name).objects.length);
+                Async.chain([
+                    function (done) {
+                        that.dataModels.create(name, args, done);
+                    },
+                    function (dataModel, done) {
+                        // Check for 2 objects before fetch
+                        assert.strictEqual(2, dataModel.objects.length);
+                        that.dataModels.fetch(done);
+                    },
+                    function (dataModels, done) {
+                        // Check for 2 objects after fetch
+                        assert.strictEqual(2, dataModels.item(name).objects.length);
+                        done();
+                    }
+                ],
+                    function (err) {
+                        assert.ok(!err);
+                        done();
+                    }
+                );
             });
 
-            it("DataModels - data model objects are created correctly", async function () {
+            it("Callback#DataModels - data model objects are created correctly", function (done) {
                 if (this.skip) {
+                    done();
                     return;
                 }
-                let args;
+                var args;
                 try {
                     args = JSON.parse(utils.readFile(__filename, "../../data/object_with_two_searches.json"));
                 }
                 catch (err) {
                     // Fail if we can't read the file, likely to occur in the browser
                     assert.ok(!err);
+                    done();
                 }
-                let name = "delete-me-" + getNextId();
+                var name = "delete-me-" + getNextId();
 
                 var that = this;
-                let dataModel = await that.dataModels.create(name, args);
-                assert.ok(dataModel.hasObject("search1"));
-                assert.ok(dataModel.hasObject("search2"));
+                Async.chain([
+                    function (done) {
+                        that.dataModels.create(name, args, done);
+                    },
+                    function (dataModel, done) {
+                        assert.ok(dataModel.hasObject("search1"));
+                        assert.ok(dataModel.hasObject("search2"));
 
-                let search1 = dataModel.objectByName("search1");
-                assert.ok(search1);
-                assert.strictEqual("‡Øµ‡Ø±‡Ø∞‡ØØ - search 1", search1.displayName);
+                        var search1 = dataModel.objectByName("search1");
+                        assert.ok(search1);
+                        assert.strictEqual("‡Øµ‡Ø±‡Ø∞‡ØØ - search 1", search1.displayName);
 
-                let search2 = dataModel.objectByName("search2");
-                assert.ok(search2);
-                assert.strictEqual("‡Øµ‡Ø±‡Ø∞‡ØØ - search 2", search2.displayName);
+                        var search2 = dataModel.objectByName("search2");
+                        assert.ok(search2);
+                        assert.strictEqual("‡Øµ‡Ø±‡Ø∞‡ØØ - search 2", search2.displayName);
+
+                        done();
+                    }
+                ],
+                    function (err) {
+                        assert.ok(!err);
+                        done();
+                    }
+                );
             });
 
-            it("DataModels - data model handles unicode characters", async function () {
+            it("Callback#DataModels - data model handles unicode characters", function (done) {
                 if (this.skip) {
+                    done();
                     return;
                 }
-                let args;
+                var args;
                 try {
                     args = JSON.parse(utils.readFile(__filename, "../../data/model_with_unicode_headers.json"));
                 }
                 catch (err) {
                     // Fail if we can't read the file, likely to occur in the browser
                     assert.ok(!err);
+                    done();
                 }
-                let name = "delete-me-" + getNextId();
+                var name = "delete-me-" + getNextId();
 
                 var that = this;
-                let dataModel = await that.dataModels.create(name, args);
-                assert.strictEqual(name, dataModel.name);
-                assert.strictEqual("·Ä©·öô‡Øµ", dataModel.displayName);
-                assert.strictEqual("‡Øµ‡Ø±‡Ø∞‡ØØ", dataModel.description);
+                Async.chain([
+                    function (done) {
+                        that.dataModels.create(name, args, done);
+                    },
+                    function (dataModel, done) {
+                        assert.strictEqual(name, dataModel.name);
+                        assert.strictEqual("·Ä©·öô‡Øµ", dataModel.displayName);
+                        assert.strictEqual("‡Øµ‡Ø±‡Ø∞‡ØØ", dataModel.description);
+
+                        done();
+                    }
+                ],
+                    function (err) {
+                        assert.ok(!err);
+                        done();
+                    }
+                );
             });
 
-            it("DataModels - create data model with empty headers", async function () {
+            it("Callback#DataModels - create data model with empty headers", function (done) {
                 if (this.skip) {
+                    done();
                     return;
                 }
-                let args;
+                var args;
                 try {
                     args = JSON.parse(utils.readFile(__filename, "../../data/model_with_empty_headers.json"));
                 }
                 catch (err) {
                     // Fail if we can't read the file, likely to occur in the browser
                     assert.ok(!err);
+                    done();
                 }
-                let name = "delete-me-" + getNextId();
+                var name = "delete-me-" + getNextId();
 
                 var that = this;
-                let dataModel = await that.dataModels.create(name, args);
-                assert.strictEqual(name, dataModel.name);
-                assert.strictEqual("", dataModel.displayName);
-                assert.strictEqual("", dataModel.description);
+                Async.chain([
+                    function (done) {
+                        that.dataModels.create(name, args, done);
+                    },
+                    function (dataModel, done) {
+                        assert.strictEqual(name, dataModel.name);
+                        assert.strictEqual("", dataModel.displayName);
+                        assert.strictEqual("", dataModel.description);
 
-                // Make sure we're not getting a summary of the data model
-                assert.strictEqual("0", dataModel.concise);
+                        // Make sure we're not getting a summary of the data model
+                        assert.strictEqual("0", dataModel.concise);
+
+                        done();
+                    }
+                ],
+                    function (err) {
+                        assert.ok(!err);
+                        done();
+                    }
+                );
             });
 
-            it("DataModels - test acceleration settings", async function () {
+            it("Callback#DataModels - test acceleration settings", function (done) {
                 if (this.skip) {
+                    done();
                     return;
                 }
-                let args;
+                var args;
                 try {
                     args = JSON.parse(utils.readFile(__filename, "../../data/data_model_with_test_objects.json"));
                 }
                 catch (err) {
                     // Fail if we can't read the file, likely to occur in the browser
                     assert.ok(!err);
+                    done();
                 }
-                let name = "delete-me-" + getNextId();
+                var name = "delete-me-" + getNextId();
 
                 var that = this;
-                let dataModel = await that.dataModels.create(name, args);
-                dataModel.acceleration.enabled = true;
-                dataModel.acceleration.earliestTime = "-2mon";
-                dataModel.acceleration.cronSchedule = "5/* * * * *";
+                Async.chain([
+                    function (done) {
+                        that.dataModels.create(name, args, done);
+                    },
+                    function (dataModel, done) {
+                        dataModel.acceleration.enabled = true;
+                        dataModel.acceleration.earliestTime = "-2mon";
+                        dataModel.acceleration.cronSchedule = "5/* * * * *";
 
-                assert.strictEqual(true, dataModel.isAccelerated());
-                assert.strictEqual(true, dataModel.acceleration.enabled);
-                assert.strictEqual("-2mon", dataModel.acceleration.earliestTime);
-                assert.strictEqual("5/* * * * *", dataModel.acceleration.cronSchedule);
+                        assert.strictEqual(true, dataModel.isAccelerated());
+                        assert.strictEqual(true, dataModel.acceleration.enabled);
+                        assert.strictEqual("-2mon", dataModel.acceleration.earliestTime);
+                        assert.strictEqual("5/* * * * *", dataModel.acceleration.cronSchedule);
 
-                dataModel.acceleration.enabled = false;
-                dataModel.acceleration.earliestTime = "-1mon";
-                dataModel.acceleration.cronSchedule = "* * * * *";
+                        dataModel.acceleration.enabled = false;
+                        dataModel.acceleration.earliestTime = "-1mon";
+                        dataModel.acceleration.cronSchedule = "* * * * *";
 
-                assert.strictEqual(false, dataModel.isAccelerated());
-                assert.strictEqual(false, dataModel.acceleration.enabled);
-                assert.strictEqual("-1mon", dataModel.acceleration.earliestTime);
-                assert.strictEqual("* * * * *", dataModel.acceleration.cronSchedule);
+                        assert.strictEqual(false, dataModel.isAccelerated());
+                        assert.strictEqual(false, dataModel.acceleration.enabled);
+                        assert.strictEqual("-1mon", dataModel.acceleration.earliestTime);
+                        assert.strictEqual("* * * * *", dataModel.acceleration.cronSchedule);
+
+                        done();
+                    }
+                ],
+                    function (err) {
+                        assert.ok(!err);
+                        done();
+                    }
+                );
             });
 
-            it("DataModels - test data model object metadata", async function () {
+            it("Callback#DataModels - test data model object metadata", function (done) {
                 if (this.skip) {
+                    done();
                     return;
                 }
-                let args;
+                var args;
                 try {
                     args = JSON.parse(utils.readFile(__filename, "../../data/data_model_with_test_objects.json"));
                 }
                 catch (err) {
                     // Fail if we can't read the file, likely to occur in the browser
                     assert.ok(!err);
+                    done();
                 }
-                let name = "delete-me-" + getNextId();
+                var name = "delete-me-" + getNextId();
 
                 var that = this;
-                let dataModel = await that.dataModels.create(name, args);
-                let obj = dataModel.objectByName("event1");
-                assert.ok(obj);
+                Async.chain([
+                    function (done) {
+                        that.dataModels.create(name, args, done);
+                    },
+                    function (dataModel, done) {
+                        var obj = dataModel.objectByName("event1");
+                        assert.ok(obj);
 
-                assert.strictEqual("event1 ·Ä©·öô", obj.displayName);
-                assert.strictEqual("event1", obj.name);
-                assert.deepEqual(dataModel, obj.dataModel);
+                        assert.strictEqual("event1 ·Ä©·öô", obj.displayName);
+                        assert.strictEqual("event1", obj.name);
+                        assert.deepEqual(dataModel, obj.dataModel);
+
+                        done();
+                    }
+                ],
+                    function (err) {
+                        assert.ok(!err);
+                        done();
+                    }
+                );
             });
 
-            it("DataModels - test data model object parent", async function () {
+            it("Callback#DataModels - test data model object parent", function (done) {
                 if (this.skip) {
+                    done();
                     return;
                 }
-                let args;
+                var args;
                 try {
                     args = JSON.parse(utils.readFile(__filename, "../../data/data_model_with_test_objects.json"));
                 }
                 catch (err) {
                     // Fail if we can't read the file, likely to occur in the browser
                     assert.ok(!err);
+                    done();
                 }
-                let name = "delete-me-" + getNextId();
+                var name = "delete-me-" + getNextId();
 
                 var that = this;
-                let dataModel = await that.dataModels.create(name, args);
-                let obj = dataModel.objectByName("event1");
-                assert.ok(obj);
-                assert.ok(!obj.parent());
+                Async.chain([
+                    function (done) {
+                        that.dataModels.create(name, args, done);
+                    },
+                    function (dataModel, done) {
+                        var obj = dataModel.objectByName("event1");
+                        assert.ok(obj);
+                        assert.ok(!obj.parent());
+
+                        done();
+                    }
+                ],
+                    function (err) {
+                        assert.ok(!err);
+                        done();
+                    }
+                );
             });
 
-            it("DataModels - test data model object lineage", async function () {
+            it("Callback#DataModels - test data model object lineage", function (done) {
                 if (this.skip) {
+                    done();
                     return;
                 }
-                let args;
+                var args;
                 try {
                     args = JSON.parse(utils.readFile(__filename, "../../data/inheritance_test_data.json"));
                 }
                 catch (err) {
                     // Fail if we can't read the file, likely to occur in the browser
                     assert.ok(!err);
+                    done();
                 }
-                let name = "delete-me-" + getNextId();
+                var name = "delete-me-" + getNextId();
 
                 var that = this;
-                let dataModel = await that.dataModels.create(name, args);
-                let obj = dataModel.objectByName("level_0");
-                assert.ok(obj);
-                assert.strictEqual(1, obj.lineage.length);
-                assert.strictEqual("level_0", obj.lineage[0]);
-                assert.strictEqual("BaseEvent", obj.parentName);
+                Async.chain([
+                    function (done) {
+                        that.dataModels.create(name, args, done);
+                    },
+                    function (dataModel, done) {
+                        var obj = dataModel.objectByName("level_0");
+                        assert.ok(obj);
+                        assert.strictEqual(1, obj.lineage.length);
+                        assert.strictEqual("level_0", obj.lineage[0]);
+                        assert.strictEqual("BaseEvent", obj.parentName);
 
-                obj = dataModel.objectByName("level_1");
-                assert.ok(obj);
-                assert.strictEqual(2, obj.lineage.length);
-                assert.deepEqual(["level_0", "level_1"], obj.lineage);
-                assert.strictEqual("level_0", obj.parentName);
+                        obj = dataModel.objectByName("level_1");
+                        assert.ok(obj);
+                        assert.strictEqual(2, obj.lineage.length);
+                        assert.deepEqual(["level_0", "level_1"], obj.lineage);
+                        assert.strictEqual("level_0", obj.parentName);
 
-                obj = dataModel.objectByName("level_2");
-                assert.ok(obj);
-                assert.strictEqual(3, obj.lineage.length);
-                assert.deepEqual(["level_0", "level_1", "level_2"], obj.lineage);
-                assert.strictEqual("level_1", obj.parentName);
+                        obj = dataModel.objectByName("level_2");
+                        assert.ok(obj);
+                        assert.strictEqual(3, obj.lineage.length);
+                        assert.deepEqual(["level_0", "level_1", "level_2"], obj.lineage);
+                        assert.strictEqual("level_1", obj.parentName);
 
-                // Make sure there's no extra children
-                assert.ok(!dataModel.objectByName("level_3"));
+                        // Make sure there's no extra children
+                        assert.ok(!dataModel.objectByName("level_3"));
+
+                        done();
+                    }
+                ],
+                    function (err) {
+                        assert.ok(!err);
+                        done();
+                    }
+                );
             });
 
-            it("DataModels - test data model object fields", async function () {
+            it("Callback#DataModels - test data model object fields", function (done) {
                 if (this.skip) {
+                    done();
                     return;
                 }
-                let args;
+                var args;
                 try {
                     args = JSON.parse(utils.readFile(__filename, "../../data/inheritance_test_data.json"));
                 }
                 catch (err) {
                     // Fail if we can't read the file, likely to occur in the browser
                     assert.ok(!err);
+                    done();
                 }
-                let name = "delete-me-" + getNextId();
+                var name = "delete-me-" + getNextId();
 
-                let that = this;
+                var that = this;
+                Async.chain([
+                    function (done) {
+                        that.dataModels.create(name, args, done);
+                    },
+                    function (dataModel, done) {
+                        var obj = dataModel.objectByName("level_2");
+                        assert.ok(obj);
 
-                let dataModel = await that.dataModels.create(name, args);
-                let obj = dataModel.objectByName("level_2");
-                assert.ok(obj);
+                        var timeField = obj.fieldByName("_time");
+                        assert.ok(timeField);
+                        assert.strictEqual("timestamp", timeField.type);
+                        assert.ok(timeField.isTimestamp());
+                        assert.ok(!timeField.isNumber());
+                        assert.ok(!timeField.isString());
+                        assert.ok(!timeField.isObjectcount());
+                        assert.ok(!timeField.isChildcount());
+                        assert.ok(!timeField.isIPv4());
+                        assert.deepEqual(["BaseEvent"], timeField.lineage);
+                        assert.strictEqual("_time", timeField.name);
+                        assert.strictEqual(false, timeField.required);
+                        assert.strictEqual(false, timeField.multivalued);
+                        assert.strictEqual(false, timeField.hidden);
+                        assert.strictEqual(false, timeField.editable);
+                        assert.strictEqual(null, timeField.comment);
 
-                let timeField = obj.fieldByName("_time");
-                assert.ok(timeField);
-                assert.strictEqual("timestamp", timeField.type);
-                assert.ok(timeField.isTimestamp());
-                assert.ok(!timeField.isNumber());
-                assert.ok(!timeField.isString());
-                assert.ok(!timeField.isObjectcount());
-                assert.ok(!timeField.isChildcount());
-                assert.ok(!timeField.isIPv4());
-                assert.deepEqual(["BaseEvent"], timeField.lineage);
-                assert.strictEqual("_time", timeField.name);
-                assert.strictEqual(false, timeField.required);
-                assert.strictEqual(false, timeField.multivalued);
-                assert.strictEqual(false, timeField.hidden);
-                assert.strictEqual(false, timeField.editable);
-                assert.strictEqual(null, timeField.comment);
+                        var lvl2 = obj.fieldByName("level_2");
+                        assert.strictEqual("level_2", lvl2.owner);
+                        assert.deepEqual(["level_0", "level_1", "level_2"], lvl2.lineage);
+                        assert.strictEqual("objectCount", lvl2.type);
+                        assert.ok(!lvl2.isTimestamp());
+                        assert.ok(!lvl2.isNumber());
+                        assert.ok(!lvl2.isString());
+                        assert.ok(lvl2.isObjectcount());
+                        assert.ok(!lvl2.isChildcount());
+                        assert.ok(!lvl2.isIPv4());
+                        assert.strictEqual("level_2", lvl2.name);
+                        assert.strictEqual("level 2", lvl2.displayName);
+                        assert.strictEqual(false, lvl2.required);
+                        assert.strictEqual(false, lvl2.multivalued);
+                        assert.strictEqual(false, lvl2.hidden);
+                        assert.strictEqual(false, lvl2.editable);
+                        assert.strictEqual(null, lvl2.comment);
 
-                let lvl2 = obj.fieldByName("level_2");
-                assert.strictEqual("level_2", lvl2.owner);
-                assert.deepEqual(["level_0", "level_1", "level_2"], lvl2.lineage);
-                assert.strictEqual("objectCount", lvl2.type);
-                assert.ok(!lvl2.isTimestamp());
-                assert.ok(!lvl2.isNumber());
-                assert.ok(!lvl2.isString());
-                assert.ok(lvl2.isObjectcount());
-                assert.ok(!lvl2.isChildcount());
-                assert.ok(!lvl2.isIPv4());
-                assert.strictEqual("level_2", lvl2.name);
-                assert.strictEqual("level 2", lvl2.displayName);
-                assert.strictEqual(false, lvl2.required);
-                assert.strictEqual(false, lvl2.multivalued);
-                assert.strictEqual(false, lvl2.hidden);
-                assert.strictEqual(false, lvl2.editable);
-                assert.strictEqual(null, lvl2.comment);
+                        done();
+                    }
+                ],
+                    function (err) {
+                        assert.ok(!err);
+                        done();
+                    }
+                );
             });
 
-            it("DataModels - test data model object properties", async function () {
+            it("Callback#DataModels - test data model object properties", function (done) {
                 if (this.skip) {
+                    done();
                     return;
                 }
-                let args;
+                var args;
                 try {
                     args = JSON.parse(utils.readFile(__filename, "../../data/data_model_for_pivot.json"));
                 }
                 catch (err) {
                     // Fail if we can't read the file, likely to occur in the browser
                     assert.ok(!err);
+                    done();
                 }
-                let name = "delete-me-" + getNextId();
+                var name = "delete-me-" + getNextId();
 
                 var that = this;
-                let dataModel = await that.dataModels.create(name, args);
-                let obj = dataModel.objectByName("test_data");
-                assert.ok(obj);
-                assert.strictEqual(5, obj.fieldNames().length);
-                assert.strictEqual(10, obj.allFieldNames().length);
-                assert.ok(obj.fieldByName("has_boris"));
-                assert.ok(obj.hasField("has_boris"));
-                assert.ok(obj.fieldByName("_time"));
-                assert.ok(obj.hasField("_time"));
+                Async.chain([
+                    function (done) {
+                        that.dataModels.create(name, args, done);
+                    },
+                    function (dataModel, done) {
+                        var obj = dataModel.objectByName("test_data");
+                        assert.ok(obj);
+                        assert.strictEqual(5, obj.fieldNames().length);
+                        assert.strictEqual(10, obj.allFieldNames().length);
+                        assert.ok(obj.fieldByName("has_boris"));
+                        assert.ok(obj.hasField("has_boris"));
+                        assert.ok(obj.fieldByName("_time"));
+                        assert.ok(obj.hasField("_time"));
+
+                        done();
+                    }
+                ],
+                    function (err) {
+                        assert.ok(!err);
+                        done();
+                    }
+                );
             });
 
-            it("DataModels - create local acceleration job", async function () {
+            it("Callback#DataModels - create local acceleration job", function (done) {
                 if (this.skip) {
+                    done();
                     return;
                 }
-                let args;
+                var args;
                 try {
                     args = JSON.parse(utils.readFile(__filename, "../../data/inheritance_test_data.json"));
                 }
                 catch (err) {
                     // Fail if we can't read the file, likely to occur in the browser
                     assert.ok(!err);
+                    done();
                 }
-                let name = "delete-me-" + getNextId();
-                let obj;
-                let that = this;
-                let dataModel = await that.dataModels.create(name, args);
-                obj = dataModel.objectByName("level_2");
-                assert.ok(obj);
-                job = await obj.createLocalAccelerationJob(null);
-                assert.ok(job);
-                await tutils.pollUntil(
-                    job,
-                    function (j) {
-                        return job.properties()["isDone"];
+                var name = "delete-me-" + getNextId();
+
+                var obj;
+                var that = this;
+                Async.chain([
+                    function (done) {
+                        that.dataModels.create(name, args, done);
                     },
-                    10
+                    function (dataModel, done) {
+                        obj = dataModel.objectByName("level_2");
+                        assert.ok(obj);
+
+                        obj.createLocalAccelerationJob(null, done);
+                    },
+                    function (job, done) {
+                        assert.ok(job);
+
+                        tutils.pollUntil(
+                            job,
+                            function (j) {
+                                return job.properties()["isDone"];
+                            },
+                            10,
+                            done
+                        );
+                    },
+                    function (job, done) {
+                        assert.strictEqual("| datamodel \"" + name + "\" level_2 search | tscollect", job.properties().request.search);
+                        job.cancel(done);
+                    }
+                ],
+                    function (err) {
+                        assert.ok(!err);
+                        done();
+                    }
                 );
-                assert.strictEqual("| datamodel \"" + name + "\" level_2 search | tscollect", job.properties().request.search);
-                await job.cancel();
             });
 
-            it("DataModels - create local acceleration job with earliest time", async function () {
+            it("Callback#DataModels - create local acceleration job with earliest time", function (done) {
                 if (this.skip) {
+                    done();
                     return;
                 }
-                let args;
+                var args;
                 try {
                     args = JSON.parse(utils.readFile(__filename, "../../data/inheritance_test_data.json"));
                 }
                 catch (err) {
                     // Fail if we can't read the file, likely to occur in the browser
                     assert.ok(!err);
+                    done();
                 }
-                let name = "delete-me-" + getNextId();
+                var name = "delete-me-" + getNextId();
 
+                var obj;
+                var oldNow = Date.now();
                 var that = this;
-                let dataModel = await that.dataModels.create(name, args);
-                let obj = dataModel.objectByName("level_2");
-                assert.ok(obj);
-                let job = await obj.createLocalAccelerationJob("-1d");
-                assert.ok(job);
-                await tutils.pollUntil(
-                    job,
-                    function (j) {
-                        return job.properties()["isDone"];
+                Async.chain([
+                    function (done) {
+                        that.dataModels.create(name, args, done);
                     },
-                    10
+                    function (dataModel, done) {
+                        obj = dataModel.objectByName("level_2");
+                        assert.ok(obj);
+                        obj.createLocalAccelerationJob("-1d", done);
+                    },
+                    function (job, done) {
+                        assert.ok(job);
+                        tutils.pollUntil(
+                            job,
+                            function (j) {
+                                return job.properties()["isDone"];
+                            },
+                            10,
+                            done
+                        );
+                    },
+                    function (job, done) {
+                        assert.strictEqual("| datamodel \"" + name + "\" level_2 search | tscollect", job.properties().request.search);
+
+                        // Make sure the earliest time is 1 day behind
+                        var yesterday = new Date(Date.now() - (1000 * 60 * 60 * 24));
+                        var month = (yesterday.getMonth() + 1);
+                        if (month <= 9) {
+                            month = "0" + month;
+                        }
+                        var date = yesterday.getDate();
+                        if (date <= 9) {
+                            date = "0" + date;
+                        }
+                        var expectedDate = yesterday.getFullYear() + "-" + month + "-" + date;
+                        assert.ok(utils.startsWith(job._state.content.earliestTime, expectedDate));
+
+                        job.cancel(done);
+                    }
+                ],
+                    function (err) {
+                        assert.ok(!err);
+                        done();
+                    }
                 );
-                assert.strictEqual("| datamodel \"" + name + "\" level_2 search | tscollect", job.properties().request.search);
-
-                // Make sure the earliest time is 1 day behind
-                let yesterday = new Date(Date.now() - (1000 * 60 * 60 * 24));
-                let month = (yesterday.getMonth() + 1);
-                if (month <= 9) {
-                    month = "0" + month;
-                }
-                let date = yesterday.getDate();
-                if (date <= 9) {
-                    date = "0" + date;
-                }
-                let expectedDate = yesterday.getFullYear() + "-" + month + "-" + date;
-                assert.ok(utils.startsWith(job._state.content.earliestTime, expectedDate));
-
-                await job.cancel();
             });
 
-            it("DataModels - test data model constraints", async function () {
+            it("Callback#DataModels - test data model constraints", function (done) {
                 if (this.skip) {
+                    done();
                     return;
                 }
-                let args;
+                var args;
                 try {
                     args = JSON.parse(utils.readFile(__filename, "../../data/data_model_with_test_objects.json"));
                 }
                 catch (err) {
                     // Fail if we can't read the file, likely to occur in the browser
                     assert.ok(!err);
+                    done();
                 }
-                let name = "delete-me-" + getNextId();
+                var name = "delete-me-" + getNextId();
 
+                var obj;
                 var that = this;
-                let dataModel = await that.dataModels.create(name, args);
-                let obj = dataModel.objectByName("event1");
-                assert.ok(obj);
-                let constraints = obj.constraints;
-                assert.ok(constraints);
-                let onlyOne = true;
-                for (var i = 0; i < constraints.length; i++) {
-                    var constraint = constraints[i];
-                    assert.ok(!!onlyOne);
-                    assert.strictEqual("event1", constraint.owner);
-                    assert.strictEqual("uri=\"*.php\" OR uri=\"*.py\"\nNOT (referer=null OR referer=\"-\")", constraint.query);
-                }
+                Async.chain([
+                    function (done) {
+                        that.dataModels.create(name, args, done);
+                    },
+                    function (dataModel, done) {
+                        obj = dataModel.objectByName("event1");
+                        assert.ok(obj);
+                        var constraints = obj.constraints;
+                        assert.ok(constraints);
+                        var onlyOne = true;
+
+                        for (var i = 0; i < constraints.length; i++) {
+                            var constraint = constraints[i];
+                            assert.ok(!!onlyOne);
+
+                            assert.strictEqual("event1", constraint.owner);
+                            assert.strictEqual("uri=\"*.php\" OR uri=\"*.py\"\nNOT (referer=null OR referer=\"-\")", constraint.query);
+                        }
+
+                        done();
+                    }
+                ],
+                    function (err) {
+                        assert.ok(!err);
+                        done();
+                    }
+                );
             });
 
-            it("DataModels - test data model calculations, and the different types", async function () {
+            it("Callback#DataModels - test data model calculations, and the different types", function (done) {
                 if (this.skip) {
+                    done();
                     return;
                 }
-                let args;
+                var args;
                 try {
                     args = JSON.parse(utils.readFile(__filename, "../../data/data_model_with_test_objects.json"));
                 }
                 catch (err) {
                     // Fail if we can't read the file, likely to occur in the browser
                     assert.ok(!err);
+                    done();
                 }
-                let name = "delete-me-" + getNextId();
+                var name = "delete-me-" + getNextId();
 
+                var obj;
                 var that = this;
-                let dataModel = await that.dataModels.create(name, args);
-                let obj = dataModel.objectByName("event1");
-                assert.ok(obj);
-                let calculations = obj.calculations;
-                assert.strictEqual(4, Object.keys(calculations).length);
-                assert.strictEqual(4, obj.calculationIDs().length);
+                Async.chain([
+                    function (done) {
+                        that.dataModels.create(name, args, done);
+                    },
+                    function (dataModel, done) {
+                        obj = dataModel.objectByName("event1");
+                        assert.ok(obj);
 
-                let evalCalculation = calculations["93fzsv03wa7"];
-                assert.ok(evalCalculation);
-                assert.strictEqual("event1", evalCalculation.owner);
-                assert.deepEqual(["event1"], evalCalculation.lineage);
-                assert.strictEqual("Eval", evalCalculation.type);
-                assert.ok(evalCalculation.isEval());
-                assert.ok(!evalCalculation.isLookup());
-                assert.ok(!evalCalculation.isGeoIP());
-                assert.ok(!evalCalculation.isRex());
-                assert.strictEqual(null, evalCalculation.comment);
-                assert.strictEqual(true, evalCalculation.isEditable());
-                assert.strictEqual("if(cidrmatch(\"192.0.0.0/16\", clientip), \"local\", \"other\")", evalCalculation.expression);
+                        var calculations = obj.calculations;
+                        assert.strictEqual(4, Object.keys(calculations).length);
+                        assert.strictEqual(4, obj.calculationIDs().length);
 
-                assert.strictEqual(1, Object.keys(evalCalculation.outputFields).length);
-                assert.strictEqual(1, evalCalculation.outputFieldNames().length);
+                        var evalCalculation = calculations["93fzsv03wa7"];
+                        assert.ok(evalCalculation);
+                        assert.strictEqual("event1", evalCalculation.owner);
+                        assert.deepEqual(["event1"], evalCalculation.lineage);
+                        assert.strictEqual("Eval", evalCalculation.type);
+                        assert.ok(evalCalculation.isEval());
+                        assert.ok(!evalCalculation.isLookup());
+                        assert.ok(!evalCalculation.isGeoIP());
+                        assert.ok(!evalCalculation.isRex());
+                        assert.strictEqual(null, evalCalculation.comment);
+                        assert.strictEqual(true, evalCalculation.isEditable());
+                        assert.strictEqual("if(cidrmatch(\"192.0.0.0/16\", clientip), \"local\", \"other\")", evalCalculation.expression);
 
-                let field = evalCalculation.outputFields["new_field"];
-                assert.ok(field);
-                assert.strictEqual("My New Field", field.displayName);
+                        assert.strictEqual(1, Object.keys(evalCalculation.outputFields).length);
+                        assert.strictEqual(1, evalCalculation.outputFieldNames().length);
 
-                let lookupCalculation = calculations["sr3mc8o3mjr"];
-                assert.ok(lookupCalculation);
-                assert.strictEqual("event1", lookupCalculation.owner);
-                assert.deepEqual(["event1"], lookupCalculation.lineage);
-                assert.strictEqual("Lookup", lookupCalculation.type);
-                assert.ok(lookupCalculation.isLookup());
-                assert.ok(!lookupCalculation.isEval());
-                assert.ok(!lookupCalculation.isGeoIP());
-                assert.ok(!lookupCalculation.isRex());
-                assert.strictEqual(null, lookupCalculation.comment);
-                assert.strictEqual(true, lookupCalculation.isEditable());
-                assert.deepEqual({ lookupField: "a_lookup_field", inputField: "host" }, lookupCalculation.inputFieldMappings);
-                assert.strictEqual(2, Object.keys(lookupCalculation.inputFieldMappings).length);
-                assert.strictEqual("a_lookup_field", lookupCalculation.inputFieldMappings.lookupField);
-                assert.strictEqual("host", lookupCalculation.inputFieldMappings.inputField);
-                assert.strictEqual("dnslookup", lookupCalculation.lookupName);
+                        var field = evalCalculation.outputFields["new_field"];
+                        assert.ok(field);
+                        assert.strictEqual("My New Field", field.displayName);
 
-                let regexpCalculation = calculations["a5v1k82ymic"];
-                assert.ok(regexpCalculation);
-                assert.strictEqual("event1", regexpCalculation.owner);
-                assert.deepEqual(["event1"], regexpCalculation.lineage);
-                assert.strictEqual("Rex", regexpCalculation.type);
-                assert.ok(regexpCalculation.isRex());
-                assert.ok(!regexpCalculation.isLookup());
-                assert.ok(!regexpCalculation.isEval());
-                assert.ok(!regexpCalculation.isGeoIP());
-                assert.strictEqual(2, regexpCalculation.outputFieldNames().length);
-                assert.strictEqual("_raw", regexpCalculation.inputField);
-                assert.strictEqual(" From: (?<from>.*) To: (?<to>.*) ", regexpCalculation.expression);
+                        var lookupCalculation = calculations["sr3mc8o3mjr"];
+                        assert.ok(lookupCalculation);
+                        assert.strictEqual("event1", lookupCalculation.owner);
+                        assert.deepEqual(["event1"], lookupCalculation.lineage);
+                        assert.strictEqual("Lookup", lookupCalculation.type);
+                        assert.ok(lookupCalculation.isLookup());
+                        assert.ok(!lookupCalculation.isEval());
+                        assert.ok(!lookupCalculation.isGeoIP());
+                        assert.ok(!lookupCalculation.isRex());
+                        assert.strictEqual(null, lookupCalculation.comment);
+                        assert.strictEqual(true, lookupCalculation.isEditable());
+                        assert.deepEqual({ lookupField: "a_lookup_field", inputField: "host" }, lookupCalculation.inputFieldMappings);
+                        assert.strictEqual(2, Object.keys(lookupCalculation.inputFieldMappings).length);
+                        assert.strictEqual("a_lookup_field", lookupCalculation.inputFieldMappings.lookupField);
+                        assert.strictEqual("host", lookupCalculation.inputFieldMappings.inputField);
+                        assert.strictEqual("dnslookup", lookupCalculation.lookupName);
 
-                let geoIPCalculation = calculations["pbe9bd0rp4"];
-                assert.ok(geoIPCalculation);
-                assert.strictEqual("event1", geoIPCalculation.owner);
-                assert.deepEqual(["event1"], geoIPCalculation.lineage);
-                assert.strictEqual("GeoIP", geoIPCalculation.type);
-                assert.ok(geoIPCalculation.isGeoIP());
-                assert.ok(!geoIPCalculation.isLookup());
-                assert.ok(!geoIPCalculation.isEval());
-                assert.ok(!geoIPCalculation.isRex());
-                assert.strictEqual("·Ä©·öô‡Øµ comment of pbe9bd0rp4", geoIPCalculation.comment);
-                assert.strictEqual(5, geoIPCalculation.outputFieldNames().length);
-                assert.strictEqual("output_from_reverse_hostname", geoIPCalculation.inputField);
+                        var regexpCalculation = calculations["a5v1k82ymic"];
+                        assert.ok(regexpCalculation);
+                        assert.strictEqual("event1", regexpCalculation.owner);
+                        assert.deepEqual(["event1"], regexpCalculation.lineage);
+                        assert.strictEqual("Rex", regexpCalculation.type);
+                        assert.ok(regexpCalculation.isRex());
+                        assert.ok(!regexpCalculation.isLookup());
+                        assert.ok(!regexpCalculation.isEval());
+                        assert.ok(!regexpCalculation.isGeoIP());
+                        assert.strictEqual(2, regexpCalculation.outputFieldNames().length);
+                        assert.strictEqual("_raw", regexpCalculation.inputField);
+                        assert.strictEqual(" From: (?<from>.*) To: (?<to>.*) ", regexpCalculation.expression);
+
+                        var geoIPCalculation = calculations["pbe9bd0rp4"];
+                        assert.ok(geoIPCalculation);
+                        assert.strictEqual("event1", geoIPCalculation.owner);
+                        assert.deepEqual(["event1"], geoIPCalculation.lineage);
+                        assert.strictEqual("GeoIP", geoIPCalculation.type);
+                        assert.ok(geoIPCalculation.isGeoIP());
+                        assert.ok(!geoIPCalculation.isLookup());
+                        assert.ok(!geoIPCalculation.isEval());
+                        assert.ok(!geoIPCalculation.isRex());
+                        assert.strictEqual("·Ä©·öô‡Øµ comment of pbe9bd0rp4", geoIPCalculation.comment);
+                        assert.strictEqual(5, geoIPCalculation.outputFieldNames().length);
+                        assert.strictEqual("output_from_reverse_hostname", geoIPCalculation.inputField);
+
+                        done();
+                    }
+                ],
+                    function (err) {
+                        assert.ok(!err);
+                        done();
+                    }
+                );
             });
 
-            it("DataModels - run queries", async function () {
+            it("Callback#DataModels - run queries", function (done) {
                 if (this.skip) {
+                    done();
                     return;
                 }
+                var obj;
                 var that = this;
-                let dataModels = await that.dataModels.fetch();
-                let dm = dataModels.item("internal_audit_logs");
-                let obj = dm.objectByName("searches");
-                let job = await obj.startSearch({}, "");
-                await tutils.pollUntil(
-                    job,
-                    function (j) {
-                        return job.properties()["isDone"];
+                Async.chain([
+                    function (done) {
+                        that.dataModels.fetch(done);
                     },
-                    10);
-                assert.strictEqual("| datamodel internal_audit_logs searches search", job.properties().request.search);
-                await job.cancel();
-
-                job = await obj.startSearch({ status_buckets: 5, enable_lookups: false }, "| head 3");
-                await tutils.pollUntil(
-                    job,
-                    function (j) {
-                        return job.properties()["isDone"];
+                    function (dataModels, done) {
+                        var dm = dataModels.item("internal_audit_logs");
+                        obj = dm.objectByName("searches");
+                        obj.startSearch({}, "", done);
                     },
-                    10);
-                assert.strictEqual("| datamodel internal_audit_logs searches search | head 3", job.properties().request.search);
-                await job.cancel();
+                    function (job, done) {
+                        tutils.pollUntil(
+                            job,
+                            function (j) {
+                                return job.properties()["isDone"];
+                            },
+                            10,
+                            done
+                        );
+                    },
+                    function (job, done) {
+                        assert.strictEqual("| datamodel internal_audit_logs searches search", job.properties().request.search);
+                        job.cancel(done);
+                    },
+                    function (response, done) {
+                        obj.startSearch({ status_buckets: 5, enable_lookups: false }, "| head 3", done);
+                    },
+                    function (job, done) {
+                        tutils.pollUntil(
+                            job,
+                            function (j) {
+                                return job.properties()["isDone"];
+                            },
+                            10,
+                            done
+                        );
+                    },
+                    function (job, done) {
+                        assert.strictEqual("| datamodel internal_audit_logs searches search | head 3", job.properties().request.search);
+                        job.cancel(done);
+                    }
+                ],
+                    function (err) {
+                        assert.ok(!err);
+                        done();
+                    }
+                );
             });
 
-            it("DataModels - baseSearch is parsed correctly", async function () {
+            it("Callback#DataModels - baseSearch is parsed correctly", function (done) {
                 if (this.skip) {
+                    done();
                     return;
                 }
-                let args;
+                var args;
                 try {
                     args = JSON.parse(utils.readFile(__filename, "../../data/model_with_multiple_types.json"));
                 }
                 catch (err) {
                     // Fail if we can't read the file, likely to occur in the browser
                     assert.ok(!err);
+                    done();
                 }
-                let name = "delete-me-" + getNextId();
+                var name = "delete-me-" + getNextId();
+
+                var obj;
                 var that = this;
-                let dataModel = await that.dataModels.create(name, args);
-                let obj = dataModel.objectByName("search1");
-                assert.ok(obj);
-                assert.ok(obj instanceof splunkjs.Service.DataModelObject);
-                assert.strictEqual("BaseSearch", obj.parentName);
-                assert.ok(obj.isBaseSearch());
-                assert.ok(!obj.isBaseTransaction());
-                assert.strictEqual("search index=_internal | head 10", obj.baseSearch);
+                Async.chain([
+                    function (done) {
+                        that.dataModels.create(name, args, done);
+                    },
+                    function (dataModel, done) {
+                        obj = dataModel.objectByName("search1");
+                        assert.ok(obj);
+                        assert.ok(obj instanceof splunkjs.Service.DataModelObject);
+                        assert.strictEqual("BaseSearch", obj.parentName);
+                        assert.ok(obj.isBaseSearch());
+                        assert.ok(!obj.isBaseTransaction());
+                        assert.strictEqual("search index=_internal | head 10", obj.baseSearch);
+                        done();
+                    }
+                ],
+                    function (err) {
+                        assert.ok(!err);
+                        done();
+                    }
+                );
             });
 
-            it("DataModels - baseTransaction is parsed correctly", async function () {
+            it("Callback#DataModels - baseTransaction is parsed correctly", function (done) {
                 if (this.skip) {
+                    done();
                     return;
                 }
-                let args;
+                var args;
                 try {
                     args = JSON.parse(utils.readFile(__filename, "../../data/model_with_multiple_types.json"));
                 }
                 catch (err) {
                     // Fail if we can't read the file, likely to occur in the browser
                     assert.ok(!err);
+                    done();
                 }
-                let name = "delete-me-" + getNextId();
+                var name = "delete-me-" + getNextId();
 
+                var obj;
                 var that = this;
-                let dataModel = await that.dataModels.create(name, args);
-                let obj = dataModel.objectByName("transaction1");
-                assert.ok(obj);
-                assert.ok(obj instanceof splunkjs.Service.DataModelObject);
-                assert.strictEqual("BaseTransaction", obj.parentName);
-                assert.ok(obj.isBaseTransaction());
-                assert.ok(!obj.isBaseSearch());
-                assert.deepEqual(["event1"], obj.objectsToGroup);
-                assert.deepEqual(["host", "from"], obj.groupByFields);
-                assert.strictEqual("25s", obj.maxPause);
-                assert.strictEqual("100m", obj.maxSpan);
+                Async.chain([
+                    function (done) {
+                        that.dataModels.create(name, args, done);
+                    },
+                    function (dataModel, done) {
+                        obj = dataModel.objectByName("transaction1");
+                        assert.ok(obj);
+                        assert.ok(obj instanceof splunkjs.Service.DataModelObject);
+                        assert.strictEqual("BaseTransaction", obj.parentName);
+                        assert.ok(obj.isBaseTransaction());
+                        assert.ok(!obj.isBaseSearch());
+                        assert.deepEqual(["event1"], obj.objectsToGroup);
+                        assert.deepEqual(["host", "from"], obj.groupByFields);
+                        assert.strictEqual("25s", obj.maxPause);
+                        assert.strictEqual("100m", obj.maxSpan);
+
+                        done();
+                    }
+                ],
+                    function (err) {
+                        assert.ok(!err);
+                        done();
+                    }
+                );
             })
         })
     )
@@ -68658,14 +69826,14 @@ if (module.id === __filename && module.parent.id.includes('mocha')) {
     var splunkjs = require('../../index');
     var options = require('../cmdline');
 
-    let cmdline = options.create().parse(process.argv);
+    var cmdline = options.create().parse(process.argv);
 
     // If there is no command line, we should return
     if (!cmdline) {
         throw new Error("Error in parsing command line parameters");
     }
 
-    let svc = new splunkjs.Service({
+    var svc = new splunkjs.Service({
         scheme: cmdline.opts.scheme,
         host: cmdline.opts.host,
         port: cmdline.opts.port,
@@ -68675,18 +69843,18 @@ if (module.id === __filename && module.parent.id.includes('mocha')) {
     });
 
     // Exports tests on a successful login
-    module.exports = new Promise(async (resolve, reject) => {
-        try {
-            await svc.login();
-            return resolve(exports.setup(svc))
-        } catch (error) {
-            throw new Error("Login failed - not running tests", error || "");
-        }
+    module.exports = new Promise((resolve, reject) => {
+        svc.login(function (err, success) {
+            if (err || !success) {
+                throw new Error("Login failed - not running tests", err || "");
+            }
+            return resolve(exports.setup(svc));
+        });
     });
 }
 
 }).call(this)}).call(this,require('_process'),"/tests/service_tests/datamodels.js")
-},{"../../index":2,"../cmdline":296,"../utils":320,"_process":239,"chai":72}],301:[function(require,module,exports){
+},{"../../index":2,"../cmdline":297,"../utils":322,"_process":240,"chai":73}],302:[function(require,module,exports){
 (function (process,__filename){(function (){
 var assert = require('chai').assert;
 
@@ -68694,36 +69862,32 @@ var splunkjs = require('../../index');
 
 exports.setup = function (svc) {
     return (
-        describe("Endpoint tests",  () => {
-            beforeEach(function () {
+        describe("Endpoint tests", function (done) {
+            beforeEach(function (done) {
                 this.service = svc;
+                done();
             });
 
             it("Throws on null arguments to init", function (done) {
                 var service = this.service;
                 assert.throws(function () {
-                    let endpoint = new splunkjs.Service.Endpoint(null, "a/b");
+                    var endpoint = new splunkjs.Service.Endpoint(null, "a/b");
                 });
                 assert.throws(function () {
-                    let endpoint = new splunkjs.Service.Endpoint(service, null);
+                    var endpoint = new splunkjs.Service.Endpoint(service, null);
                 });
                 done();
             });
 
-            it("Endpoint delete on a relative path", async function () {
+            it("Endpoint delete on a relative path", function (done) {
                 var service = this.service;
-                let endpoint = new splunkjs.Service.Endpoint(service, "/search/jobs/12345");
-                let res;
-                try {
-                    res = await endpoint.del("search/jobs/12345", {});
-                } catch (error) {
-                    assert.ok(error);
-                }
+                var endpoint = new splunkjs.Service.Endpoint(service, "/search/jobs/12345");
+                endpoint.del("search/jobs/12345", {}, function () { done(); });
             });
 
             it("Methods of Resource to be overridden", function (done) {
                 var service = this.service;
-                let resource = new splunkjs.Service.Resource(service, "/search/jobs/12345");
+                var resource = new splunkjs.Service.Resource(service, "/search/jobs/12345");
                 assert.throws(function () { resource.path(); });
                 assert.throws(function () { resource.fetch(); });
                 assert.ok(splunkjs.Utils.isEmpty(resource.state()));
@@ -68737,14 +69901,14 @@ if (module.id === __filename && module.parent.id.includes('mocha')) {
     var splunkjs = require('../../index');
     var options = require('../cmdline');
 
-    let cmdline = options.create().parse(process.argv);
+    var cmdline = options.create().parse(process.argv);
 
     // If there is no command line, we should return
     if (!cmdline) {
         throw new Error("Error in parsing command line parameters");
     }
 
-    let svc = new splunkjs.Service({
+    var svc = new splunkjs.Service({
         scheme: cmdline.opts.scheme,
         host: cmdline.opts.host,
         port: cmdline.opts.port,
@@ -68754,23 +69918,24 @@ if (module.id === __filename && module.parent.id.includes('mocha')) {
     });
 
     // Exports tests on a successful login
-    module.exports = new Promise(async (resolve, reject) => {
-        try {
-            await svc.login();
-            return resolve(exports.setup(svc))
-        } catch (error) {
-            throw new Error("Login failed - not running tests", error || "");
-        }
+    module.exports = new Promise((resolve, reject) => {
+        svc.login(function (err, success) {
+            if (err || !success) {
+                throw new Error("Login failed - not running tests", err || "");
+            }
+            return resolve(exports.setup(svc));
+        });
     });
 }
 
 }).call(this)}).call(this,require('_process'),"/tests/service_tests/endpoint.js")
-},{"../../index":2,"../cmdline":296,"_process":239,"chai":72}],302:[function(require,module,exports){
+},{"../../index":2,"../cmdline":297,"_process":240,"chai":73}],303:[function(require,module,exports){
 (function (process,__filename){(function (){
 var assert = require('chai').assert;
 
 var splunkjs = require('../../index');
 
+var Async = splunkjs.Async;
 var idCounter = 0;
 
 var getNextId = function () {
@@ -68779,15 +69944,16 @@ var getNextId = function () {
 
 exports.setup = function (svc, loggedOutSvc) {
     return (
-        describe("Entity tests", () => {
+        describe("Entity tests", function () {
 
-            beforeEach(function () {
+            beforeEach(function (done) {
                 this.service = svc;
                 this.loggedOutService = loggedOutSvc;
+                done();
             });
 
             it("Accessors function properly", function (done) {
-                let entity = new splunkjs.Service.Entity(
+                var entity = new splunkjs.Service.Entity(
                     this.service,
                     "/search/jobs/12345",
                     { owner: "boris", app: "factory", sharing: "app" }
@@ -68809,66 +69975,74 @@ exports.setup = function (svc, loggedOutSvc) {
                 done();
             });
 
-            it("Refresh throws error correctly", async function () {
-                let entity = new splunkjs.Service.Entity(this.loggedOutService, "/search/jobs/12345", { owner: "boris", app: "factory", sharing: "app" });
-                try {
-                    let res = await entity.fetch({});
-                    assert.ok(!res)
-                } catch (error) {
-                    assert.ok(error)
-                }
+            it("Refresh throws error correctly", function (done) {
+                var entity = new splunkjs.Service.Entity(this.loggedOutService, "/search/jobs/12345", { owner: "boris", app: "factory", sharing: "app" });
+                entity.fetch({}, function (err) { assert.ok(err); done(); });
             });
 
             it("Cannot update name of entity", function (done) {
-                let entity = new splunkjs.Service.Entity(this.service, "/search/jobs/12345", { owner: "boris", app: "factory", sharing: "app" });
+                var entity = new splunkjs.Service.Entity(this.service, "/search/jobs/12345", { owner: "boris", app: "factory", sharing: "app" });
                 assert.throws(function () { entity.update({ name: "asdf" }); });
                 done();
             });
 
-            it("Disable throws error correctly", async function () {
-                let entity = new splunkjs.Service.Entity(
+            it("Disable throws error correctly", function (done) {
+                var entity = new splunkjs.Service.Entity(
                     this.loggedOutService,
                     "/search/jobs/12345",
                     { owner: "boris", app: "factory", sharing: "app" }
                 );
-                let res;
-                try {
-                    res = await entity.disable();
-                } catch (error) {
-                    assert.ok(error);
-                }
-                assert.ok(!res);
+                entity.disable(function (err) { assert.ok(err); done(); });
             });
 
-            it("Enable throws error correctly", async function () {
-                let entity = new splunkjs.Service.Entity(
+            it("Enable throws error correctly", function (done) {
+                var entity = new splunkjs.Service.Entity(
                     this.loggedOutService,
                     "/search/jobs/12345",
                     { owner: "boris", app: "factory", sharing: "app" }
                 );
-                let res;
-                try {
-                    res = await entity.enable();
-                } catch (error) {
-                    assert.ok(error);
-                }
-                assert.ok(!res);
+                entity.enable(function (err) { assert.ok(err); done(); });
             });
 
-            it("Does reload work?", async function () {
-                let name = "jssdk_testapp_" + getNextId();
-                let apps = this.service.apps();
+            it("Does reload work?", function (done) {
+                var idx = new splunkjs.Service.Index(
+                    this.service,
+                    "data/indexes/sdk-test",
+                    {
+                        owner: "admin",
+                        app: "search",
+                        sharing: "app"
+                    }
+                );
+                var name = "jssdk_testapp_" + getNextId();
+                var apps = this.service.apps();
 
                 var that = this;
-                let app = await apps.create({ name: name });
-                await app.reload();
-                let app2 = new splunkjs.Service.Application(that.loggedOutService, app.name);
-                try {
-                    await app2.reload();
-                } catch (error) {
-                    assert.ok(error);
-                }
-                await app.remove();
+                Async.chain(
+                    function (done) {
+                        apps.create({ name: name }, done);
+                    },
+                    function (app, done) {
+                        app.reload(function (err) {
+                            assert.ok(!err);
+                            done(null, app);
+                        });
+                    },
+                    function (app, done) {
+                        var app2 = new splunkjs.Service.Application(that.loggedOutService, app.name);
+                        app2.reload(function (err) {
+                            assert.ok(err);
+                            done(null, app);
+                        });
+                    },
+                    function (app, done) {
+                        app.remove(done);
+                    },
+                    function (err) {
+                        assert.ok(!err);
+                        done();
+                    }
+                );
             })
         })
     )
@@ -68878,14 +70052,14 @@ if (module.id === __filename && module.parent.id.includes('mocha')) {
     var splunkjs = require('../../index');
     var options = require('../cmdline');
 
-    let cmdline = options.create().parse(process.argv);
+    var cmdline = options.create().parse(process.argv);
 
     // If there is no command line, we should return
     if (!cmdline) {
         throw new Error("Error in parsing command line parameters");
     }
 
-    let svc = new splunkjs.Service({
+    var svc = new splunkjs.Service({
         scheme: cmdline.opts.scheme,
         host: cmdline.opts.host,
         port: cmdline.opts.port,
@@ -68894,7 +70068,7 @@ if (module.id === __filename && module.parent.id.includes('mocha')) {
         version: cmdline.opts.version
     });
 
-    let loggedOutSvc = new splunkjs.Service({
+    var loggedOutSvc = new splunkjs.Service({
         scheme: cmdline.opts.scheme,
         host: cmdline.opts.host,
         port: cmdline.opts.port,
@@ -68904,22 +70078,24 @@ if (module.id === __filename && module.parent.id.includes('mocha')) {
     });
 
     // Exports tests on a successful login
-    module.exports = new Promise(async (resolve, reject) => {
-        try {
-            await svc.login();
-            return resolve(exports.setup(svc, loggedOutSvc))
-        } catch (error) {
-            throw new Error("Login failed - not running tests", error || "");
-        }
+    module.exports = new Promise((resolve, reject) => {
+        svc.login(function (err, success) {
+            if (err || !success) {
+                throw new Error("Login failed - not running tests", err || "");
+            }
+            return resolve(exports.setup(svc, loggedOutSvc));
+        });
     });
 }
 
 }).call(this)}).call(this,require('_process'),"/tests/service_tests/entity.js")
-},{"../../index":2,"../cmdline":296,"_process":239,"chai":72}],303:[function(require,module,exports){
+},{"../../index":2,"../cmdline":297,"_process":240,"chai":73}],304:[function(require,module,exports){
 (function (process,__filename){(function (){
 var assert = require('chai').assert;
 
 var splunkjs = require('../../index');
+
+var Async = splunkjs.Async;
 var utils = splunkjs.Utils;
 var idCounter = 0;
 
@@ -68930,15 +70106,18 @@ var getNextId = function () {
 exports.setup = function (svc, loggedOutSvc) {
     return (
         describe("Fired alerts tests", () => {
-            beforeEach(function () {
+            beforeEach(function (done) {
                 this.service = svc;
                 this.loggedOutService = loggedOutSvc;
+                var indexes = this.service.indexes();
+                done();
             });
 
-            it("create, verify emptiness and delete new alert group", async function () {
-                let searches = this.service.savedSearches({ owner: this.service.username });
-                let name = "jssdk_savedsearch_alert_" + getNextId();
-                let searchConfig = {
+            it("Callback#create + verify emptiness + delete new alert group", function (done) {
+
+                var searches = this.service.savedSearches({ owner: this.service.username });
+                var name = "jssdk_savedsearch_alert_" + getNextId();
+                var searchConfig = {
                     "name": name,
                     "search": "index=_internal | head 1",
                     "alert_type": "always",
@@ -68950,16 +70129,34 @@ exports.setup = function (svc, loggedOutSvc) {
                     "is_scheduled": "1",
                     "cron_schedule": "* * * * *"
                 };
-                let search = await searches.create(searchConfig);
-                assert.ok(search);
-                assert.strictEqual(search.alertCount(), 0);
-                [jobs, search] = await search.history();
-                assert.strictEqual(jobs.length, 0);
-                assert.strictEqual(search.firedAlertGroup().count(), 0);
-                let firedAlertGroups = await searches.service.firedAlertGroups().fetch();
-                let originalSearch = search;
-                assert.strictEqual(firedAlertGroups.list().indexOf(originalSearch.name), -1);
-                await originalSearch.remove();
+
+                Async.chain([
+                    function (done) {
+                        searches.create(searchConfig, done);
+                    },
+                    function (search, done) {
+                        assert.ok(search);
+                        assert.strictEqual(search.alertCount(), 0);
+                        search.history(done);
+                    },
+                    function (jobs, search, done) {
+                        assert.strictEqual(jobs.length, 0);
+                        assert.strictEqual(search.firedAlertGroup().count(), 0);
+                        searches.service.firedAlertGroups().fetch(Async.augment(done, search));
+                    },
+                    function (firedAlertGroups, originalSearch, done) {
+                        assert.strictEqual(firedAlertGroups.list().indexOf(originalSearch.name), -1);
+                        done(null, originalSearch);
+                    },
+                    function (originalSearch, done) {
+                        originalSearch.remove(done);
+                    }
+                ],
+                    function (err) {
+                        assert.ok(!err);
+                        done();
+                    }
+                );
             });
 
             // This test is not stable, commenting it out until we figure it out
@@ -69141,19 +70338,25 @@ exports.setup = function (svc, loggedOutSvc) {
             //     );
             // });
 
-            it("Delete all alerts", async function () {
-                let namePrefix = "jssdk_savedsearch_alert_";
-                let alertList = this.service.savedSearches().list();
-                let err = await utils.parallelEach(
+            it("Callback#delete all alerts", function (done) {
+                var namePrefix = "jssdk_savedsearch_alert_";
+                var alertList = this.service.savedSearches().list();
+
+                Async.parallelEach(
                     alertList,
-                    async function (alert, idx) {
+                    function (alert, idx, callback) {
                         if (utils.startsWith(alert.name, namePrefix)) {
                             splunkjs.Logger.log("ALERT ---", alert.name);
-                            await alert.remove();
+                            alert.remove(callback);
                         }
+                        else {
+                            callback();
+                        }
+                    }, function (err) {
+                        assert.ok(!err);
+                        done();
                     }
                 );
-                assert.ok(!err);
             })
         })
     )
@@ -69163,14 +70366,14 @@ if (module.id === __filename && module.parent.id.includes('mocha')) {
     var splunkjs = require('../../index');
     var options = require('../cmdline');
 
-    let cmdline = options.create().parse(process.argv);
+    var cmdline = options.create().parse(process.argv);
 
     // If there is no command line, we should return
     if (!cmdline) {
         throw new Error("Error in parsing command line parameters");
     }
 
-    let svc = new splunkjs.Service({
+    var svc = new splunkjs.Service({
         scheme: cmdline.opts.scheme,
         host: cmdline.opts.host,
         port: cmdline.opts.port,
@@ -69179,7 +70382,7 @@ if (module.id === __filename && module.parent.id.includes('mocha')) {
         version: cmdline.opts.version
     });
 
-    let loggedOutSvc = new splunkjs.Service({
+    var loggedOutSvc = new splunkjs.Service({
         scheme: cmdline.opts.scheme,
         host: cmdline.opts.host,
         port: cmdline.opts.port,
@@ -69189,24 +70392,24 @@ if (module.id === __filename && module.parent.id.includes('mocha')) {
     });
 
     // Exports tests on a successful login
-    module.exports = new Promise(async (resolve, reject) => {
-        try {
-            await svc.login();
-            return resolve(exports.setup(svc, loggedOutSvc))
-        } catch (error) {
-            throw new Error("Login failed - not running tests", error || "");
-        }
+    module.exports = new Promise((resolve, reject) => {
+        svc.login(function (err, success) {
+            if (err || !success) {
+                throw new Error("Login failed - not running tests", err || "");
+            }
+            return resolve(exports.setup(svc, loggedOutSvc));
+        });
     });
 }
 
 }).call(this)}).call(this,require('_process'),"/tests/service_tests/firedalerts.js")
-},{"../../index":2,"../cmdline":296,"_process":239,"chai":72}],304:[function(require,module,exports){
+},{"../../index":2,"../cmdline":297,"_process":240,"chai":73}],305:[function(require,module,exports){
 (function (process,Buffer,__filename){(function (){
 var assert = require('chai').assert;
 
 var splunkjs = require('../../index');
-var utils = splunkjs.Utils;
 
+var Async = splunkjs.Async;
 var idCounter = 0;
 
 var getNextId = function () {
@@ -69215,21 +70418,21 @@ var getNextId = function () {
 
 exports.setup = function (svc, loggedOutSvc) {
     return (
-        describe("Indexes tests", () => {
-            beforeEach(async function () {
+        describe("Indexes tests", function (done) {
+            beforeEach(function (done) {
                 this.service = svc;
                 this.loggedOutService = loggedOutSvc;
 
                 // Create the index for everyone to use
-                let name = this.indexName = "sdk-tests";
-                let indexes = this.service.indexes();
-                try {
-                    await indexes.create(name, {});
-                } catch (err) {
-                    if (err.status !== 409) {
+                var name = this.indexName = "sdk-tests";
+                var indexes = this.service.indexes();
+                indexes.create(name, {}, function (err, index) {
+                    if (err && err.status !== 409) {
                         throw new Error("Index creation failed for an unknown reason");
                     }
-                }
+
+                    done();
+                });
             });
 
             // it("Callback#remove index fails on Splunk 4.x", function(done) {
@@ -69292,90 +70495,181 @@ exports.setup = function (svc, loggedOutSvc) {
             //     );
             // });
 
-            it("list indexes", async function () {
-                let indexes = this.service.indexes();
-                indexes = await indexes.fetch();
-                let indexList = indexes.list();
-                assert.ok(indexList.length > 0);
+            it("Callback#list indexes", function (done) {
+                var indexes = this.service.indexes();
+                indexes.fetch(function (err, indexes) {
+                    var indexList = indexes.list();
+                    assert.ok(indexList.length > 0);
+                    done();
+                });
             });
 
-            it("Contains index", async function () {
-                let indexes = this.service.indexes();
-                let indexName = this.indexName;
+            it("Callback#contains index", function (done) {
+                var indexes = this.service.indexes();
+                var indexName = this.indexName;
 
-                indexes = await indexes.fetch();
-                let index = indexes.item(indexName);
-                assert.ok(index);
+                indexes.fetch(function (err, indexes) {
+                    var index = indexes.item(indexName);
+                    assert.ok(index);
+                    done();
+                });
             });
 
-            it("Modify index", async function () {
-                let name = this.indexName;
-                let indexes = this.service.indexes();
-                let originalSyncMeta = false;
-                indexes = await indexes.fetch();
-                let index = indexes.item(name);
-                assert.ok(index);
+            it("Callback#modify index", function (done) {
 
-                originalSyncMeta = index.properties().syncMeta;
-                index = await index.update({ syncMeta: !originalSyncMeta });
-                assert.ok(index);
-                let properties = index.properties();
-                assert.strictEqual(!originalSyncMeta, properties.syncMeta);
-                index = await index.update({ syncMeta: !properties.syncMeta });
-                assert.ok(index);
-                properties = index.properties();
-                assert.strictEqual(originalSyncMeta, properties.syncMeta);
+                var name = this.indexName;
+                var indexes = this.service.indexes();
+                var originalSyncMeta = false;
+
+                Async.chain([
+                    function (callback) {
+                        indexes.fetch(callback);
+                    },
+                    function (indexes, callback) {
+                        var index = indexes.item(name);
+                        assert.ok(index);
+
+                        originalSyncMeta = index.properties().syncMeta;
+                        index.update({
+                            syncMeta: !originalSyncMeta
+                        }, callback);
+                    },
+                    function (index, callback) {
+                        assert.ok(index);
+                        var properties = index.properties();
+
+                        assert.strictEqual(!originalSyncMeta, properties.syncMeta);
+
+                        index.update({
+                            syncMeta: !properties.syncMeta
+                        }, callback);
+                    },
+                    function (index, callback) {
+                        assert.ok(index);
+                        var properties = index.properties();
+
+                        assert.strictEqual(originalSyncMeta, properties.syncMeta);
+                        callback();
+                    }
+                ],
+                    function (err) {
+                        assert.ok(!err);
+                        done();
+                    }
+                );
             });
 
-            it("Enable/disable index", async function () {
+            it("Callback#Enable+disable index", function (done) {
+
                 this.timeout(40000);
-                let name = this.indexName;
-                let indexes = this.service.indexes();
+                var name = this.indexName;
+                var indexes = this.service.indexes();
 
-                indexes = await indexes.fetch();
-                let index = indexes.item(name);
-                assert.ok(index);
-                index = await index.disable();
-                await utils.sleep(5000);
-                assert.ok(index);
-                index = await index.fetch();
-                assert.ok(index);
-                assert.ok(index.properties().disabled);
+                Async.chain([
+                    function (callback) {
+                        indexes.fetch(callback);
+                    },
+                    function (indexes, callback) {
+                        var index = indexes.item(name);
+                        assert.ok(index);
 
-                index = await index.enable();
-                await utils.sleep(5000);
-                assert.ok(index);
-                index = await index.fetch();
-                assert.ok(index);
-                assert.ok(!index.properties().disabled);
+                        index.disable(callback);
+                    },
+                    function (index, callback) {
+                        Async.sleep(5000, function () {
+                            callback(null, index);
+                        });
+                    },
+                    function (index, callback) {
+                        assert.ok(index);
+                        index.fetch(callback);
+                    },
+                    function (index, callback) {
+                        assert.ok(index);
+                        assert.ok(index.properties().disabled);
+
+                        index.enable(callback);
+                    },
+                    function (index, callback) {
+                        Async.sleep(5000, function () {
+                            callback(null, index);
+                        });
+                    },
+                    function (index, callback) {
+                        assert.ok(index);
+                        index.fetch(callback);
+                    },
+                    function (index, callback) {
+                        assert.ok(index);
+                        assert.ok(!index.properties().disabled);
+
+                        callback();
+                    }
+                ],
+                    function (err) {
+                        assert.ok(!err, JSON.stringify(err));
+                        done();
+                    }
+                );
             });
 
-            it("Service submit event", async function () {
-                let message = "Hello World -- " + getNextId();
-                let sourcetype = "sdk-tests";
+            it("Callback#Service submit event", function (done) {
+                var message = "Hello World -- " + getNextId();
+                var sourcetype = "sdk-tests";
 
-                let service = this.service;
-                let indexName = this.indexName;
-                let eventInfo = await service.log(message, { sourcetype: sourcetype, index: indexName });
-                assert.ok(eventInfo);
-                assert.strictEqual(eventInfo.sourcetype, sourcetype);
-                assert.strictEqual(eventInfo.bytes, message.length);
-                assert.strictEqual(eventInfo.index, indexName);
+                var service = this.service;
+                var indexName = this.indexName;
+                Async.chain(
+                    function (done) {
+                        service.log(message, { sourcetype: sourcetype, index: indexName }, done);
+                    },
+                    function (eventInfo, done) {
+                        assert.ok(eventInfo);
+                        assert.strictEqual(eventInfo.sourcetype, sourcetype);
+                        assert.strictEqual(eventInfo.bytes, message.length);
+                        assert.strictEqual(eventInfo.index, indexName);
+
+                        // We could poll to make sure the index has eaten up the event,
+                        // but unfortunately this can take an unbounded amount of time.
+                        // As such, since we got a good response, we'll just be done with it.
+                        done();
+                    },
+                    function (err) {
+                        assert.ok(!err);
+                        done();
+                    }
+                );
             });
 
-            it("Service submit event, omitting optional arguments", async function () {
-                let message = "Hello World -- " + getNextId();
+            it("Callback#Service submit event, omitting optional arguments", function (done) {
+                var message = "Hello World -- " + getNextId();
+                var sourcetype = "sdk-tests";
 
-                let service = this.service;
-                let eventInfo = await service.log(message);
-                assert.ok(eventInfo);
-                assert.strictEqual(eventInfo.bytes, message.length);
+                var service = this.service;
+                var indexName = this.indexName;
+                Async.chain(
+                    function (done) {
+                        service.log(message, done);
+                    },
+                    function (eventInfo, done) {
+                        assert.ok(eventInfo);
+                        assert.strictEqual(eventInfo.bytes, message.length);
 
+                        // We could poll to make sure the index has eaten up the event,
+                        // but unfortunately this can take an unbounded amount of time.
+                        // As such, since we got a good response, we'll just be done with it.
+                        done();
+                    },
+                    function (err) {
+                        assert.ok(!err);
+                        done();
+                    }
+                );
             });
 
-            it("Service submit events with multi-byte chars", async function () {
-                let service = this.service;
-                let messages = [
+            it("Callback#Service submit events with multi-byte chars", function (done) {
+                var service = this.service;
+                var messages = [
                     "Ummelner Straße 6",
                     "Ümmelner Straße 6",
                     "Iԉｔéｒԉáｔíòлåɭìƶåｔｉòл",
@@ -69407,93 +70701,139 @@ exports.setup = function (svc, loggedOutSvc) {
                     " ìｄ ｃòлѕèｑûâｔ ｌàƅ߀ｒìｓ."
                 ];
 
-                let counter = 0;
-                let [err, vals] = await utils.seriesMap(
+                var counter = 0;
+                Async.seriesMap(
                     messages,
-                    async function (val, idx) {
+                    function (val, idx, done) {
                         counter++;
-                        try {
-                            let res = await service.log(val);
-                            return [null, res];
-                        } catch (error) {
-                            return [error];
+                        service.log(val, done);
+                    },
+                    function (err, vals) {
+                        assert.ok(!err);
+                        assert.strictEqual(counter, messages.length);
+
+                        // Verify that the full byte-length was sent for each message
+                        for (var m in messages) {
+                            assert.notStrictEqual(messages[m].length, vals[m].bytes);
+                            try {
+                                assert.strictEqual(Buffer.byteLength(messages[m]), vals[m].bytes);
+                            }
+                            catch (err) {
+                                // Assume Buffer isn't defined, we're probably in the browser
+                                assert.strictEqual(decodeURI(encodeURIComponent(messages[m])).length, vals[m].bytes);
+                            }
                         }
+
+                        done();
                     }
                 );
-                assert.ok(!err);
-                assert.strictEqual(counter, messages.length);
-                // Verify that the full byte-length was sent for each message
-                for (let m in messages) {
-                    assert.notStrictEqual(messages[m].length, vals[m].bytes);
-                    try {
-                        assert.strictEqual(Buffer.byteLength(messages[m]), vals[m].bytes);
+            });
+
+            it("Callback#Service submit event, failure", function (done) {
+                var message = "Hello World -- " + getNextId();
+                var sourcetype = "sdk-tests";
+
+                var service = this.loggedOutService;
+                var indexName = this.indexName;
+                Async.chain(
+                    function (done) {
+                        assert.ok(service);
+                        service.log(message, done);
+                    },
+                    function (err) {
+                        assert.ok(err);
+                        done();
                     }
-                    catch (err) {
-                        // Assume Buffer isn't defined, we're probably in the browser
-                        assert.strictEqual(decodeURI(encodeURIComponent(messages[m])).length, vals[m].bytes);
+                );
+            });
+
+            it("Callback#remove throws an error", function (done) {
+                var index = this.service.indexes().item("_internal");
+                assert.throws(function () {
+                    index.remove();
+                });
+                done();
+            });
+
+            it("Callback#create an index with alternate argument format", function (done) {
+                var indexes = this.service.indexes();
+                indexes.create(
+                    { name: "_internal" },
+                    function (err, newIndex) {
+                        assert.ok(err.data.messages[0].text.match("name=_internal already exists"));
+                        done();
                     }
-                }
+                );
             });
 
-            it("Service submit event, failure", async function () {
-                let message = "Hello World -- " + getNextId();
+            it("Callback#Index submit event with omitted optional arguments", function (done) {
+                var message = "Hello world -- " + getNextId();
 
-                let service = this.loggedOutService;
-                try {
-                    assert.ok(service);
-                    await service.log(message);
-                } catch (error) {
-                    assert.ok(error);
-                }
+                var indexName = this.indexName;
+                var indexes = this.service.indexes();
+
+                Async.chain(
+                    [
+                        function (done) {
+                            indexes.fetch(done);
+                        },
+                        function (indexes, done) {
+                            var index = indexes.item(indexName);
+                            assert.ok(index);
+                            assert.strictEqual(index.name, indexName);
+                            index.submitEvent(message, done);
+                        },
+                        function (eventInfo, index, done) {
+                            assert.ok(eventInfo);
+                            assert.strictEqual(eventInfo.bytes, message.length);
+                            assert.strictEqual(eventInfo.index, indexName);
+
+                            // We could poll to make sure the index has eaten up the event,
+                            // but unfortunately this can take an unbounded amount of time.
+                            // As such, since we got a good response, we'll just be done with it.
+                            done();
+                        }
+                    ],
+                    function (err) {
+                        assert.ok(!err);
+                        done();
+                    }
+                );
             });
 
-            it("Remove throws an error", async function () {
-                let index = this.service.indexes().item("_internal");
-                assert.isNull(index);
-                assert.throws(function () { index.remove(); });
-            });
+            it("Callback#Index submit event", function (done) {
+                var message = "Hello World -- " + getNextId();
+                var sourcetype = "sdk-tests";
 
-            it("Create an index with alternate argument format", async function () {
-                let indexes = this.service.indexes();
-                try {
-                    await indexes.create({ name: "_internal" });
-                } catch (error) {
-                    assert.ok(error.data.messages[0].text.match("name=_internal already exists"));
-                }
-            });
+                var indexName = this.indexName;
+                var indexes = this.service.indexes();
+                Async.chain([
+                    function (done) {
+                        indexes.fetch(done);
+                    },
+                    function (indexes, done) {
+                        var index = indexes.item(indexName);
+                        assert.ok(index);
+                        assert.strictEqual(index.name, indexName);
+                        index.submitEvent(message, { sourcetype: sourcetype }, done);
+                    },
+                    function (eventInfo, index, done) {
+                        assert.ok(eventInfo);
+                        assert.strictEqual(eventInfo.sourcetype, sourcetype);
+                        assert.strictEqual(eventInfo.bytes, message.length);
+                        assert.strictEqual(eventInfo.index, indexName);
 
-            it("Index submit event with omitted optional arguments", async function () {
-                let message = "Hello world -- " + getNextId();
-                let indexName = this.indexName;
-                let indexes = this.service.indexes();
-
-                indexes = await indexes.fetch();
-                let index = indexes.item(indexName);
-                assert.ok(index);
-                assert.strictEqual(index.name, indexName);
-                let response = await index.submitEvent(message);
-                let eventInfo = response[0];
-                assert.ok(eventInfo);
-                assert.strictEqual(eventInfo.bytes, message.length);
-                assert.strictEqual(eventInfo.index, indexName);
-            });
-
-            it("Index submit event", async function () {
-                let message = "Hello World -- " + getNextId();
-                let sourcetype = "sdk-tests";
-
-                let indexName = this.indexName;
-                let indexes = this.service.indexes();
-                indexes = await indexes.fetch();
-                let index = indexes.item(indexName);
-                assert.ok(index);
-                assert.strictEqual(index.name, indexName);
-                let response = await index.submitEvent(message, { sourcetype: sourcetype });
-                let eventInfo = response[0];
-                assert.ok(eventInfo);
-                assert.strictEqual(eventInfo.sourcetype, sourcetype);
-                assert.strictEqual(eventInfo.bytes, message.length);
-                assert.strictEqual(eventInfo.index, indexName);
+                        // We could poll to make sure the index has eaten up the event,
+                        // but unfortunately this can take an unbounded amount of time.
+                        // As such, since we got a good response, we'll just be done with it.
+                        done();
+                    }
+                ],
+                    function (err) {
+                        assert.ok(!err);
+                        done();
+                    }
+                );
             })
         })
     )
@@ -69503,14 +70843,14 @@ if (module.id === __filename && module.parent.id.includes('mocha')) {
     var splunkjs = require('../../index');
     var options = require('../cmdline');
 
-    let cmdline = options.create().parse(process.argv);
+    var cmdline = options.create().parse(process.argv);
 
     // If there is no command line, we should return
     if (!cmdline) {
         throw new Error("Error in parsing command line parameters");
     }
 
-    let svc = new splunkjs.Service({
+    var svc = new splunkjs.Service({
         scheme: cmdline.opts.scheme,
         host: cmdline.opts.host,
         port: cmdline.opts.port,
@@ -69519,7 +70859,7 @@ if (module.id === __filename && module.parent.id.includes('mocha')) {
         version: cmdline.opts.version
     });
 
-    let loggedOutSvc = new splunkjs.Service({
+    var loggedOutSvc = new splunkjs.Service({
         scheme: cmdline.opts.scheme,
         host: cmdline.opts.host,
         port: cmdline.opts.port,
@@ -69529,18 +70869,18 @@ if (module.id === __filename && module.parent.id.includes('mocha')) {
     });
 
     // Exports tests on a successful login
-    module.exports = new Promise(async (resolve, reject) => {
-        try {
-            await svc.login();
-            return resolve(exports.setup(svc, loggedOutSvc))
-        } catch (error) {
-            throw new Error("Login failed - not running tests", error || "");
-        }
+    module.exports = new Promise((resolve, reject) => {
+        svc.login(function (err, success) {
+            if (err || !success) {
+                throw new Error("Login failed - not running tests", err || "");
+            }
+            return resolve(exports.setup(svc, loggedOutSvc));
+        });
     });
 }
 
 }).call(this)}).call(this,require('_process'),require("buffer").Buffer,"/tests/service_tests/indexes.js")
-},{"../../index":2,"../cmdline":296,"_process":239,"buffer":68,"chai":72}],305:[function(require,module,exports){
+},{"../../index":2,"../cmdline":297,"_process":240,"buffer":69,"chai":73}],306:[function(require,module,exports){
 (function (process,__filename){(function (){
 exports.setup = function (svc) {
     var assert = require('chai').assert;
@@ -69550,16 +70890,17 @@ exports.setup = function (svc) {
     var tutils = require('../utils');
     const { Logger } = require('../../lib/log');
 
-    var utils = splunkjs.Utils;
+    var Async = splunkjs.Async;
     var idCounter = 0;
 
     var getNextId = function () {
         return "id" + (idCounter++) + "_" + ((new Date()).valueOf());
     };
     return (
-        describe("Job tests", () => {
-            beforeEach(function () {
+        describe("Job tests", function (done) {
+            beforeEach(function (done) {
                 this.service = svc;
+                done();
             });
 
             // Disabling the test for now because the apps/appinstall endpoint have been deprecated from Splunk 8.2
@@ -69596,7 +70937,7 @@ exports.setup = function (svc) {
             // });
 
             it("Job Create Urls validation", function () {
-                let testData = {
+                var testData = {
                     "v1_1": {
                         "qualifiedPath": "/servicesNS/admin/foo/search/jobs/id5_1649796951725",
                         "relpath": "search/jobs/id5_1649796951725/events",
@@ -69618,164 +70959,270 @@ exports.setup = function (svc) {
                         "expected": "/services/search/v2/jobs/id5_1649796951725/events"
                     }
                 }
-
+                
                 for (const [key, value] of Object.entries(testData)) {
                     createdUrl = this.service.jobs().createUrl(value.qualifiedPath, value.relpath);
                     assert.strictEqual(value.expected, createdUrl);
                 }
             });
 
-            it("Create and cancel job", async function () {
-                let sid = getNextId();
-                let job = await this.service.jobs().search('search index=_internal | head 1', { id: sid });
-                assert.ok(job);
-                assert.strictEqual(job.sid, sid);
+            it("Callback#Create+cancel job", function (done) {
+                var sid = getNextId();
+                this.service.jobs().search('search index=_internal | head 1', { id: sid }, function (err, job) {
+                    assert.ok(job);
+                    assert.strictEqual(job.sid, sid);
 
-                await job.cancel();
+                    job.cancel(function () {
+                        done();
+                    });
+                });
             });
 
-            it("Create job error", async function () {
-                let sid = getNextId();
-                try {
-                    let res = await this.service.jobs().search({ search: 'index=_internal | head 1', id: sid });
-                    assert.ok(!res);
-                } catch (error) {
-                    assert.ok(error);
-                }
+            it("Callback#Create job error", function (done) {
+                var sid = getNextId();
+                this.service.jobs().search({ search: 'index=_internal | head 1', id: sid }, function (err) {
+                    assert.ok(!!err);
+                    done();
+                });
             });
 
-            it("List jobs", async function () {
-                let jobs = await this.service.jobs().fetch();
-                assert.ok(jobs);
+            it("Callback#List jobs", function (done) {
+                this.service.jobs().fetch(function (err, jobs) {
+                    assert.ok(!err);
+                    assert.ok(jobs);
 
-                let jobsList = jobs.list();
-                assert.ok(jobsList.length > 0);
+                    var jobsList = jobs.list();
+                    assert.ok(jobsList.length > 0);
 
-                for (let i = 0; i < jobsList.length; i++) {
-                    assert.ok(jobsList[i]);
-                };
+                    for (var i = 0; i < jobsList.length; i++) {
+                        assert.ok(jobsList[i]);
+                    }
+
+                    done();
+                });
             });
 
-            it("Contains job", async function () {
-                let sid = getNextId();
-                let jobs = this.service.jobs();
+            it("Callback#Contains job", function (done) {
+                var that = this;
+                var sid = getNextId();
+                var jobs = this.service.jobs();
 
-                let job = await jobs.search('search index=_internal | head 1', { id: sid });
-                assert.ok(job);
-                assert.strictEqual(job.sid, sid);
+                jobs.search('search index=_internal | head 1', { id: sid }, function (err, job) {
+                    assert.ok(!err);
+                    assert.ok(job);
+                    assert.strictEqual(job.sid, sid);
 
-                jobs = await jobs.fetch();
-                job = jobs.item(sid);
-                assert.ok(job);
+                    jobs.fetch(function (err, jobs) {
+                        assert.ok(!err);
+                        var job = jobs.item(sid);
+                        assert.ok(job);
 
-                await job.cancel();
+                        job.cancel(function () {
+                            done();
+                        });
+                    });
+                });
             });
 
-            it("Job results", async function () {
-                let sid = getNextId();
-                let that = this;
-                let job = await that.service.jobs().search('search index=_internal | head 1 | stats count', { id: sid });
-                assert.strictEqual(job.sid, sid);
-                await tutils.pollUntil(
-                    job,
-                    function (j) {
-                        return job.properties()["isDone"];
+            it("Callback#job results", function (done) {
+                var sid = getNextId();
+                var service = this.service;
+                var that = this;
+
+                Async.chain([
+                    function (done) {
+                        that.service.jobs().search('search index=_internal | head 1 | stats count', { id: sid }, done);
                     },
-                    10
-                );
-                [results, job] = await job.results({});
-                assert.strictEqual(results.rows.length, 1);
-                assert.strictEqual(results.fields.length, 1);
-                assert.strictEqual(results.fields[0], "count");
-                assert.strictEqual(results.rows[0][0], "1");
-                await job.cancel();
-            });
-
-            it("Job events", async function () {
-                let sid = getNextId();
-                let that = this;
-                let job = await that.service.jobs().search('search index=_internal | head 1', { id: sid });
-                assert.strictEqual(job.sid, sid);
-                await tutils.pollUntil(
-                    job,
-                    function (j) {
-                        return job.properties()["isDone"];
+                    function (job, done) {
+                        assert.strictEqual(job.sid, sid);
+                        tutils.pollUntil(
+                            job,
+                            function (j) {
+                                return job.properties()["isDone"];
+                            },
+                            10,
+                            done
+                        );
                     },
-                    10
-                );
-                [results, job] = await job.events({});
-                assert.strictEqual(results.rows.length, 1);
-                assert.strictEqual(results.fields.length, results.rows[0].length);
-                await job.cancel();
-            });
-
-            it("Job events - post processing search params", async function () {
-                let sid = getNextId();
-                let that = this;
-                let job = await that.service.jobs().search('search index=_internal | head 2', { id: sid });
-                assert.strictEqual(job.sid, sid);
-                await tutils.pollUntil(
-                    job,
-                    function (j) {
-                        return job.properties()["isDone"];
+                    function (job, done) {
+                        job.results({}, done);
                     },
-                    10
-                );
-                [results, job] = await job.events({ search: "| head 1" });
-                assert.strictEqual(results.post_process_count, 1);
-                assert.strictEqual(results.rows.length, 1);
-                assert.strictEqual(results.fields.length, results.rows[0].length);
-                await job.cancel();
-            });
-
-            it("Job results preview", async function () {
-                let sid = getNextId();
-                let that = this;
-                let job = await that.service.jobs().search('search index=_internal | head 1 | stats count', { id: sid });
-                assert.strictEqual(job.sid, sid);
-                await tutils.pollUntil(
-                    job,
-                    function (j) {
-                        return job.properties()["isDone"];
-                    },
-                    10
-                );
-                [results, job] = await job.preview({});
-                assert.strictEqual(results.rows.length, 1);
-                assert.strictEqual(results.fields.length, 1);
-                assert.strictEqual(results.fields[0], "count");
-                assert.strictEqual(results.rows[0][0], "1");
-                await job.cancel();
-            });
-
-            it("Job results iterator", async function () {
-                let that = this;
-                let job = await that.service.jobs().search('search index=_internal | head 10', {});
-                await tutils.pollUntil(
-                    job,
-                    function (j) {
-                        return job.properties()["isDone"];
-                    },
-                    10
-                );
-                let iterator = job.iterator("results", { pagesize: 4 });
-                let hasMore = true;
-                let pageSizes = [];
-                await utils.whilst(
-                    function () { return hasMore; },
-                    async function () {
-                        try {
-                            [results, _hasMore] = await iterator.next();
-                            hasMore = _hasMore;
-                            if (hasMore) {
-                                pageSizes.push(results.rows.length);
-                            }
-                        } catch (error) {
-                            return error;
-                        }
+                    function (results, job, done) {
+                        assert.strictEqual(results.rows.length, 1);
+                        assert.strictEqual(results.fields.length, 1);
+                        assert.strictEqual(results.fields[0], "count");
+                        assert.strictEqual(results.rows[0][0], "1");
+                        job.cancel(done);
+                    }
+                ],
+                    function (err) {
+                        assert.ok(!err);
+                        done();
                     }
                 );
-                assert.deepStrictEqual(pageSizes, [4, 4, 2]);
+            });
+
+            it("Callback#job events", function (done) {
+                var sid = getNextId();
+                var service = this.service;
+                var that = this;
+
+                Async.chain([
+                    function (done) {
+                        that.service.jobs().search('search index=_internal | head 1', { id: sid }, done);
+                    },
+                    function (job, done) {
+                        assert.strictEqual(job.sid, sid);
+                        tutils.pollUntil(
+                            job,
+                            function (j) {
+                                return job.properties()["isDone"];
+                            },
+                            10,
+                            done
+                        );
+                    },
+                    function (job, done) {
+                        job.events({}, done);
+                    },
+                    function (results, job, done) {
+                        assert.strictEqual(results.rows.length, 1);
+                        assert.strictEqual(results.fields.length, results.rows[0].length);
+                        job.cancel(done);
+                    }
+                ],
+                    function (err) {
+                        assert.ok(!err);
+                        done();
+                    }
+                );
+            });
+                
+            it("Callback#job events - post processing search params", function(done) {
+                var sid = getNextId();
+                var service = this.service;
+                var that = this;
+        
+                Async.chain([
+                        function(done) {
+                            that.service.jobs().search('search index=_internal | head 2', {id: sid}, done);
+                        },
+                        function(job, done) {
+                            assert.strictEqual(job.sid, sid);
+                            tutils.pollUntil(
+                                job,
+                                function(j) {
+                                    return job.properties()["isDone"];
+                                },
+                                10,
+                                done
+                            );
+                        },
+                        function(job, done) {
+                            job.events({ search: "| head 1" }, done);
+                        },
+                        function (results, job, done) {
+                            assert.strictEqual(results.post_process_count, 1);
+                            assert.strictEqual(results.rows.length, 1);
+                            assert.strictEqual(results.fields.length, results.rows[0].length);
+                            job.cancel(done);
+                        }
+                    ],
+                    function(err) {
+                        assert.ok(!err);
+                        done();
+                    }
+                );
+            });
+
+            it("Callback#job results preview", function (done) {
+                var sid = getNextId();
+                var service = this.service;
+                var that = this;
+
+                Async.chain([
+                    function (done) {
+                        that.service.jobs().search('search index=_internal | head 1 | stats count', { id: sid }, done);
+                    },
+                    function (job, done) {
+                        assert.strictEqual(job.sid, sid);
+                        tutils.pollUntil(
+                            job,
+                            function (j) {
+                                return job.properties()["isDone"];
+                            },
+                            10,
+                            done
+                        );
+                    },
+                    function (job, done) {
+                        job.preview({}, done);
+                    },
+                    function (results, job, done) {
+                        assert.strictEqual(results.rows.length, 1);
+                        assert.strictEqual(results.fields.length, 1);
+                        assert.strictEqual(results.fields[0], "count");
+                        assert.strictEqual(results.rows[0][0], "1");
+                        job.cancel(done);
+                    }
+                ],
+                    function (err) {
+                        assert.ok(!err);
+                        done();
+                    }
+                );
+            });
+
+            it("Callback#job results iterator", function (done) {
+                var that = this;
+
+                Async.chain([
+                    function (done) {
+                        that.service.jobs().search('search index=_internal | head 10', {}, done);
+                    },
+                    function (job, done) {
+                        tutils.pollUntil(
+                            job,
+                            function (j) {
+                                return job.properties()["isDone"];
+                            },
+                            10,
+                            done
+                        );
+                    },
+                    function (job, done) {
+                        var iterator = job.iterator("results", { pagesize: 4 });
+                        var hasMore = true;
+                        var numElements = 0;
+                        var pageSizes = [];
+                        Async.whilst(
+                            function () { return hasMore; },
+                            function (nextIteration) {
+                                iterator.next(function (err, results, _hasMore) {
+                                    if (err) {
+                                        nextIteration(err);
+                                        return;
+                                    }
+
+                                    hasMore = _hasMore;
+                                    if (hasMore) {
+                                        pageSizes.push(results.rows.length);
+                                    }
+                                    nextIteration();
+                                });
+                            },
+                            function (err) {
+                                assert.deepStrictEqual(pageSizes, [4, 4, 2]);
+                                done(err);
+                            }
+                        );
+                    }
+                ],
+                    function (err) {
+                        assert.ok(!err);
+                        done();
+                    }
+                );
             });
 
             // Disabling the test for now because the apps/appinstall endpoint have been deprecated from Splunk 8.2
@@ -69860,20 +71307,39 @@ exports.setup = function (svc) {
             //     );
             // });
 
-            it("Set TTL", async function () {
-                let sid = getNextId();
-                let originalTTL = 0;
+            it("Callback#Set TTL", function (done) {
+                var sid = getNextId();
+                var originalTTL = 0;
                 var that = this;
-                let job = await that.service.jobs().search('search index=_internal | head 1', { id: sid });
-                job = await job.fetch();
-                let ttl = job.properties()["ttl"];
-                originalTTL = ttl;
-                let res = await job.setTTL(ttl * 2);
-                job = await job.fetch();
-                ttl = job.properties()["ttl"];
-                assert.ok(ttl > originalTTL);
-                assert.ok(ttl <= (originalTTL * 2));
-                await job.cancel();
+
+                Async.chain([
+                    function (done) {
+                        that.service.jobs().search('search index=_internal | head 1', { id: sid }, done);
+                    },
+                    function (job, done) {
+                        job.fetch(done);
+                    },
+                    function (job, done) {
+                        var ttl = job.properties()["ttl"];
+                        originalTTL = ttl;
+
+                        job.setTTL(ttl * 2, done);
+                    },
+                    function (job, done) {
+                        job.fetch(done);
+                    },
+                    function (job, done) {
+                        var ttl = job.properties()["ttl"];
+                        assert.ok(ttl > originalTTL);
+                        assert.ok(ttl <= (originalTTL * 2));
+                        job.cancel(done);
+                    }
+                ],
+                    function (err) {
+                        assert.ok(!err);
+                        done();
+                    }
+                );
             });
 
             // Disabling the test for now because the apps/appinstall endpoint have been deprecated from Splunk 8.2
@@ -69914,161 +71380,287 @@ exports.setup = function (svc) {
             //     );
             // });
 
-            it("Search log", async function () {
-                let sid = getNextId();
+            it("Callback#Search log", function (done) {
+                var sid = getNextId();
                 var that = this;
-                let job = await that.service.jobs().search('search index=_internal | head 1', { id: sid, exec_mode: "blocking" });
-                [log, job] = await job.searchlog();
-                assert.ok(job);
-                assert.ok(log);
-                assert.ok(log.length > 0);
-                assert.ok(log.split("\r\n").length > 0);
-                await job.cancel();
+
+                Async.chain([
+                    function (done) {
+                        that.service.jobs().search('search index=_internal | head 1', { id: sid, exec_mode: "blocking" }, done);
+                    },
+                    function (job, done) {
+                        job.searchlog(done);
+                    },
+                    function (log, job, done) {
+                        assert.ok(job);
+                        assert.ok(log);
+                        assert.ok(log.length > 0);
+                        assert.ok(log.split("\r\n").length > 0);
+                        job.cancel(done);
+                    }
+                ],
+                    function (err) {
+                        assert.ok(!err);
+                        done();
+                    }
+                );
             });
 
-            it("Search summary", async function () {
-                let sid = getNextId();
+            it("Callback#Search summary", function (done) {
+                var sid = getNextId();
                 var that = this;
-                let job = await that.service.jobs().search(
-                    'search index=_internal | head 1 | eval foo="bar" | fields foo',
-                    {
-                        id: sid,
-                        status_buckets: 300,
-                        rf: ["foo"]
-                    });
-                // Let's sleep for 2 second so
-                // we let the server catch up
-                await utils.sleep(2000);
-                [summary, job] = await job.summary({});
-                assert.ok(job);
-                assert.ok(summary);
-                assert.strictEqual(summary.event_count, 1);
-                assert.strictEqual(summary.fields.foo.count, 1);
-                assert.strictEqual(summary.fields.foo.distinct_count, 1);
-                assert.ok(summary.fields.foo.is_exact, 1);
-                assert.strictEqual(summary.fields.foo.modes.length, 1);
-                assert.strictEqual(summary.fields.foo.modes[0].count, 1);
-                assert.strictEqual(summary.fields.foo.modes[0].value, "bar");
-                assert.ok(summary.fields.foo.modes[0].is_exact);
-                await job.cancel();
+
+                Async.chain([
+                    function (done) {
+                        that.service.jobs().search(
+                            'search index=_internal | head 1 | eval foo="bar" | fields foo',
+                            {
+                                id: sid,
+                                status_buckets: 300,
+                                rf: ["foo"]
+                            },
+                            done);
+                    },
+                    function (job, done) {
+                        // Let's sleep for 2 second so
+                        // we let the server catch up
+                        Async.sleep(2000, function () {
+                            job.summary({}, done);
+                        });
+                    },
+                    function (summary, job, done) {
+                        assert.ok(job);
+                        assert.ok(summary);
+                        assert.strictEqual(summary.event_count, 1);
+                        assert.strictEqual(summary.fields.foo.count, 1);
+                        assert.strictEqual(summary.fields.foo.distinct_count, 1);
+                        assert.ok(summary.fields.foo.is_exact, 1);
+                        assert.strictEqual(summary.fields.foo.modes.length, 1);
+                        assert.strictEqual(summary.fields.foo.modes[0].count, 1);
+                        assert.strictEqual(summary.fields.foo.modes[0].value, "bar");
+                        assert.ok(summary.fields.foo.modes[0].is_exact);
+                        job.cancel(done);
+                    }
+                ],
+                    function (err) {
+                        assert.ok(!err);
+                        done();
+                    }
+                );
             });
 
-            it("Search timeline", async function () {
-                let sid = getNextId();
+            it("Callback#Search timeline", function (done) {
+                var sid = getNextId();
                 var that = this;
-                let job = await that.service.jobs().search(
-                    'search index=_internal | head 1 | eval foo="bar" | fields foo',
-                    {
-                        id: sid,
-                        status_buckets: 300,
-                        rf: ["foo"],
-                        exec_mode: "blocking"
-                    });
-                [timeline, job] = await job.timeline({});
-                assert.ok(job);
-                assert.ok(timeline);
-                assert.strictEqual(timeline.buckets.length, 1);
-                assert.strictEqual(timeline.event_count, 1);
-                assert.strictEqual(timeline.buckets[0].available_count, 1);
-                assert.strictEqual(timeline.buckets[0].duration, 0.001);
-                assert.strictEqual(timeline.buckets[0].earliest_time_offset, timeline.buckets[0].latest_time_offset);
-                assert.strictEqual(timeline.buckets[0].total_count, 1);
-                assert.ok(timeline.buckets[0].is_finalized);
-                await job.cancel();
+
+                Async.chain([
+                    function (done) {
+                        that.service.jobs().search(
+                            'search index=_internal | head 1 | eval foo="bar" | fields foo',
+                            {
+                                id: sid,
+                                status_buckets: 300,
+                                rf: ["foo"],
+                                exec_mode: "blocking"
+                            },
+                            done);
+                    },
+                    function (job, done) {
+                        job.timeline({}, done);
+                    },
+                    function (timeline, job, done) {
+                        assert.ok(job);
+                        assert.ok(timeline);
+                        assert.strictEqual(timeline.buckets.length, 1);
+                        assert.strictEqual(timeline.event_count, 1);
+                        assert.strictEqual(timeline.buckets[0].available_count, 1);
+                        assert.strictEqual(timeline.buckets[0].duration, 0.001);
+                        assert.strictEqual(timeline.buckets[0].earliest_time_offset, timeline.buckets[0].latest_time_offset);
+                        assert.strictEqual(timeline.buckets[0].total_count, 1);
+                        assert.ok(timeline.buckets[0].is_finalized);
+                        job.cancel(done);
+                    }
+                ],
+                    function (err) {
+                        assert.ok(!err);
+                        done();
+                    }
+                );
             });
 
-            it("Touch", async function () {
-                let sid = getNextId();
+            it("Callback#Touch", function (done) {
+                var sid = getNextId();
                 var that = this;
-                let originalTime = "";
-                let job = await that.service.jobs().search('search index=_internal | head 1', { id: sid });
-                job = await job.fetch();
-                assert.ok(job);
-                originalTime = job.properties().updated;
-                await utils.sleep(1200);
-                await job.touch();
-                job = await job.fetch();
-                assert.ok(originalTime !== job.updated());
-                await job.cancel();
+                var originalTime = "";
+
+                Async.chain([
+                    function (done) {
+                        that.service.jobs().search('search index=_internal | head 1', { id: sid }, done);
+                    },
+                    function (job, done) {
+                        job.fetch(done);
+                    },
+                    function (job, done) {
+                        assert.ok(job);
+                        originalTime = job.properties().updated;
+                        Async.sleep(1200, function () { job.touch(done); });
+                    },
+                    function (job, done) {
+                        job.fetch(done);
+                    },
+                    function (job, done) {
+                        assert.ok(originalTime !== job.updated());
+                        job.cancel(done);
+                    }
+                ],
+                    function (err) {
+                        assert.ok(!err);
+                        done();
+                    }
+                );
             });
 
-            it("Create failure", async function () {
-                let name = "jssdk_savedsearch_" + getNextId();
-                let originalSearch = "search index=_internal | head 1";
+            it("Callback#Create failure", function (done) {
+                var name = "jssdk_savedsearch_" + getNextId();
+                var originalSearch = "search index=_internal | head 1";
 
-                let jobs = this.service.jobs();
-                let res;
-                try {
-                    res = await jobs.create({ search: originalSearch, name: name, exec_mode: "oneshot" });
-                } catch (error) {
-                    assert.ok(error);
-                }
-                assert.ok(!res);
+                var jobs = this.service.jobs();
+                assert.throws(function () { jobs.create({ search: originalSearch, name: name, exec_mode: "oneshot" }, function () { }); });
+                done();
             });
 
-            it("Create fails with no search string", async function () {
-                let jobs = this.service.jobs();
-                let res;
-                try {
-                    res = await jobs.create("", {});
-                } catch (error) {
-                    assert.ok(error);
-                }
-                assert.ok(!res);
+            it("Callback#Create fails with no search string", function (done) {
+                var jobs = this.service.jobs();
+                jobs.create(
+                    "", {},
+                    function (err) {
+                        assert.ok(err);
+                        done();
+                    }
+                );
             });
 
-            it("Oneshot search", async function () {
-                let sid = getNextId();
+            it("Callback#Oneshot search", function (done) {
+                var sid = getNextId();
                 var that = this;
-                let results = await that.service.jobs().oneshotSearch('search index=_internal | head 1 | stats count', { id: sid });
-                assert.ok(results);
-                assert.ok(results.fields);
-                assert.strictEqual(results.fields.length, 1);
-                assert.strictEqual(results.fields[0], "count");
-                assert.ok(results.rows);
-                assert.strictEqual(results.rows.length, 1);
-                assert.strictEqual(results.rows[0].length, 1);
-                assert.strictEqual(results.rows[0][0], "1");
+                var originalTime = "";
+
+                Async.chain([
+                    function (done) {
+                        that.service.jobs().oneshotSearch('search index=_internal | head 1 | stats count', { id: sid }, done);
+                    },
+                    function (results, done) {
+                        assert.ok(results);
+                        assert.ok(results.fields);
+                        assert.strictEqual(results.fields.length, 1);
+                        assert.strictEqual(results.fields[0], "count");
+                        assert.ok(results.rows);
+                        assert.strictEqual(results.rows.length, 1);
+                        assert.strictEqual(results.rows[0].length, 1);
+                        assert.strictEqual(results.rows[0][0], "1");
+
+                        done();
+                    }
+                ],
+                    function (err) {
+                        assert.ok(!err);
+                        done();
+                    }
+                );
             });
 
-            it("Oneshot search with json results", async function () {
-                let sid = getNextId();
+            it("Callback#Oneshot search with json results", function (done) {
+                var sid = getNextId();
                 var that = this;
-                let results = await that.service.jobs().oneshotSearch('search index=_internal | head 1 | stats count', { id: sid, output_mode: 'json' });
-                assert.ok(results);
-                assert.ok(results.fields);
-                assert.strictEqual(results.fields.length, 1);
+
+                Async.chain([
+                    function (done) {
+                        that.service.jobs().oneshotSearch('search index=_internal | head 1 | stats count', { id: sid, output_mode: 'json' }, done);
+                    },
+                    function (results, done) {
+                        assert.ok(results);
+                        assert.ok(results.fields);
+                        assert.strictEqual(results.fields.length, 1);
+                        done();
+                    }
+                ],
+                    function (err) {
+                        assert.ok(!err);
+                        done();
+                    }
+                );
             });
 
-            it("Oneshot search with xml results", async function () {
-                let sid = getNextId();
+            it("Callback#Oneshot search with xml results", function (done) {
+                var sid = getNextId();
                 var that = this;
-                let results = await that.service.jobs().oneshotSearch('search index=_internal | head 2 | stats count', { id: sid, output_mode: 'xml' });
-                assert.ok(results);
-                assert.ok(results.includes('<field>count</field>'));
-                assert.ok(results.includes('<value><text>2</text></value>'));
+
+                Async.chain([
+                    function (done) {
+                        that.service.jobs().oneshotSearch('search index=_internal | head 2 | stats count', { id: sid, output_mode: 'xml' }, done);
+                    },
+                    function (results, done) {
+                        assert.ok(results);
+                        assert.ok(results.includes('<field>count</field>'));
+                        assert.ok(results.includes('<value><text>2</text></value>'));
+                        done();
+                    }
+                ],
+                    function (err) {
+                        assert.ok(!err);
+                        done();
+                    }
+                );
             });
 
-            it("Oneshot search with csv results", async function () {
-                let sid = getNextId();
+            it("Callback#Oneshot search with csv results", function (done) {
+                var sid = getNextId();
                 var that = this;
-                let results = await that.service.jobs().oneshotSearch('makeresults count=3 | streamstats count | eval foo="bar" | fields - _time', { id: sid, output_mode: 'csv' });
-                assert.ok(results);
-                assert.ok(results.includes('count,foo'));
-                assert.ok(results.includes('1,bar'));
-                assert.ok(results.includes('2,bar'));
-                assert.ok(results.includes('3,bar'));
+
+                Async.chain([
+                    function (done) {
+                        that.service.jobs().oneshotSearch('makeresults count=3 | streamstats count | eval foo="bar" | fields - _time', { id: sid, output_mode: 'csv' }, done);
+                    },
+                    function (results, done) {
+                        assert.ok(results);
+                        assert.ok(results.includes('count,foo'));
+                        assert.ok(results.includes('1,bar'));
+                        assert.ok(results.includes('2,bar'));
+                        assert.ok(results.includes('3,bar'));
+                        done();
+                    }
+                ],
+                    function (err) {
+                        assert.ok(!err);
+                        done();
+                    }
+                );
             });
 
-            it("Oneshot search with no results", async function () {
-                let sid = getNextId();
+            it("Callback#Oneshot search with no results", function (done) {
+                var sid = getNextId();
                 var that = this;
-                let query = 'search index=history MUST_NOT_EXISTABCDEF';
-                let results = await that.service.jobs().oneshotSearch(query, { id: sid });
-                assert.ok(results);
-                assert.strictEqual(results.fields.length, 0);
-                assert.strictEqual(results.rows.length, 0);
-                assert.ok(!results.preview);
+                var originalTime = "";
+
+                Async.chain([
+                    function (done) {
+                        var query = 'search index=history MUST_NOT_EXISTABCDEF';
+                        that.service.jobs().oneshotSearch(query, { id: sid }, done);
+                    },
+                    function (results, done) {
+                        assert.ok(results);
+                        assert.strictEqual(results.fields.length, 0);
+                        assert.strictEqual(results.rows.length, 0);
+                        assert.ok(!results.preview);
+
+                        done();
+                    }
+                ],
+                    function (err) {
+                        assert.ok(!err);
+                        done();
+                    }
+                );
             });
 
             // it("Callback#Service oneshot search", function(done) {
@@ -70184,153 +71776,225 @@ exports.setup = function (svc) {
             //     );
             // });
 
-            it("Service search", async function () {
-                let sid = getNextId();
-                let that = this;
-                let namespace = { owner: "admin", app: "search" };
-                let job = await that.service.search('search index=_internal | head 1 | stats count', { id: sid }, namespace);
-                assert.strictEqual(job.sid, sid);
-                assert.strictEqual(job.namespace, namespace);
-                await tutils.pollUntil(
-                    job,
-                    function (j) {
-                        return job.properties()["isDone"];
-                    },
-                    10
-                );
-                [results, job] = await job.results({});
-                assert.strictEqual(results.rows.length, 1);
-                assert.strictEqual(results.fields.length, 1);
-                assert.strictEqual(results.fields[0], "count");
-                assert.strictEqual(results.rows[0][0], "1");
-                await job.cancel();
-            });
-
-            it("Wait until job done", async function () {
-                let job = await this.service.search('search index=_internal | head 1000', {});
-                let numReadyEvents = 0;
-                let numProgressEvents = 0;
-                await job.track({ period: 200 }, {
-                    ready: function (job) {
-                        assert.ok(job);
-
-                        numReadyEvents++;
-                    },
-                    progress: function (job) {
-                        assert.ok(job);
-
-                        numProgressEvents++;
-                    },
-                    done: function (job) {
-                        assert.ok(job);
-
-                        assert.ok(numReadyEvents === 1);      // all done jobs must have become ready
-                        assert.ok(numProgressEvents >= 1);    // a job that becomes ready has progress
-                    },
-                    failed: function (job) {
-                        assert.ok(job);
-                        assert.ok(false, "Job failed unexpectedly.");
-                    },
-                    error: function (err) {
-                        assert.ok(err);
-                        assert.ok(false, "Error while tracking job.");
-                    }
-                });
-
-            });
-
-            it("Wait until job failed", async function () {
-                let job = await this.service.search('search index=_internal | head bogusarg', {});
-
-                let numReadyEvents = 0;
-                let numProgressEvents = 0;
-                await job.track({ period: 200 }, {
-                    ready: function (job) {
-                        assert.ok(job);
-                        numReadyEvents++;
-                    },
-                    progress: function (job) {
-                        assert.ok(job);
-                        numProgressEvents++;
-                    },
-                    done: function (job) {
-                        assert.ok(job);
-                        assert.ok(false, "Job became done unexpectedly.");
-                    },
-                    failed: function (job) {
-                        assert.ok(job);
-                        assert.ok(numReadyEvents === 1);      // even failed jobs become ready
-                        assert.ok(numProgressEvents >= 1);    // a job that becomes ready has progress
-                    },
-                    error: function (err) {
-                        assert.ok(err);
-                        assert.ok(false, "Error while tracking job.");
-                    }
-                });
-            });
-
-            it("track() with default params and one function", async function () {
-                let job = await this.service.search('search index=_internal | head 1', {});
-
-                await job.track({}, function (job) {
-                    assert.ok(job);
-                });
-            });
-
-            it("track() should stop polling if only the ready callback is specified", async function () {
-                let job = await this.service.search('search index=_internal | head 1', {});
-
-                await job.track({}, {
-                    ready: function (job) {
-                        assert.ok(job);
-                    },
-                    _stoppedAfterReady: function (job) {
-                        assert.ok(job);
-                    }
-                });
-            });
-
-            it("track() a job that is not immediately ready", async function () {
-                /*jshint loopfunc:true */
-                let numJobs = 20;
-                let numJobsLeft = numJobs;
-                let gotJobNotImmediatelyReady = false;
-                let taskList = []
-                let service = this.service;
-                for (let i = 0; i < numJobs; i++) {
-                    taskList.push(async function(){
-                        let job = await service.search('search index=_internal | head 10000', {});
-                            await job.track({}, {
-                                _preready: function (job) {
-                                    gotJobNotImmediatelyReady = true;
-                                },
-    
-                                ready: function (job) {
-                                    numJobsLeft--;
-                                    if (numJobsLeft === 0) {
-                                        if (!gotJobNotImmediatelyReady) {
-                                            splunkjs.Logger.error("", "WARNING: Couldn't test code path in track() where job wasn't ready immediately.");
-                                        }
-                                        
-                                        assert.ok(true);
-                                    }
-                                }
-                            });
-                    })
-                }
-                let [err, resp] = await utils.parallel(taskList);
-                assert.ok(!err);
-            });
-
-            it("Service.getJob() works", async function () {
+            it("Callback#Service search", function (done) {
+                var sid = getNextId();
+                var service = this.service;
                 var that = this;
-                let sidsMatch = false;
-                let job = await this.service.search('search index=_internal | head 1', {});
-                let sid = job.sid;
-                let innerJob = await that.service.getJob(sid);
-                assert.strictEqual(sid, innerJob.sid);
-                sidsMatch = sid === innerJob.sid;
-                assert.ok(sidsMatch);
+                var namespace = { owner: "admin", app: "search" };
+
+                Async.chain([
+                    function (done) {
+                        that.service.search('search index=_internal | head 1 | stats count', { id: sid }, namespace, done);
+                    },
+                    function (job, done) {
+                        assert.strictEqual(job.sid, sid);
+                        assert.strictEqual(job.namespace, namespace);
+                        tutils.pollUntil(
+                            job,
+                            function (j) {
+                                return job.properties()["isDone"];
+                            },
+                            10,
+                            done
+                        );
+                    },
+                    function (job, done) {
+                        job.results({}, done);
+                    },
+                    function (results, job, done) {
+                        assert.strictEqual(results.rows.length, 1);
+                        assert.strictEqual(results.fields.length, 1);
+                        assert.strictEqual(results.fields[0], "count");
+                        assert.strictEqual(results.rows[0][0], "1");
+                        job.cancel(done);
+                    }
+                ],
+                    function (err) {
+                        assert.ok(!err);
+                        done();
+                    }
+                );
+            });
+
+            it("Callback#Wait until job done", function (done) {
+                this.service.search('search index=_internal | head 1000', {}, function (err, job) {
+                    assert.ok(!err);
+
+                    var numReadyEvents = 0;
+                    var numProgressEvents = 0;
+                    job.track({ period: 200 }, {
+                        ready: function (job) {
+                            assert.ok(job);
+
+                            numReadyEvents++;
+                        },
+                        progress: function (job) {
+                            assert.ok(job);
+
+                            numProgressEvents++;
+                        },
+                        done: function (job) {
+                            assert.ok(job);
+
+                            assert.ok(numReadyEvents === 1);      // all done jobs must have become ready
+                            assert.ok(numProgressEvents >= 1);    // a job that becomes ready has progress
+                            done();
+                        },
+                        failed: function (job) {
+                            assert.ok(job);
+
+                            assert.ok(false, "Job failed unexpectedly.");
+                            done();
+                        },
+                        error: function (err) {
+                            assert.ok(err);
+
+                            assert.ok(false, "Error while tracking job.");
+                            done();
+                        }
+                    });
+                });
+            });
+
+            it("Callback#Wait until job failed", function (done) {
+                this.service.search('search index=_internal | head bogusarg', {}, function (err, job) {
+                    if (err) {
+                        assert.ok(!err);
+                        done();
+                        return;
+                    }
+
+                    var numReadyEvents = 0;
+                    var numProgressEvents = 0;
+                    job.track({ period: 200 }, {
+                        ready: function (job) {
+                            assert.ok(job);
+
+                            numReadyEvents++;
+                        },
+                        progress: function (job) {
+                            assert.ok(job);
+
+                            numProgressEvents++;
+                        },
+                        done: function (job) {
+                            assert.ok(job);
+
+                            assert.ok(false, "Job became done unexpectedly.");
+                            done();
+                        },
+                        failed: function (job) {
+                            assert.ok(job);
+
+                            assert.ok(numReadyEvents === 1);      // even failed jobs become ready
+                            assert.ok(numProgressEvents >= 1);    // a job that becomes ready has progress
+                            done();
+                        },
+                        error: function (err) {
+                            assert.ok(err);
+
+                            assert.ok(false, "Error while tracking job.");
+                            done();
+                        }
+                    });
+                });
+            });
+
+            it("Callback#track() with default params and one function", function (done) {
+                this.service.search('search index=_internal | head 1', {}, function (err, job) {
+                    if (err) {
+                        assert.ok(!err);
+                        done();
+                        return;
+                    }
+
+                    job.track({}, function (job) {
+                        assert.ok(job);
+                        done();
+                    });
+                });
+            });
+
+            it("Callback#track() should stop polling if only the ready callback is specified", function (done) {
+                this.service.search('search index=_internal | head 1', {}, function (err, job) {
+                    if (err) {
+                        assert.ok(!err);
+                        done();
+                        return;
+                    }
+
+                    job.track({}, {
+                        ready: function (job) {
+                            assert.ok(job);
+                        },
+
+                        _stoppedAfterReady: function (job) {
+                            done();
+                        }
+                    });
+                });
+            });
+
+            it("Callback#track() a job that is not immediately ready", function (done) {
+                /*jshint loopfunc:true */
+                var numJobs = 20;
+                var numJobsLeft = numJobs;
+                var gotJobNotImmediatelyReady = false;
+                for (var i = 0; i < numJobs; i++) {
+                    this.service.search('search index=_internal | head 10000', {}, function (err, job) {
+                        if (err) {
+                            assert.ok(!err);
+                            done();
+                            return;
+                        }
+
+                        job.track({}, {
+                            _preready: function (job) {
+                                gotJobNotImmediatelyReady = true;
+                            },
+
+                            ready: function (job) {
+                                numJobsLeft--;
+
+                                if (numJobsLeft === 0) {
+                                    if (!gotJobNotImmediatelyReady) {
+                                        splunkjs.Logger.error("", "WARNING: Couldn't test code path in track() where job wasn't ready immediately.");
+                                    }
+                                    done();
+                                }
+                            }
+                        });
+                    });
+                }
+            });
+
+            it("Callback#Service.getJob() works", function (done) {
+                var that = this;
+                var sidsMatch = false;
+                this.service.search('search index=_internal | head 1', {}, function (err, job) {
+                    if (err) {
+                        assert.ok(!err);
+                        done();
+                        return;
+                    }
+                    var sid = job.sid;
+                    return Async.chain([
+                        function (done) {
+                            that.service.getJob(sid, done);
+                        },
+                        function (innerJob, done) {
+                            assert.strictEqual(sid, innerJob.sid);
+                            sidsMatch = sid === innerJob.sid;
+                            done();
+                        }
+                    ],
+                        function (err) {
+                            assert.ok(!err);
+                            assert.ok(sidsMatch);
+                            done();
+                        }
+                    );
+                });
             });
         })
     )
@@ -70340,7 +72004,7 @@ if (module.id === __filename && module.parent.id.includes('mocha')) {
     var splunkjs = require('../../index');
     var options = require('../cmdline');
 
-    let cmdline = options.create().parse(process.argv);
+    var cmdline = options.create().parse(process.argv);
 
     // If there is no command line, we should return
     if (!cmdline) {
@@ -70351,7 +72015,7 @@ if (module.id === __filename && module.parent.id.includes('mocha')) {
         throw new Error("$PATH variable SPLUNK_HOME is not set. Please export SPLUNK_HOME to the splunk instance.");
     }
 
-    let svc = new splunkjs.Service({
+    var svc = new splunkjs.Service({
         scheme: cmdline.opts.scheme,
         host: cmdline.opts.host,
         port: cmdline.opts.port,
@@ -70361,24 +72025,25 @@ if (module.id === __filename && module.parent.id.includes('mocha')) {
     });
 
     // Exports tests on a successful login
-    module.exports = new Promise(async (resolve, reject) => {
-        try {
-            await svc.login();
-            return resolve(exports.setup(svc))
-        } catch (error) {
-            throw new Error("Login failed - not running tests", error || "");
-        }
+    module.exports = new Promise((resolve, reject) => {
+        svc.login(function (err, success) {
+            if (err || !success) {
+                throw new Error("Login failed - not running tests", err || "");
+            }
+            return resolve(exports.setup(svc));
+        });
     });
 }
 
 }).call(this)}).call(this,require('_process'),"/tests/service_tests/job.js")
-},{"../../index":2,"../../lib/log":7,"../cmdline":296,"../utils":320,"_process":239,"chai":72,"path":231}],306:[function(require,module,exports){
+},{"../../index":2,"../../lib/log":8,"../cmdline":297,"../utils":322,"_process":240,"chai":73,"path":232}],307:[function(require,module,exports){
 (function (process,__filename){(function (){
 var assert = require('chai').assert;
 
 var splunkjs = require('../../index');
 const { Logger } = require('../../lib/log');
 
+var Async = splunkjs.Async;
 var utils = splunkjs.Utils;
 var idCounter = 0;
 
@@ -70389,189 +72054,243 @@ var getNextId = function () {
 exports.setup = function (svc) {
     return (
         describe("Namespace tests", () => {
-            beforeEach(async function () {
+            beforeEach(function (finished) {
                 this.service = svc;
-                let that = this;
+                var that = this;
 
-                let appName1 = "jssdk_testapp_" + getNextId();
-                let appName2 = "jssdk_testapp_" + getNextId();
+                var appName1 = "jssdk_testapp_" + getNextId();
+                var appName2 = "jssdk_testapp_" + getNextId();
 
-                let userName1 = "jssdk_testuser_" + getNextId();
-                let userName2 = "jssdk_testuser_" + getNextId();
+                var userName1 = "jssdk_testuser_" + getNextId();
+                var userName2 = "jssdk_testuser_" + getNextId();
 
-                let apps = this.service.apps();
-                let users = this.service.users();
+                var apps = this.service.apps();
+                var users = this.service.users();
 
                 this.namespace11 = { owner: userName1, app: appName1 };
                 this.namespace12 = { owner: userName1, app: appName2 };
                 this.namespace21 = { owner: userName2, app: appName1 };
                 this.namespace22 = { owner: userName2, app: appName2 };
 
-                let app1 = await apps.create({ name: appName1 });
-                that.app1 = app1;
-                that.appName1 = appName1;
-                let app2 = await apps.create({ name: appName2 });
-                that.app2 = app2;
-                that.appName2 = appName2;
-                let user1 = users.create({ name: userName1, password: "abcdefg!", roles: ["user"] });
-                that.user1 = user1;
-                that.userName1 = userName1;
-                let user2 = users.create({ name: userName2, password: "abcdefg!", roles: ["user"] });
-                that.user2 = user2;
-                that.userName2 = userName2;
-                await utils.sleep(2000);
-            });
+                Async.chain([
+                    function (done) {
+                        apps.create({ name: appName1 }, done);
+                    },
+                    function (app1, done) {
+                        that.app1 = app1;
+                        that.appName1 = appName1;
+                        apps.create({ name: appName2 }, done);
+                    },
+                    function (app2, done) {
+                        that.app2 = app2;
+                        that.appName2 = appName2;
+                        users.create({ name: userName1, password: "abcdefg!", roles: ["user"] }, done);
+                    },
+                    function (user1, done) {
+                        that.user1 = user1;
+                        that.userName1 = userName1;
+                        users.create({ name: userName2, password: "abcdefg!", roles: ["user"] }, done);
+                    },
+                    function (user2, done) {
+                        that.user2 = user2;
+                        that.userName2 = userName2;
 
-            it("Namespace protection", async function () {
-                let searchName = "jssdk_search_" + getNextId();
-                let search = "search *";
-                let service = this.service;
-                let savedSearches11 = service.savedSearches(this.namespace11);
-                let savedSearches21 = service.savedSearches(this.namespace21);
-
-                // Create the saved search only in the 11 namespace
-                await savedSearches11.create({ name: searchName, search: search });
-                // Refresh the 11 saved searches
-                await savedSearches11.fetch();
-                // Refresh the 21 saved searches
-                await savedSearches21.fetch();
-                let entity11 = savedSearches11.item(searchName);
-                let entity21 = savedSearches21.item(searchName);
-
-                // Make sure the saved search exists in the 11 namespace
-                assert.ok(entity11);
-                assert.strictEqual(entity11.name, searchName);
-                assert.strictEqual(entity11.properties().search, search);
-
-                // Make sure the saved search doesn't exist in the 11 namespace
-                assert.ok(!entity21);
-            });
-
-            it("Namespace item", async function () {
-                let searchName = "jssdk_search_" + getNextId();
-                let search = "search *";
-                let service = this.service;
-
-                let namespace_1 = { owner: "-", app: this.appName1 };
-                let namespace_nobody1 = { owner: "nobody", app: this.appName1 };
-
-                let savedSearches11 = service.savedSearches(this.namespace11);
-                let savedSearches21 = service.savedSearches(this.namespace21);
-                let savedSearches_1 = service.savedSearches(namespace_1);
-                let savedSearches_nobody1 = service.savedSearches(namespace_nobody1);
-
-                let that = this;
-                // Create a saved search in the 11 namespace
-                await savedSearches11.create({ name: searchName, search: search });
-                // Create a saved search in the 21 namespace
-                await savedSearches21.create({ name: searchName, search: search });
-                // Refresh the -/1 namespace
-                await savedSearches_1.fetch();
-                // Refresh the 1/1 namespace
-                await savedSearches11.fetch();
-                // Refresh the 2/1 namespace
-                await savedSearches21.fetch();
-                let entity11 = savedSearches11.item(searchName, that.namespace11);
-                let entity21 = savedSearches21.item(searchName, that.namespace21);
-
-                // Ensure that the saved search exists in the 11 namespace
-                assert.ok(entity11);
-                assert.strictEqual(entity11.name, searchName);
-                assert.strictEqual(entity11.properties().search, search);
-                assert.strictEqual(entity11.namespace.owner, that.namespace11.owner);
-                assert.strictEqual(entity11.namespace.app, that.namespace11.app);
-
-                // Ensure that the saved search exists in the 21 namespace
-                assert.ok(entity21);
-                assert.strictEqual(entity21.name, searchName);
-                assert.strictEqual(entity21.properties().search, search);
-                assert.strictEqual(entity21.namespace.owner, that.namespace21.owner);
-                assert.strictEqual(entity21.namespace.app, that.namespace21.app);
-
-                // Create a saved search in the nobody/1 namespace
-                await savedSearches_nobody1.create({ name: searchName, search: search });
-                // Refresh the 1/1 namespace
-                await savedSearches11.fetch();
-                // Refresh the 2/1 namespace
-                await savedSearches21.fetch();
-                // Ensure that we can't get the item from the generic
-                // namespace without specifying a namespace
-                try {
-                    savedSearches_1.item(searchName);
-                    assert.ok(false);
-                } catch (err) {
-                    assert.ok(err);
-                }
-
-                // Ensure that we can't get the item using wildcard namespaces.
-                try {
-                    savedSearches_1.item(searchName, { owner: '-' });
-                    assert.ok(false);
-                } catch (err) {
-                    assert.ok(err);
-                }
-
-                try {
-                    savedSearches_1.item(searchName, { app: '-' });
-                    assert.ok(false);
-                } catch (err) {
-                    assert.ok(err);
-                }
-
-                try {
-                    savedSearches_1.item(searchName, { app: '-', owner: '-' });
-                    assert.ok(false);
-                } catch (err) {
-                    assert.ok(err);
-                }
-
-                // Ensure we get the right entities from the -/1 namespace when we
-                // specify it.
-                entity11 = savedSearches_1.item(searchName, that.namespace11);
-                entity21 = savedSearches_1.item(searchName, that.namespace21);
-
-                assert.ok(entity11);
-                assert.strictEqual(entity11.name, searchName);
-                assert.strictEqual(entity11.properties().search, search);
-                assert.strictEqual(entity11.namespace.owner, that.namespace11.owner);
-                assert.strictEqual(entity11.namespace.app, that.namespace11.app);
-
-                assert.ok(entity21);
-                assert.strictEqual(entity21.name, searchName);
-                assert.strictEqual(entity21.properties().search, search);
-                assert.strictEqual(entity21.namespace.owner, that.namespace21.owner);
-                assert.strictEqual(entity21.namespace.app, that.namespace21.app);
-            });
-
-            it("Delete test users", async function () {
-                let users = this.service.users();
-                users = await users.fetch();
-                let userList = users.list();
-                let err = await utils.parallelEach(
-                    userList,
-                    async function (user, idx) {
-                        if (utils.startsWith(user.name, "jssdk_")) {
-                            await user.remove();
-                        }
+                        done();
+                    }
+                ],
+                    function (err) {
+                        finished(err);
                     }
                 );
-                assert.ok(!err);
             });
 
-            it("Delete test applications", async function () {
-                let apps = this.service.apps();
-                let response = await apps.fetch();
-                let appList = response.list();
-                let err = await utils.parallelEach(
-                    appList,
-                    async function (app, idx) {
-                        if (utils.startsWith(app.name, "jssdk_")) {
-                            await app.remove();
-                        }
+            it("Callback#Namespace protection", function (done) {
+                var searchName = "jssdk_search_" + getNextId();
+                var search = "search *";
+                var service = this.service;
+                var savedSearches11 = service.savedSearches(this.namespace11);
+                var savedSearches21 = service.savedSearches(this.namespace21);
+
+                Async.chain([
+                    function (done) {
+                        // Create the saved search only in the 11 namespace
+                        savedSearches11.create({ name: searchName, search: search }, done);
+                    },
+                    function (savedSearch, done) {
+                        // Refresh the 11 saved searches
+                        savedSearches11.fetch(done);
+                    },
+                    function (savedSearches, done) {
+                        // Refresh the 21 saved searches
+                        savedSearches21.fetch(done);
+                    },
+                    function (savedSearches, done) {
+                        var entity11 = savedSearches11.item(searchName);
+                        var entity21 = savedSearches21.item(searchName);
+
+                        // Make sure the saved search exists in the 11 namespace
+                        assert.ok(entity11);
+                        assert.strictEqual(entity11.name, searchName);
+                        assert.strictEqual(entity11.properties().search, search);
+
+                        // Make sure the saved search doesn't exist in the 11 namespace
+                        assert.ok(!entity21);
+                        done();
+                    }
+                ],
+                    function (err) {
+                        assert.ok(!err, JSON.stringify(err));
+                        done();
                     }
                 );
-                assert.ok(!err);
             });
+
+            it("Callback#Namespace item", function (done) {
+                var searchName = "jssdk_search_" + getNextId();
+                var search = "search *";
+                var service = this.service;
+
+                var namespace_1 = { owner: "-", app: this.appName1 };
+                var namespace_nobody1 = { owner: "nobody", app: this.appName1 };
+
+                var savedSearches11 = service.savedSearches(this.namespace11);
+                var savedSearches21 = service.savedSearches(this.namespace21);
+                var savedSearches_1 = service.savedSearches(namespace_1);
+                var savedSearches_nobody1 = service.savedSearches(namespace_nobody1);
+
+                var that = this;
+                Async.chain([
+                    function (done) {
+                        // Create a saved search in the 11 namespace
+                        savedSearches11.create({ name: searchName, search: search }, done);
+                    },
+                    function (savedSearch, done) {
+                        // Create a saved search in the 21 namespace
+                        savedSearches21.create({ name: searchName, search: search }, done);
+                    },
+                    function (savedSearch, done) {
+                        // Refresh the -/1 namespace
+                        savedSearches_1.fetch(done);
+                    },
+                    function (savedSearches, done) {
+                        // Refresh the 1/1 namespace
+                        savedSearches11.fetch(done);
+                    },
+                    function (savedSearches, done) {
+                        // Refresh the 2/1 namespace
+                        savedSearches21.fetch(done);
+                    },
+                    function (savedSearches, done) {
+                        var entity11 = savedSearches11.item(searchName, that.namespace11);
+                        var entity21 = savedSearches21.item(searchName, that.namespace21);
+
+                        // Ensure that the saved search exists in the 11 namespace
+                        assert.ok(entity11);
+                        assert.strictEqual(entity11.name, searchName);
+                        assert.strictEqual(entity11.properties().search, search);
+                        assert.strictEqual(entity11.namespace.owner, that.namespace11.owner);
+                        assert.strictEqual(entity11.namespace.app, that.namespace11.app);
+
+                        // Ensure that the saved search exists in the 21 namespace
+                        assert.ok(entity21);
+                        assert.strictEqual(entity21.name, searchName);
+                        assert.strictEqual(entity21.properties().search, search);
+                        assert.strictEqual(entity21.namespace.owner, that.namespace21.owner);
+                        assert.strictEqual(entity21.namespace.app, that.namespace21.app);
+
+                        done();
+                    },
+                    function (done) {
+                        // Create a saved search in the nobody/1 namespace
+                        savedSearches_nobody1.create({ name: searchName, search: search }, done);
+                    },
+                    function (savedSearch, done) {
+                        // Refresh the 1/1 namespace
+                        savedSearches11.fetch(done);
+                    },
+                    function (savedSearches, done) {
+                        // Refresh the 2/1 namespace
+                        savedSearches21.fetch(done);
+                    },
+                    function (savedSearches, done) {
+                        // Ensure that we can't get the item from the generic
+                        // namespace without specifying a namespace
+                        try {
+                            savedSearches_1.item(searchName);
+                            assert.ok(false);
+                        } catch (err) {
+                            assert.ok(err);
+                        }
+
+                        // Ensure that we can't get the item using wildcard namespaces.
+                        try {
+                            savedSearches_1.item(searchName, { owner: '-' });
+                            assert.ok(false);
+                        } catch (err) {
+                            assert.ok(err);
+                        }
+
+                        try {
+                            savedSearches_1.item(searchName, { app: '-' });
+                            assert.ok(false);
+                        } catch (err) {
+                            assert.ok(err);
+                        }
+
+                        try {
+                            savedSearches_1.item(searchName, { app: '-', owner: '-' });
+                            assert.ok(false);
+                        } catch (err) {
+                            assert.ok(err);
+                        }
+
+                        // Ensure we get the right entities from the -/1 namespace when we
+                        // specify it.
+                        var entity11 = savedSearches_1.item(searchName, that.namespace11);
+                        var entity21 = savedSearches_1.item(searchName, that.namespace21);
+
+                        assert.ok(entity11);
+                        assert.strictEqual(entity11.name, searchName);
+                        assert.strictEqual(entity11.properties().search, search);
+                        assert.strictEqual(entity11.namespace.owner, that.namespace11.owner);
+                        assert.strictEqual(entity11.namespace.app, that.namespace11.app);
+
+                        assert.ok(entity21);
+                        assert.strictEqual(entity21.name, searchName);
+                        assert.strictEqual(entity21.properties().search, search);
+                        assert.strictEqual(entity21.namespace.owner, that.namespace21.owner);
+                        assert.strictEqual(entity21.namespace.app, that.namespace21.app);
+
+                        done();
+                    }
+                ],
+                    function (err) {
+                        assert.ok(!err);
+                        done();
+                    }
+                );
+            });
+
+            it("Callback#delete test users", function (done) {
+                var users = this.service.users();
+                users.fetch(function (err, users) {
+                    var userList = users.list();
+
+                    Async.parallelEach(
+                        userList,
+                        function (user, idx, callback) {
+                            if (utils.startsWith(user.name, "jssdk_")) {
+                                user.remove(callback);
+                            } else {
+                                callback();
+                            }
+                        }, function (err) {
+                            assert.ok(!err);
+                            done();
+                        }
+                    );
+                });
+            })
         })
     )
 };
@@ -70580,14 +72299,14 @@ if (module.id === __filename && module.parent.id.includes('mocha')) {
     var splunkjs = require('../../index');
     var options = require('../cmdline');
 
-    let cmdline = options.create().parse(process.argv);
+    var cmdline = options.create().parse(process.argv);
 
     // If there is no command line, we should return
     if (!cmdline) {
         throw new Error("Error in parsing command line parameters");
     }
 
-    let svc = new splunkjs.Service({
+    var svc = new splunkjs.Service({
         scheme: cmdline.opts.scheme,
         host: cmdline.opts.host,
         port: cmdline.opts.port,
@@ -70597,43 +72316,47 @@ if (module.id === __filename && module.parent.id.includes('mocha')) {
     });
 
     // Exports tests on a successful login
-    module.exports = new Promise(async (resolve, reject) => {
-        try {
-            await svc.login();
-            return resolve(exports.setup(svc))
-        } catch (error) {
-            throw new Error("Login failed - not running tests", error || "");
-        }
+    module.exports = new Promise((resolve, reject) => {
+        svc.login(function (err, success) {
+            if (err || !success) {
+                throw new Error("Login failed - not running tests", err || "");
+            }
+            return resolve(exports.setup(svc));
+        });
     });
 }
 
 }).call(this)}).call(this,require('_process'),"/tests/service_tests/namespace.js")
-},{"../../index":2,"../../lib/log":7,"../cmdline":296,"_process":239,"chai":72}],307:[function(require,module,exports){
+},{"../../index":2,"../../lib/log":8,"../cmdline":297,"_process":240,"chai":73}],308:[function(require,module,exports){
 (function (process,__filename){(function (){
 exports.setup = function (svc) {
     var assert = require('chai').assert;
     return (
-        describe("Parsing Tests", () => {
-            beforeEach(function () {
+        describe("Parsing Tests", function () {
+            beforeEach(function (done) {
                 this.service = svc;
+                done();
             });
 
-            it("Basic parse", async function () {
-                let service = this.service;
-                let parse = await service.parse("search index=_internal | head 1");
-                assert.ok(parse);
-                assert.ok(parse.commands.length > 0);
+            it("Callback#Basic parse", function (done) {
+                var service = this.service;
+
+                service.parse("search index=_internal | head 1", function (err, parse) {
+                    assert.ok(!err);
+                    assert.ok(parse);
+                    assert.ok(parse.commands.length > 0);
+                    done();
+                });
             });
 
-            it("Parse error", async function () {
-                let service = this.service;
-                try {
-                    await service.parse("ABCXYZ");
-                    assert.ok(false);
-                } catch (err) {
+            it("Callback#Parse error", function (done) {
+                var service = this.service;
+
+                service.parse("ABCXYZ", function (err, parse) {
                     assert.ok(err);
                     assert.strictEqual(err.status, 400);
-                }
+                    done();
+                });
             });
         })
     );
@@ -70643,14 +72366,14 @@ if (module.id === __filename && module.parent.id.includes('mocha')) {
     var splunkjs = require('../../index');
     var options = require('../cmdline');
 
-    let cmdline = options.create().parse(process.argv);
+    var cmdline = options.create().parse(process.argv);
 
     // If there is no command line, we should return
     if (!cmdline) {
         throw new Error("Error in parsing command line parameters");
     }
 
-    let svc = new splunkjs.Service({
+    var svc = new splunkjs.Service({
         scheme: cmdline.opts.scheme,
         host: cmdline.opts.host,
         port: cmdline.opts.port,
@@ -70660,18 +72383,18 @@ if (module.id === __filename && module.parent.id.includes('mocha')) {
     });
 
     // Exports tests on a successful login
-    module.exports = new Promise(async (resolve, reject) => {
-        try {
-            await svc.login();
-            return resolve(exports.setup(svc))
-        } catch (error) {
-            throw new Error("Login failed - not running tests", error || "");
-        }
+    module.exports = new Promise((resolve, reject) => {
+        svc.login(function (err, success) {
+            if (err || !success) {
+                throw new Error("Login failed - not running tests", err || "");
+            }
+            return resolve(exports.setup(svc));
+        });
     });
 }
 
 }).call(this)}).call(this,require('_process'),"/tests/service_tests/parser.js")
-},{"../../index":2,"../cmdline":296,"_process":239,"chai":72}],308:[function(require,module,exports){
+},{"../../index":2,"../cmdline":297,"_process":240,"chai":73}],309:[function(require,module,exports){
 (function (process,__filename){(function (){
 
 exports.setup = function (svc) {
@@ -70680,6 +72403,7 @@ exports.setup = function (svc) {
     var splunkjs = require('../../index');
     var tutils = require('../utils');
 
+    var Async = splunkjs.Async;
     var utils = splunkjs.Utils;
     var idCounter = 0;
 
@@ -70687,1292 +72411,1555 @@ exports.setup = function (svc) {
         return "id" + (idCounter++) + "_" + ((new Date()).valueOf());
     };
     return (
-        describe("Pivot Tests", () => {
-            beforeEach(async function () {
+        describe("Pivot Tests", function () {
+            beforeEach(function (done) {
                 this.service = svc;
                 this.dataModels = svc.dataModels({ owner: "nobody", app: "search" });
                 this.skip = false;
                 var that = this;
-                let info = await this.service.serverInfo();
-                if (parseInt(info.properties().version.split(".")[0], 10) < 6) {
-                    that.skip = true;
-                    splunkjs.Logger.log("Skipping pivot tests...");
-                }
-            })
-
-            it("Pivot - test constructor args", async function () {
-                if (this.skip) {
-                    return;
-                }
-                let name = "delete-me-" + getNextId();
-                let args;
-                try {
-                    args = JSON.parse(utils.readFile(__filename, "../../data/data_model_for_pivot.json"));
-                }
-                catch (err) {
-                    // Fail if we can't read the file, likely to occur in the browser
-                    assert.ok(!err);
-                }
-                var that = this;
-                let dataModel = await that.dataModels.create(name, args);
-                assert.ok(dataModel.objectByName("test_data"));
-            })
-
-            it("Pivot - test acceleration, then pivot", async function () {
-                if (this.skip) {
-                    return;
-                }
-                let name = "delete-me-" + getNextId();
-                let args;
-                try {
-                    args = JSON.parse(utils.readFile(__filename, "../../data/data_model_for_pivot.json"));
-                }
-                catch (err) {
-                    // Fail if we can't read the file, likely to occur in the browser
-                    assert.ok(!err);
-                }
-                var that = this;
-                let dataModel = await that.dataModels.create(name, args);
-                dataModel.objectByName("test_data");
-                assert.ok(dataModel);
-                dataModel.acceleration.enabled = true;
-                dataModel.acceleration.earliestTime = "-2mon";
-                dataModel.acceleration.cronSchedule = "0 */12 * * *";
-                dataModel = await dataModel.update();
-                let props = dataModel.properties();
-                assert.strictEqual(true, dataModel.isAccelerated());
-                assert.strictEqual(true, !!dataModel.acceleration.enabled);
-                assert.strictEqual("-2mon", dataModel.acceleration.earliest_time);
-                assert.strictEqual("0 */12 * * *", dataModel.acceleration.cron_schedule);
-
-                let dataModelObject = dataModel.objectByName("test_data");
-                let pivotSpecification = dataModelObject.createPivotSpecification();
-                assert.strictEqual(dataModelObject.dataModel.name, pivotSpecification.accelerationNamespace);
-
-                let name1 = "delete-me-" + getNextId();
-                pivotSpecification.setAccelerationJob(name1);
-                assert.strictEqual("sid=" + name1, pivotSpecification.accelerationNamespace);
-
-                let namespaceTemp = "delete-me-" + getNextId();
-                pivotSpecification.accelerationNamespace = namespaceTemp;
-                assert.strictEqual(namespaceTemp, pivotSpecification.accelerationNamespace);
-
-                [job, pivot] = await pivotSpecification
-                    .addCellValue("test_data", "Source Value", "count")
-                    .run();
-                assert.ok(job);
-                assert.ok(pivot);
-                assert.notStrictEqual("FAILED", job.properties().dispatchState);
-
-                job = await job.track({}, function (job) {
-                    assert.ok(pivot.tstatsSearch);
-                    assert.strictEqual(0, job.properties().request.search.indexOf("| tstats"));
-                    assert.strictEqual("| tstats", job.properties().request.search.match("^\\| tstats")[0]);
-                    assert.strictEqual(1, job.properties().request.search.match("^\\| tstats").length);
-                    assert.strictEqual(pivot.tstatsSearch, job.properties().request.search);
+                this.service.serverInfo(function (err, info) {
+                    if (parseInt(info.properties().version.split(".")[0], 10) < 6) {
+                        that.skip = true;
+                        splunkjs.Logger.log("Skipping pivot tests...");
+                    }
+                    done(err);
                 });
-
             })
 
-            it("Pivot - test illegal filtering (all types)", async function () {
+            it("Callback#Pivot - test constructor args", function (done) {
                 if (this.skip) {
+                    done();
                     return;
                 }
-                let name = "delete-me-" + getNextId();
-                let args;
+                var name = "delete-me-" + getNextId();
+                var args;
                 try {
                     args = JSON.parse(utils.readFile(__filename, "../../data/data_model_for_pivot.json"));
                 }
                 catch (err) {
                     // Fail if we can't read the file, likely to occur in the browser
                     assert.ok(!err);
+                    done();
                 }
                 var that = this;
-                let dataModel = await that.dataModels.create(name, args);
-
-                let obj = dataModel.objectByName("test_data");
-                assert.ok(obj);
-
-                let pivotSpecification = obj.createPivotSpecification();
-
-                // Boolean comparisons
-                try {
-                    pivotSpecification.addFilter(getNextId(), "boolean", "=", true);
-                    assert.ok(false);
-                }
-                catch (e) {
-                    assert.ok(e);
-                    assert.strictEqual(e.message, "Cannot add filter on a nonexistent field.");
-                }
-                try {
-                    pivotSpecification.addFilter("_time", "boolean", "=", true);
-                    assert.ok(false);
-                }
-                catch (e) {
-                    assert.ok(e);
-                    assert.strictEqual(e.message, "Cannot add boolean filter on _time because it is of type timestamp");
-                }
-
-                // String comparisons
-                try {
-                    pivotSpecification.addFilter("has_boris", "string", "contains", "abc");
-                    assert.ok(false);
-                }
-                catch (e) {
-                    assert.ok(e);
-                    assert.strictEqual(e.message, "Cannot add string filter on has_boris because it is of type boolean");
-                }
-                try {
-                    pivotSpecification.addFilter(getNextId(), "string", "contains", "abc");
-                    assert.ok(false);
-                }
-                catch (e) {
-                    assert.ok(e);
-                    assert.strictEqual(e.message, "Cannot add filter on a nonexistent field.");
-                }
-
-                // IPv4 comparisons
-                try {
-                    pivotSpecification.addFilter("has_boris", "ipv4", "startsWith", "192.168");
-                    assert.ok(false);
-                }
-                catch (e) {
-                    assert.ok(e);
-                    assert.strictEqual(e.message, "Cannot add ipv4 filter on has_boris because it is of type boolean");
-                }
-                try {
-                    pivotSpecification.addFilter(getNextId(), "ipv4", "startsWith", "192.168");
-                    assert.ok(false);
-                }
-                catch (e) {
-                    assert.ok(e);
-                    assert.strictEqual(e.message, "Cannot add filter on a nonexistent field.");
-                }
-
-                // Number comparisons
-                try {
-                    pivotSpecification.addFilter("has_boris", "number", "atLeast", 2.3);
-                    assert.ok(false);
-                }
-                catch (e) {
-                    assert.ok(e);
-                    assert.strictEqual(e.message, "Cannot add number filter on has_boris because it is of type boolean");
-                }
-                try {
-                    pivotSpecification.addFilter(getNextId(), "number", "atLeast", 2.3);
-                    assert.ok(false);
-                }
-                catch (e) {
-                    assert.ok(e);
-                    assert.strictEqual(e.message, "Cannot add filter on a nonexistent field.");
-                }
-
-                // Limit filter
-                try {
-                    pivotSpecification.addLimitFilter("has_boris", "host", "DEFAULT", 50, "count");
-                    assert.ok(false);
-                }
-                catch (e) {
-                    assert.ok(e);
-                    assert.strictEqual(e.message, "Cannot add limit filter on has_boris because it is of type boolean");
-                }
-                try {
-                    pivotSpecification.addLimitFilter(getNextId(), "host", "DEFAULT", 50, "count");
-                    assert.ok(false);
-                }
-                catch (e) {
-                    assert.ok(e);
-                    assert.strictEqual(e.message, "Cannot add limit filter on a nonexistent field.");
-                }
-                try {
-                    pivotSpecification.addLimitFilter("source", "host", "DEFAULT", 50, "sum");
-                    assert.ok(false);
-                }
-                catch (e) {
-                    assert.ok(e);
-                    assert.strictEqual(e.message,
-                        "Stats function for fields of type string must be COUNT or DISTINCT_COUNT; found sum");
-                }
-                try {
-                    pivotSpecification.addLimitFilter("epsilon", "host", "DEFAULT", 50, "duration");
-                    assert.ok(false);
-                }
-                catch (e) {
-                    assert.ok(e);
-                    assert.strictEqual(e.message,
-                        "Stats function for fields of type number must be one of COUNT, DISTINCT_COUNT, SUM, or AVERAGE; found duration");
-                }
-                try {
-                    pivotSpecification.addLimitFilter("test_data", "host", "DEFAULT", 50, "list");
-                    assert.ok(false);
-                }
-                catch (e) {
-                    assert.ok(e);
-                    assert.strictEqual(e.message,
-                        "Stats function for fields of type object count must be COUNT; found list");
-                }
-            })
-
-            it("Pivot - test boolean filtering", async function () {
-                if (this.skip) {
-                    return;
-                }
-                let name = "delete-me-" + getNextId();
-                let args;
-                try {
-                    args = JSON.parse(utils.readFile(__filename, "../../data/data_model_for_pivot.json"));
-                }
-                catch (err) {
-                    // Fail if we can't read the file, likely to occur in the browser
-                    assert.ok(!err);
-                }
-                var that = this;
-                let dataModel = await that.dataModels.create(name, args);
-                let obj = dataModel.objectByName("test_data");
-                assert.ok(obj);
-
-                let pivotSpecification = obj.createPivotSpecification();
-                try {
-                    pivotSpecification.addFilter("has_boris", "boolean", "=", true);
-                    assert.strictEqual(1, pivotSpecification.filters.length);
-
-                    //Test the individual parts of the filter
-                    let filter = pivotSpecification.filters[0];
-
-                    assert.ok(filter.hasOwnProperty("fieldName"));
-                    assert.ok(filter.hasOwnProperty("type"));
-                    assert.ok(filter.hasOwnProperty("rule"));
-                    assert.ok(filter.hasOwnProperty("owner"));
-
-                    assert.strictEqual("has_boris", filter.fieldName);
-                    assert.strictEqual("boolean", filter.type);
-                    assert.strictEqual("=", filter.rule.comparator);
-                    assert.strictEqual(true, filter.rule.compareTo);
-                    assert.strictEqual("test_data", filter.owner);
-                }
-                catch (e) {
-                    assert.ok(false);
-                }
-            })
-
-            it("Pivot - test string filtering", async function () {
-                if (this.skip) {
-                    return;
-                }
-                let name = "delete-me-" + getNextId();
-                let args;
-                try {
-                    args = JSON.parse(utils.readFile(__filename, "../../data/data_model_for_pivot.json"));
-                }
-                catch (err) {
-                    // Fail if we can't read the file, likely to occur in the browser
-                    assert.ok(!err);
-                }
-                var that = this;
-                let dataModel = await that.dataModels.create(name, args);
-                let obj = dataModel.objectByName("test_data");
-                assert.ok(obj);
-
-                let pivotSpecification = obj.createPivotSpecification();
-                try {
-                    pivotSpecification.addFilter("host", "string", "contains", "abc");
-                    assert.strictEqual(1, pivotSpecification.filters.length);
-
-                    //Test the individual parts of the filter
-                    let filter = pivotSpecification.filters[0];
-
-                    assert.ok(filter.hasOwnProperty("fieldName"));
-                    assert.ok(filter.hasOwnProperty("type"));
-                    assert.ok(filter.hasOwnProperty("rule"));
-                    assert.ok(filter.hasOwnProperty("owner"));
-
-                    assert.strictEqual("host", filter.fieldName);
-                    assert.strictEqual("string", filter.type);
-                    assert.strictEqual("contains", filter.rule.comparator);
-                    assert.strictEqual("abc", filter.rule.compareTo);
-                    assert.strictEqual("BaseEvent", filter.owner);
-                }
-                catch (e) {
-                    assert.ok(false);
-                }
-            })
-
-            it("Pivot - test IPv4 filtering", async function () {
-                if (this.skip) {
-                    return;
-                }
-                let name = "delete-me-" + getNextId();
-                let args;
-                try {
-                    args = JSON.parse(utils.readFile(__filename, "../../data/data_model_for_pivot.json"));
-                }
-                catch (err) {
-                    // Fail if we can't read the file, likely to occur in the browser
-                    assert.ok(!err);
-                }
-                var that = this;
-                let dataModel = await that.dataModels.create(name, args);
-                let obj = dataModel.objectByName("test_data");
-                assert.ok(obj);
-
-                let pivotSpecification = obj.createPivotSpecification();
-                try {
-                    pivotSpecification.addFilter("hostip", "ipv4", "startsWith", "192.168");
-                    assert.strictEqual(1, pivotSpecification.filters.length);
-
-                    //Test the individual parts of the filter
-                    let filter = pivotSpecification.filters[0];
-
-                    assert.ok(filter.hasOwnProperty("fieldName"));
-                    assert.ok(filter.hasOwnProperty("type"));
-                    assert.ok(filter.hasOwnProperty("rule"));
-                    assert.ok(filter.hasOwnProperty("owner"));
-
-                    assert.strictEqual("hostip", filter.fieldName);
-                    assert.strictEqual("ipv4", filter.type);
-                    assert.strictEqual("startsWith", filter.rule.comparator);
-                    assert.strictEqual("192.168", filter.rule.compareTo);
-                    assert.strictEqual("test_data", filter.owner);
-                }
-                catch (e) {
-                    assert.ok(false);
-                }
-            })
-
-            it("Pivot - test number filtering", async function () {
-                if (this.skip) {
-                    return;
-                }
-                let name = "delete-me-" + getNextId();
-                let args;
-                try {
-                    args = JSON.parse(utils.readFile(__filename, "../../data/data_model_for_pivot.json"));
-                }
-                catch (err) {
-                    // Fail if we can't read the file, likely to occur in the browser
-                    assert.ok(!err);
-                }
-                var that = this;
-                let dataModel = await that.dataModels.create(name, args);
-                let obj = dataModel.objectByName("test_data");
-                assert.ok(obj);
-
-                let pivotSpecification = obj.createPivotSpecification();
-                try {
-                    pivotSpecification.addFilter("epsilon", "number", ">=", 2.3);
-                    assert.strictEqual(1, pivotSpecification.filters.length);
-
-                    //Test the individual parts of the filter
-                    let filter = pivotSpecification.filters[0];
-
-                    assert.ok(filter.hasOwnProperty("fieldName"));
-                    assert.ok(filter.hasOwnProperty("type"));
-                    assert.ok(filter.hasOwnProperty("rule"));
-                    assert.ok(filter.hasOwnProperty("owner"));
-
-                    assert.strictEqual("epsilon", filter.fieldName);
-                    assert.strictEqual("number", filter.type);
-                    assert.strictEqual(">=", filter.rule.comparator);
-                    assert.strictEqual(2.3, filter.rule.compareTo);
-                    assert.strictEqual("test_data", filter.owner);
-                }
-                catch (e) {
-                    assert.ok(false);
-                }
-            })
-
-            it("Pivot - test limit filtering", async function () {
-                if (this.skip) {
-                    return;
-                }
-                let name = "delete-me-" + getNextId();
-                let args;
-                try {
-                    args = JSON.parse(utils.readFile(__filename, "../../data/data_model_for_pivot.json"));
-                }
-                catch (err) {
-                    // Fail if we can't read the file, likely to occur in the browser
-                    assert.ok(!err);
-                }
-                var that = this;
-                let dataModel = await that.dataModels.create(name, args);
-                let obj = dataModel.objectByName("test_data");
-                assert.ok(obj);
-
-                let pivotSpecification = obj.createPivotSpecification();
-                try {
-                    pivotSpecification.addLimitFilter("epsilon", "host", "ASCENDING", 500, "average");
-                    assert.strictEqual(1, pivotSpecification.filters.length);
-
-                    //Test the individual parts of the filter
-                    let filter = pivotSpecification.filters[0];
-
-                    assert.ok(filter.hasOwnProperty("fieldName"));
-                    assert.ok(filter.hasOwnProperty("type"));
-                    assert.ok(filter.hasOwnProperty("owner"));
-                    assert.ok(filter.hasOwnProperty("attributeName"));
-                    assert.ok(filter.hasOwnProperty("attributeOwner"));
-                    assert.ok(filter.hasOwnProperty("limitType"));
-                    assert.ok(filter.hasOwnProperty("limitAmount"));
-                    assert.ok(filter.hasOwnProperty("statsFn"));
-
-                    assert.strictEqual("epsilon", filter.fieldName);
-                    assert.strictEqual("number", filter.type);
-                    assert.strictEqual("test_data", filter.owner);
-                    assert.strictEqual("host", filter.attributeName);
-                    assert.strictEqual("BaseEvent", filter.attributeOwner);
-                    assert.strictEqual("lowest", filter.limitType);
-                    assert.strictEqual(500, filter.limitAmount);
-                    assert.strictEqual("average", filter.statsFn);
-                }
-                catch (e) {
-                    assert.ok(false);
-                }
-            })
-
-            it("Pivot - test row split", async function () {
-                if (this.skip) {
-                    return;
-                }
-                let name = "delete-me-" + getNextId();
-                let args;
-                try {
-                    args = JSON.parse(utils.readFile(__filename, "../../data/data_model_for_pivot.json"));
-                }
-                catch (err) {
-                    // Fail if we can't read the file, likely to occur in the browser
-                    assert.ok(!err);
-                }
-                var that = this;
-                let dataModel = await that.dataModels.create(name, args);
-                let obj = dataModel.objectByName("test_data");
-                assert.ok(obj);
-
-                let pivotSpecification = obj.createPivotSpecification();
-                // Test error handling for row split
-                try {
-                    pivotSpecification.addRowSplit("has_boris", "Wrong type here");
-                    assert.ok(false);
-                }
-                catch (e) {
-                    assert.ok(e);
-                    assert.strictEqual(e.message, "Field was of type " + obj.fieldByName("has_boris").type + ", expected number or string.");
-                }
-                let field = getNextId();
-                try {
-
-                    pivotSpecification.addRowSplit(field, "Break Me!");
-                    assert.ok(false);
-                }
-                catch (e) {
-                    assert.ok(e);
-                    assert.strictEqual(e.message, "Did not find field " + field);
-                }
-
-                // Test row split, number
-                pivotSpecification.addRowSplit("epsilon", "My Label");
-                assert.strictEqual(1, pivotSpecification.rows.length);
-
-                let row = pivotSpecification.rows[0];
-                assert.ok(row.hasOwnProperty("fieldName"));
-                assert.ok(row.hasOwnProperty("owner"));
-                assert.ok(row.hasOwnProperty("type"));
-                assert.ok(row.hasOwnProperty("label"));
-                assert.ok(row.hasOwnProperty("display"));
-
-                assert.strictEqual("epsilon", row.fieldName);
-                assert.strictEqual("test_data", row.owner);
-                assert.strictEqual("number", row.type);
-                assert.strictEqual("My Label", row.label);
-                assert.strictEqual("all", row.display);
-                assert.deepEqual({
-                    fieldName: "epsilon",
-                    owner: "test_data",
-                    type: "number",
-                    label: "My Label",
-                    display: "all"
-                },
-                    row);
-
-                // Test row split, string
-                pivotSpecification.addRowSplit("host", "My Label");
-                assert.strictEqual(2, pivotSpecification.rows.length);
-
-                row = pivotSpecification.rows[pivotSpecification.rows.length - 1];
-                assert.ok(row.hasOwnProperty("fieldName"));
-                assert.ok(row.hasOwnProperty("owner"));
-                assert.ok(row.hasOwnProperty("type"));
-                assert.ok(row.hasOwnProperty("label"));
-                assert.ok(!row.hasOwnProperty("display"));
-
-                assert.strictEqual("host", row.fieldName);
-                assert.strictEqual("BaseEvent", row.owner);
-                assert.strictEqual("string", row.type);
-                assert.strictEqual("My Label", row.label);
-                assert.deepEqual({
-                    fieldName: "host",
-                    owner: "BaseEvent",
-                    type: "string",
-                    label: "My Label"
-                },
-                    row);
-
-                // Test error handling on range row split
-                try {
-                    pivotSpecification.addRangeRowSplit("has_boris", "Wrong type here", { start: 0, end: 100, step: 20, limit: 5 });
-                }
-                catch (e) {
-                    assert.ok(e);
-                    assert.strictEqual(e.message, "Field was of type " + obj.fieldByName("has_boris").type + ", expected number.");
-                }
-                try {
-                    pivotSpecification.addRangeRowSplit(field, "Break Me!", { start: 0, end: 100, step: 20, limit: 5 });
-                    assert.ok(false);
-                }
-                catch (e) {
-                    assert.ok(e);
-                    assert.strictEqual(e.message, "Did not find field " + field);
-                }
-
-                // Test range row split
-                pivotSpecification.addRangeRowSplit("epsilon", "My Label", { start: 0, end: 100, step: 20, limit: 5 });
-                assert.strictEqual(3, pivotSpecification.rows.length);
-
-                row = pivotSpecification.rows[pivotSpecification.rows.length - 1];
-                assert.ok(row.hasOwnProperty("fieldName"));
-                assert.ok(row.hasOwnProperty("owner"));
-                assert.ok(row.hasOwnProperty("type"));
-                assert.ok(row.hasOwnProperty("label"));
-                assert.ok(row.hasOwnProperty("display"));
-                assert.ok(row.hasOwnProperty("ranges"));
-
-                assert.strictEqual("epsilon", row.fieldName);
-                assert.strictEqual("test_data", row.owner);
-                assert.strictEqual("number", row.type);
-                assert.strictEqual("My Label", row.label);
-                assert.strictEqual("ranges", row.display);
-
-                let ranges = {
-                    start: 0,
-                    end: 100,
-                    size: 20,
-                    maxNumberOf: 5
-                };
-                assert.deepEqual(ranges, row.ranges);
-                assert.deepEqual({
-                    fieldName: "epsilon",
-                    owner: "test_data",
-                    type: "number",
-                    label: "My Label",
-                    display: "ranges",
-                    ranges: ranges
-                },
-                    row);
-
-                // Test error handling on boolean row split
-                try {
-                    pivotSpecification.addBooleanRowSplit("epsilon", "Wrong type here", "t", "f");
-                }
-                catch (e) {
-                    assert.ok(e);
-                    assert.strictEqual(e.message, "Field was of type " + obj.fieldByName("epsilon").type + ", expected boolean.");
-                }
-                try {
-                    pivotSpecification.addBooleanRowSplit(field, "Break Me!", "t", "f");
-                    assert.ok(false);
-                }
-                catch (e) {
-                    assert.ok(e);
-                    assert.strictEqual(e.message, "Did not find field " + field);
-                }
-
-                // Test boolean row split
-                pivotSpecification.addBooleanRowSplit("has_boris", "My Label", "is_true", "is_false");
-                assert.strictEqual(4, pivotSpecification.rows.length);
-
-                row = pivotSpecification.rows[pivotSpecification.rows.length - 1];
-                assert.ok(row.hasOwnProperty("fieldName"));
-                assert.ok(row.hasOwnProperty("owner"));
-                assert.ok(row.hasOwnProperty("type"));
-                assert.ok(row.hasOwnProperty("label"));
-                assert.ok(row.hasOwnProperty("trueLabel"));
-                assert.ok(row.hasOwnProperty("falseLabel"));
-
-                assert.strictEqual("has_boris", row.fieldName);
-                assert.strictEqual("My Label", row.label);
-                assert.strictEqual("test_data", row.owner);
-                assert.strictEqual("boolean", row.type);
-                assert.strictEqual("is_true", row.trueLabel);
-                assert.strictEqual("is_false", row.falseLabel);
-                assert.deepEqual({
-                    fieldName: "has_boris",
-                    label: "My Label",
-                    owner: "test_data",
-                    type: "boolean",
-                    trueLabel: "is_true",
-                    falseLabel: "is_false"
-                },
-                    row);
-
-                // Test error handling on timestamp row split
-                try {
-                    pivotSpecification.addTimestampRowSplit("epsilon", "Wrong type here", "some binning");
-                }
-                catch (e) {
-                    assert.ok(e);
-                    assert.strictEqual(e.message, "Field was of type " + obj.fieldByName("epsilon").type + ", expected timestamp.");
-                }
-                try {
-                    pivotSpecification.addTimestampRowSplit(field, "Break Me!", "some binning");
-                    assert.ok(false);
-                }
-                catch (e) {
-                    assert.ok(e);
-                    assert.strictEqual(e.message, "Did not find field " + field);
-                }
-                try {
-                    pivotSpecification.addTimestampRowSplit("_time", "some label", "Bogus binning value");
-                    assert.ok(false);
-                }
-                catch (e) {
-                    assert.ok(e);
-                    assert.strictEqual(e.message, "Invalid binning Bogus binning value found. Valid values are: " + pivotSpecification._binning.join(", "));
-                }
-
-                // Test timestamp row split
-                pivotSpecification.addTimestampRowSplit("_time", "My Label", "day");
-                assert.strictEqual(5, pivotSpecification.rows.length);
-
-                row = pivotSpecification.rows[pivotSpecification.rows.length - 1];
-                assert.ok(row.hasOwnProperty("fieldName"));
-                assert.ok(row.hasOwnProperty("owner"));
-                assert.ok(row.hasOwnProperty("type"));
-                assert.ok(row.hasOwnProperty("label"));
-                assert.ok(row.hasOwnProperty("period"));
-
-                assert.strictEqual("_time", row.fieldName);
-                assert.strictEqual("My Label", row.label);
-                assert.strictEqual("BaseEvent", row.owner);
-                assert.strictEqual("timestamp", row.type);
-                assert.strictEqual("day", row.period);
-                assert.deepEqual({
-                    fieldName: "_time",
-                    label: "My Label",
-                    owner: "BaseEvent",
-                    type: "timestamp",
-                    period: "day"
-                },
-                    row);
-            })
-
-            it("Pivot - test column split", async function () {
-                if (this.skip) {
-                    return;
-                }
-                let name = "delete-me-" + getNextId();
-                let args;
-                try {
-                    args = JSON.parse(utils.readFile(__filename, "../../data/data_model_for_pivot.json"));
-                }
-                catch (err) {
-                    // Fail if we can't read the file, likely to occur in the browser
-                    assert.ok(!err);
-                }
-                var that = this;
-                let dataModel = await that.dataModels.create(name, args);
-                let obj = dataModel.objectByName("test_data");
-                assert.ok(obj);
-
-                let pivotSpecification = obj.createPivotSpecification();
-                // Test error handling for column split
-                try {
-                    pivotSpecification.addColumnSplit("has_boris", "Wrong type here");
-                    assert.ok(false);
-                }
-                catch (e) {
-                    assert.ok(e);
-                    assert.strictEqual(e.message, "Field was of type " + obj.fieldByName("has_boris").type + ", expected number or string.");
-                }
-                let field = getNextId();
-                try {
-
-                    pivotSpecification.addColumnSplit(field, "Break Me!");
-                    assert.ok(false);
-                }
-                catch (e) {
-                    assert.ok(e);
-                    assert.strictEqual(e.message, "Did not find field " + field);
-                }
-
-                // Test column split, number
-                pivotSpecification.addColumnSplit("epsilon");
-                assert.strictEqual(1, pivotSpecification.columns.length);
-
-                let col = pivotSpecification.columns[pivotSpecification.columns.length - 1];
-                assert.ok(col.hasOwnProperty("fieldName"));
-                assert.ok(col.hasOwnProperty("owner"));
-                assert.ok(col.hasOwnProperty("type"));
-                assert.ok(col.hasOwnProperty("display"));
-
-                assert.strictEqual("epsilon", col.fieldName);
-                assert.strictEqual("test_data", col.owner);
-                assert.strictEqual("number", col.type);
-                assert.strictEqual("all", col.display);
-                assert.deepEqual({
-                    fieldName: "epsilon",
-                    owner: "test_data",
-                    type: "number",
-                    display: "all"
-                },
-                    col);
-
-                // Test column split, string
-                pivotSpecification.addColumnSplit("host");
-                assert.strictEqual(2, pivotSpecification.columns.length);
-
-                col = pivotSpecification.columns[pivotSpecification.columns.length - 1];
-                assert.ok(col.hasOwnProperty("fieldName"));
-                assert.ok(col.hasOwnProperty("owner"));
-                assert.ok(col.hasOwnProperty("type"));
-                assert.ok(!col.hasOwnProperty("display"));
-
-                assert.strictEqual("host", col.fieldName);
-                assert.strictEqual("BaseEvent", col.owner);
-                assert.strictEqual("string", col.type);
-                assert.deepEqual({
-                    fieldName: "host",
-                    owner: "BaseEvent",
-                    type: "string"
-                },
-                    col);
-
-                // Test error handling for range column split
-                try {
-                    pivotSpecification.addRangeColumnSplit("has_boris", "Wrong type here", { start: 0, end: 100, step: 20, limit: 5 });
-                }
-                catch (e) {
-                    assert.ok(e);
-                    assert.strictEqual(e.message, "Field was of type " + obj.fieldByName("has_boris").type + ", expected number.");
-                }
-                try {
-                    pivotSpecification.addRangeColumnSplit(field, { start: 0, end: 100, step: 20, limit: 5 });
-                    assert.ok(false);
-                }
-                catch (e) {
-                    assert.ok(e);
-                    assert.strictEqual(e.message, "Did not find field " + field);
-                }
-
-                // Test range column split
-                pivotSpecification.addRangeColumnSplit("epsilon", { start: 0, end: 100, step: 20, limit: 5 });
-                assert.strictEqual(3, pivotSpecification.columns.length);
-
-                col = pivotSpecification.columns[pivotSpecification.columns.length - 1];
-                assert.ok(col.hasOwnProperty("fieldName"));
-                assert.ok(col.hasOwnProperty("owner"));
-                assert.ok(col.hasOwnProperty("type"));
-                assert.ok(col.hasOwnProperty("display"));
-                assert.ok(col.hasOwnProperty("ranges"));
-
-                assert.strictEqual("epsilon", col.fieldName);
-                assert.strictEqual("test_data", col.owner);
-                assert.strictEqual("number", col.type);
-                assert.strictEqual("ranges", col.display);
-                let ranges = {
-                    start: 0,
-                    end: 100,
-                    size: 20,
-                    maxNumberOf: 5
-                };
-                assert.deepEqual(ranges, col.ranges);
-                assert.deepEqual({
-                    fieldName: "epsilon",
-                    owner: "test_data",
-                    type: "number",
-                    display: "ranges",
-                    ranges: ranges
-                },
-                    col);
-
-                // Test error handling on boolean column split
-                try {
-                    pivotSpecification.addBooleanColumnSplit("epsilon", "t", "f");
-                }
-                catch (e) {
-                    assert.ok(e);
-                    assert.strictEqual(e.message, "Field was of type " + obj.fieldByName("epsilon").type + ", expected boolean.");
-                }
-                try {
-                    pivotSpecification.addBooleanColumnSplit(field, "t", "f");
-                    assert.ok(false);
-                }
-                catch (e) {
-                    assert.ok(e);
-                    assert.strictEqual(e.message, "Did not find field " + field);
-                }
-
-                // Test boolean column split
-                pivotSpecification.addBooleanColumnSplit("has_boris", "is_true", "is_false");
-                assert.strictEqual(4, pivotSpecification.columns.length);
-
-                col = pivotSpecification.columns[pivotSpecification.columns.length - 1];
-                assert.ok(col.hasOwnProperty("fieldName"));
-                assert.ok(col.hasOwnProperty("owner"));
-                assert.ok(col.hasOwnProperty("type"));
-                assert.ok(!col.hasOwnProperty("label"));
-                assert.ok(col.hasOwnProperty("trueLabel"));
-                assert.ok(col.hasOwnProperty("falseLabel"));
-
-                assert.strictEqual("has_boris", col.fieldName);
-                assert.strictEqual("test_data", col.owner);
-                assert.strictEqual("boolean", col.type);
-                assert.strictEqual("is_true", col.trueLabel);
-                assert.strictEqual("is_false", col.falseLabel);
-                assert.deepEqual({
-                    fieldName: "has_boris",
-                    owner: "test_data",
-                    type: "boolean",
-                    trueLabel: "is_true",
-                    falseLabel: "is_false"
-                },
-                    col);
-
-                // Test error handling on timestamp column split
-                try {
-                    pivotSpecification.addTimestampColumnSplit("epsilon", "Wrong type here");
-                }
-                catch (e) {
-                    assert.ok(e);
-                    assert.strictEqual(e.message, "Field was of type " + obj.fieldByName("epsilon").type + ", expected timestamp.");
-                }
-                try {
-                    pivotSpecification.addTimestampColumnSplit(field, "Break Me!");
-                    assert.ok(false);
-                }
-                catch (e) {
-                    assert.ok(e);
-                    assert.strictEqual(e.message, "Did not find field " + field);
-                }
-                try {
-                    pivotSpecification.addTimestampColumnSplit("_time", "Bogus binning value");
-                    assert.ok(false);
-                }
-                catch (e) {
-                    assert.ok(e);
-                    assert.strictEqual(e.message, "Invalid binning Bogus binning value found. Valid values are: " + pivotSpecification._binning.join(", "));
-                }
-
-                // Test timestamp column split
-                pivotSpecification.addTimestampColumnSplit("_time", "day");
-                assert.strictEqual(5, pivotSpecification.columns.length);
-
-                col = pivotSpecification.columns[pivotSpecification.columns.length - 1];
-                assert.ok(col.hasOwnProperty("fieldName"));
-                assert.ok(col.hasOwnProperty("owner"));
-                assert.ok(col.hasOwnProperty("type"));
-                assert.ok(!col.hasOwnProperty("label"));
-                assert.ok(col.hasOwnProperty("period"));
-
-                assert.strictEqual("_time", col.fieldName);
-                assert.strictEqual("BaseEvent", col.owner);
-                assert.strictEqual("timestamp", col.type);
-                assert.strictEqual("day", col.period);
-                assert.deepEqual({
-                    fieldName: "_time",
-                    owner: "BaseEvent",
-                    type: "timestamp",
-                    period: "day"
-                },
-                    col);
-            })
-
-            it("Pivot - test cell value", async function () {
-                if (this.skip) {
-                    return;
-                }
-                let name = "delete-me-" + getNextId();
-                let args;
-                try {
-                    args = JSON.parse(utils.readFile(__filename, "../../data/data_model_for_pivot.json"));
-                }
-                catch (err) {
-                    // Fail if we can't read the file, likely to occur in the browser
-                    assert.ok(!err);
-                }
-                var that = this;
-                let dataModel = await that.dataModels.create(name, args);
-                let obj = dataModel.objectByName("test_data");
-                assert.ok(obj);
-
-                let pivotSpecification = obj.createPivotSpecification()
-                // Test error handling for cell value, string
-                try {
-                    pivotSpecification.addCellValue("iDontExist", "Break Me!", "explosion");
-                    assert.ok(false);
-                }
-                catch (e) {
-                    assert.ok(e);
-                    assert.strictEqual(e.message, "Did not find field iDontExist");
-                }
-                try {
-                    pivotSpecification.addCellValue("source", "Wrong Stats Function", "stdev");
-                    assert.ok(false);
-                }
-                catch (e) {
-                    assert.ok(e);
-                    assert.strictEqual(e.message, "Stats function on string and IPv4 fields must be one of:" +
-                        " list, distinct_values, first, last, count, or distinct_count; found stdev");
-                }
-
-                // Add cell value, string
-                pivotSpecification.addCellValue("source", "Source Value", "dc");
-                assert.strictEqual(1, pivotSpecification.cells.length);
-
-                let cell = pivotSpecification.cells[pivotSpecification.cells.length - 1];
-                assert.ok(cell.hasOwnProperty("fieldName"));
-                assert.ok(cell.hasOwnProperty("owner"));
-                assert.ok(cell.hasOwnProperty("type"));
-                assert.ok(cell.hasOwnProperty("label"));
-                assert.ok(cell.hasOwnProperty("value"));
-                assert.ok(cell.hasOwnProperty("sparkline"));
-
-                assert.strictEqual("source", cell.fieldName);
-                assert.strictEqual("BaseEvent", cell.owner);
-                assert.strictEqual("string", cell.type);
-                assert.strictEqual("Source Value", cell.label);
-                assert.strictEqual("dc", cell.value);
-                assert.strictEqual(false, cell.sparkline);
-                assert.deepEqual({
-                    fieldName: "source",
-                    owner: "BaseEvent",
-                    type: "string",
-                    label: "Source Value",
-                    value: "dc",
-                    sparkline: false
-                }, cell);
-
-                // Test error handling for cell value, IPv4
-                try {
-                    pivotSpecification.addCellValue("hostip", "Wrong Stats Function", "stdev");
-                    assert.ok(false);
-                }
-                catch (e) {
-                    assert.ok(e);
-                    assert.strictEqual(e.message, "Stats function on string and IPv4 fields must be one of:" +
-                        " list, distinct_values, first, last, count, or distinct_count; found stdev");
-                }
-
-                // Add cell value, IPv4
-                pivotSpecification.addCellValue("hostip", "Source Value", "dc");
-                assert.strictEqual(2, pivotSpecification.cells.length);
-
-                cell = pivotSpecification.cells[pivotSpecification.cells.length - 1];
-                assert.ok(cell.hasOwnProperty("fieldName"));
-                assert.ok(cell.hasOwnProperty("owner"));
-                assert.ok(cell.hasOwnProperty("type"));
-                assert.ok(cell.hasOwnProperty("label"));
-                assert.ok(cell.hasOwnProperty("value"));
-                assert.ok(cell.hasOwnProperty("sparkline"));
-
-                assert.strictEqual("hostip", cell.fieldName);
-                assert.strictEqual("test_data", cell.owner);
-                assert.strictEqual("ipv4", cell.type);
-                assert.strictEqual("Source Value", cell.label);
-                assert.strictEqual("dc", cell.value);
-                assert.strictEqual(false, cell.sparkline);
-                assert.deepEqual({
-                    fieldName: "hostip",
-                    owner: "test_data",
-                    type: "ipv4",
-                    label: "Source Value",
-                    value: "dc",
-                    sparkline: false
-                }, cell);
-
-                // Test error handling for cell value, boolean
-                try {
-                    pivotSpecification.addCellValue("has_boris", "Booleans not allowed", "sum");
-                    assert.ok(false);
-                }
-                catch (e) {
-                    assert.ok(e);
-                    assert.strictEqual(e.message, "Cannot use boolean valued fields as cell values.");
-                }
-
-                // Test error handling for cell value, number
-                try {
-                    pivotSpecification.addCellValue("epsilon", "Wrong Stats Function", "latest");
-                    assert.ok(false);
-                }
-                catch (e) {
-                    assert.ok(e);
-                    assert.strictEqual(e.message, "Stats function on number field must be must be one of:" +
-                        " sum, count, average, max, min, stdev, list, or distinct_values; found latest");
-                }
-
-                // Add cell value, number
-                pivotSpecification.addCellValue("epsilon", "Source Value", "average");
-                assert.strictEqual(3, pivotSpecification.cells.length);
-
-                cell = pivotSpecification.cells[pivotSpecification.cells.length - 1];
-                assert.ok(cell.hasOwnProperty("fieldName"));
-                assert.ok(cell.hasOwnProperty("owner"));
-                assert.ok(cell.hasOwnProperty("type"));
-                assert.ok(cell.hasOwnProperty("label"));
-                assert.ok(cell.hasOwnProperty("value"));
-                assert.ok(cell.hasOwnProperty("sparkline"));
-
-                assert.strictEqual("epsilon", cell.fieldName);
-                assert.strictEqual("test_data", cell.owner);
-                assert.strictEqual("number", cell.type);
-                assert.strictEqual("Source Value", cell.label);
-                assert.strictEqual("average", cell.value);
-                assert.strictEqual(false, cell.sparkline);
-                assert.deepEqual({
-                    fieldName: "epsilon",
-                    owner: "test_data",
-                    type: "number",
-                    label: "Source Value",
-                    value: "average",
-                    sparkline: false
-                }, cell);
-
-                // Test error handling for cell value, timestamp
-                try {
-                    pivotSpecification.addCellValue("_time", "Wrong Stats Function", "max");
-                    assert.ok(false);
-                }
-                catch (e) {
-                    assert.ok(e);
-                    assert.strictEqual(e.message, "Stats function on timestamp field must be one of:" +
-                        " duration, earliest, latest, list, or distinct values; found max");
-                }
-
-                // Add cell value, timestamp
-                pivotSpecification.addCellValue("_time", "Source Value", "earliest");
-                assert.strictEqual(4, pivotSpecification.cells.length);
-
-                cell = pivotSpecification.cells[pivotSpecification.cells.length - 1];
-                assert.ok(cell.hasOwnProperty("fieldName"));
-                assert.ok(cell.hasOwnProperty("owner"));
-                assert.ok(cell.hasOwnProperty("type"));
-                assert.ok(cell.hasOwnProperty("label"));
-                assert.ok(cell.hasOwnProperty("value"));
-                assert.ok(cell.hasOwnProperty("sparkline"));
-
-                assert.strictEqual("_time", cell.fieldName);
-                assert.strictEqual("BaseEvent", cell.owner);
-                assert.strictEqual("timestamp", cell.type);
-                assert.strictEqual("Source Value", cell.label);
-                assert.strictEqual("earliest", cell.value);
-                assert.strictEqual(false, cell.sparkline);
-                assert.deepEqual({
-                    fieldName: "_time",
-                    owner: "BaseEvent",
-                    type: "timestamp",
-                    label: "Source Value",
-                    value: "earliest",
-                    sparkline: false
-                }, cell);
-
-                // Test error handling for cell value, count
-                try {
-                    pivotSpecification.addCellValue("test_data", "Wrong Stats Function", "min");
-                    assert.ok(false);
-                }
-                catch (e) {
-                    assert.ok(e);
-                    assert.strictEqual(e.message, "Stats function on childcount and objectcount fields " +
-                        "must be count; found " + "min");
-                }
-
-                // Add cell value, count
-                pivotSpecification.addCellValue("test_data", "Source Value", "count");
-                assert.strictEqual(5, pivotSpecification.cells.length);
-
-                cell = pivotSpecification.cells[pivotSpecification.cells.length - 1];
-                assert.ok(cell.hasOwnProperty("fieldName"));
-                assert.ok(cell.hasOwnProperty("owner"));
-                assert.ok(cell.hasOwnProperty("type"));
-                assert.ok(cell.hasOwnProperty("label"));
-                assert.ok(cell.hasOwnProperty("value"));
-                assert.ok(cell.hasOwnProperty("sparkline"));
-
-                assert.strictEqual("test_data", cell.fieldName);
-                assert.strictEqual("test_data", cell.owner);
-                assert.strictEqual("objectCount", cell.type);
-                assert.strictEqual("Source Value", cell.label);
-                assert.strictEqual("count", cell.value);
-                assert.strictEqual(false, cell.sparkline);
-                assert.deepEqual({
-                    fieldName: "test_data",
-                    owner: "test_data",
-                    type: "objectCount",
-                    label: "Source Value",
-                    value: "count",
-                    sparkline: false
-                }, cell);
-            })
-
-            it("Pivot - test pivot throws HTTP exception", async function () {
-                if (this.skip) {
-                    return;
-                }
-                let name = "delete-me-" + getNextId();
-                let args;
-                try {
-                    args = JSON.parse(utils.readFile(__filename, "../../data/data_model_for_pivot.json"));
-                }
-                catch (err) {
-                    // Fail if we can't read the file, likely to occur in the browser
-                    assert.ok(!err);
-                }
-                var that = this;
-                try {
-                    let dataModel = await that.dataModels.create(name, args);
-                    let obj = dataModel.objectByName("test_data");
-                    assert.ok(obj);
-
-                    let pivot = await obj.createPivotSpecification().pivot();
-                    assert.ok(false);
-                } catch (err) {
-                    assert.ok(err);
-                    let expectedErr = "In handler 'datamodelpivot': Error in 'PivotReport': Must have non-empty cells or non-empty rows.";
-                    assert.ok(utils.endsWith(err.message, expectedErr));
-                }
-            })
-
-            it("Pivot - test pivot with simple namespace", async function () {
-                if (this.skip) {
-                    return;
-                }
-                let name = "delete-me-" + getNextId();
-                let args;
-                try {
-                    args = JSON.parse(utils.readFile(__filename, "../../data/data_model_for_pivot.json"));
-                }
-                catch (err) {
-                    // Fail if we can't read the file, likely to occur in the browser
-                    assert.ok(!err);
-                }
-                var that = this;
-                let obj;
-                let pivotSpecification;
-                let adhocjob;
-                let dataModel = await that.dataModels.create(name, args);
-                obj = dataModel.objectByName("test_data");
-                assert.ok(obj);
-                job = await obj.createLocalAccelerationJob(null);
-                adhocjob = job;
-                assert.ok(job);
-                pivotSpecification = obj.createPivotSpecification();
-
-                pivotSpecification.addBooleanRowSplit("has_boris", "Has Boris", "meep", "hilda");
-                pivotSpecification.addCellValue("hostip", "Distinct IPs", "count");
-
-                // Test setting a job
-                pivotSpecification.setAccelerationJob(job);
-                assert.strictEqual("string", typeof pivotSpecification.accelerationNamespace);
-                assert.strictEqual("sid=" + job.sid, pivotSpecification.accelerationNamespace);
-
-                // Test setting a job's SID
-                pivotSpecification.setAccelerationJob(job.sid);
-                assert.strictEqual("string", typeof pivotSpecification.accelerationNamespace);
-                assert.strictEqual("sid=" + job.sid, pivotSpecification.accelerationNamespace);
-
-                let pivot = await pivotSpecification.pivot();
-                assert.ok(pivot.tstatsSearch);
-                assert.ok(pivot.tstatsSearch.length > 0);
-                assert.strictEqual(0, pivot.tstatsSearch.indexOf("| tstats"));
-                // This test won't work with utils.startsWith due to the regex escaping
-                assert.strictEqual("| tstats", pivot.tstatsSearch.match("^\\| tstats")[0]);
-                assert.strictEqual(1, pivot.tstatsSearch.match("^\\| tstats").length);
-                job = await pivot.run();
-                await tutils.pollUntil(
-                    job,
-                    function (j) {
-                        return job.properties().isDone;
+                Async.chain([
+                    function (done) {
+                        that.dataModels.create(name, args, done);
                     },
-                    10
+                    function (dataModel, done) {
+                        assert.ok(dataModel.objectByName("test_data"));
+                        done();
+                    }
+                ],
+                    function (err) {
+                        assert.ok(!err);
+                        done();
+                    }
                 );
-                assert.ok("FAILED" !== job.properties().dispatchState);
-                assert.strictEqual(0, job.properties().request.search.indexOf("| tstats"));
-                // This test won't work with utils.startsWith due to the regex escaping
-                assert.strictEqual("| tstats", job.properties().request.search.match("^\\| tstats")[0]);
-                assert.strictEqual(1, job.properties().request.search.match("^\\| tstats").length);
-
-                await adhocjob.cancel();
-
             })
 
-            it("Pivot - test pivot column range split", async function () {
+            it("Callback#Pivot - test acceleration, then pivot", function (done) {
+                if (this.skip) {
+                    done();
+                    return;
+                }
+                var name = "delete-me-" + getNextId();
+                var args;
+                try {
+                    args = JSON.parse(utils.readFile(__filename, "../../data/data_model_for_pivot.json"));
+                }
+                catch (err) {
+                    // Fail if we can't read the file, likely to occur in the browser
+                    assert.ok(!err);
+                    done();
+                }
+                var that = this;
+                Async.chain([
+                    function (done) {
+                        that.dataModels.create(name, args, done);
+                    },
+                    function (dataModel, done) {
+                        dataModel.objectByName("test_data");
+                        assert.ok(dataModel);
+
+                        dataModel.acceleration.enabled = true;
+                        dataModel.acceleration.earliestTime = "-2mon";
+                        dataModel.acceleration.cronSchedule = "0 */12 * * *";
+                        dataModel.update(done);
+                    },
+                    function (dataModel, done) {
+                        var props = dataModel.properties();
+
+                        assert.strictEqual(true, dataModel.isAccelerated());
+                        assert.strictEqual(true, !!dataModel.acceleration.enabled);
+                        assert.strictEqual("-2mon", dataModel.acceleration.earliest_time);
+                        assert.strictEqual("0 */12 * * *", dataModel.acceleration.cron_schedule);
+
+                        var dataModelObject = dataModel.objectByName("test_data");
+                        var pivotSpecification = dataModelObject.createPivotSpecification();
+
+                        assert.strictEqual(dataModelObject.dataModel.name, pivotSpecification.accelerationNamespace);
+
+                        var name1 = "delete-me-" + getNextId();
+                        pivotSpecification.setAccelerationJob(name1);
+                        assert.strictEqual("sid=" + name1, pivotSpecification.accelerationNamespace);
+
+                        var namespaceTemp = "delete-me-" + getNextId();
+                        pivotSpecification.accelerationNamespace = namespaceTemp;
+                        assert.strictEqual(namespaceTemp, pivotSpecification.accelerationNamespace);
+
+                        pivotSpecification
+                            .addCellValue("test_data", "Source Value", "count")
+                            .run(done);
+                    },
+                    function (job, pivot, done) {
+                        assert.ok(job);
+                        assert.ok(pivot);
+                        assert.notStrictEqual("FAILED", job.properties().dispatchState);
+
+                        job.track({}, function (job) {
+                            assert.ok(pivot.tstatsSearch);
+                            assert.strictEqual(0, job.properties().request.search.indexOf("| tstats"));
+                            assert.strictEqual("| tstats", job.properties().request.search.match("^\\| tstats")[0]);
+                            assert.strictEqual(1, job.properties().request.search.match("^\\| tstats").length);
+
+                            assert.strictEqual(pivot.tstatsSearch, job.properties().request.search);
+                            done(null, job);
+                        });
+                    },
+                    function (job, done) {
+                        assert.ok(job);
+                        done();
+                    }
+                ],
+                    function (err) {
+                        assert.ok(!err);
+                        done();
+                    }
+                );
+            })
+
+            it("Callback#Pivot - test illegal filtering (all types)", function (done) {
+                if (this.skip) {
+                    done();
+                    return;
+                }
+                var name = "delete-me-" + getNextId();
+                var args;
+                try {
+                    args = JSON.parse(utils.readFile(__filename, "../../data/data_model_for_pivot.json"));
+                }
+                catch (err) {
+                    // Fail if we can't read the file, likely to occur in the browser
+                    assert.ok(!err);
+                    done();
+                }
+                var that = this;
+                Async.chain([
+                    function (done) {
+                        that.dataModels.create(name, args, done);
+                    },
+                    function (dataModel, done) {
+                        var obj = dataModel.objectByName("test_data");
+                        assert.ok(obj);
+
+                        var pivotSpecification = obj.createPivotSpecification();
+
+                        // Boolean comparisons
+                        try {
+                            pivotSpecification.addFilter(getNextId(), "boolean", "=", true);
+                            assert.ok(false);
+                        }
+                        catch (e) {
+                            assert.ok(e);
+                            assert.strictEqual(e.message, "Cannot add filter on a nonexistent field.");
+                        }
+                        try {
+                            pivotSpecification.addFilter("_time", "boolean", "=", true);
+                            assert.ok(false);
+                        }
+                        catch (e) {
+                            assert.ok(e);
+                            assert.strictEqual(e.message, "Cannot add boolean filter on _time because it is of type timestamp");
+                        }
+
+                        // String comparisons
+                        try {
+                            pivotSpecification.addFilter("has_boris", "string", "contains", "abc");
+                            assert.ok(false);
+                        }
+                        catch (e) {
+                            assert.ok(e);
+                            assert.strictEqual(e.message, "Cannot add string filter on has_boris because it is of type boolean");
+                        }
+                        try {
+                            pivotSpecification.addFilter(getNextId(), "string", "contains", "abc");
+                            assert.ok(false);
+                        }
+                        catch (e) {
+                            assert.ok(e);
+                            assert.strictEqual(e.message, "Cannot add filter on a nonexistent field.");
+                        }
+
+                        // IPv4 comparisons
+                        try {
+                            pivotSpecification.addFilter("has_boris", "ipv4", "startsWith", "192.168");
+                            assert.ok(false);
+                        }
+                        catch (e) {
+                            assert.ok(e);
+                            assert.strictEqual(e.message, "Cannot add ipv4 filter on has_boris because it is of type boolean");
+                        }
+                        try {
+                            pivotSpecification.addFilter(getNextId(), "ipv4", "startsWith", "192.168");
+                            assert.ok(false);
+                        }
+                        catch (e) {
+                            assert.ok(e);
+                            assert.strictEqual(e.message, "Cannot add filter on a nonexistent field.");
+                        }
+
+                        // Number comparisons
+                        try {
+                            pivotSpecification.addFilter("has_boris", "number", "atLeast", 2.3);
+                            assert.ok(false);
+                        }
+                        catch (e) {
+                            assert.ok(e);
+                            assert.strictEqual(e.message, "Cannot add number filter on has_boris because it is of type boolean");
+                        }
+                        try {
+                            pivotSpecification.addFilter(getNextId(), "number", "atLeast", 2.3);
+                            assert.ok(false);
+                        }
+                        catch (e) {
+                            assert.ok(e);
+                            assert.strictEqual(e.message, "Cannot add filter on a nonexistent field.");
+                        }
+
+                        // Limit filter
+                        try {
+                            pivotSpecification.addLimitFilter("has_boris", "host", "DEFAULT", 50, "count");
+                            assert.ok(false);
+                        }
+                        catch (e) {
+                            assert.ok(e);
+                            assert.strictEqual(e.message, "Cannot add limit filter on has_boris because it is of type boolean");
+                        }
+                        try {
+                            pivotSpecification.addLimitFilter(getNextId(), "host", "DEFAULT", 50, "count");
+                            assert.ok(false);
+                        }
+                        catch (e) {
+                            assert.ok(e);
+                            assert.strictEqual(e.message, "Cannot add limit filter on a nonexistent field.");
+                        }
+                        try {
+                            pivotSpecification.addLimitFilter("source", "host", "DEFAULT", 50, "sum");
+                            assert.ok(false);
+                        }
+                        catch (e) {
+                            assert.ok(e);
+                            assert.strictEqual(e.message,
+                                "Stats function for fields of type string must be COUNT or DISTINCT_COUNT; found sum");
+                        }
+                        try {
+                            pivotSpecification.addLimitFilter("epsilon", "host", "DEFAULT", 50, "duration");
+                            assert.ok(false);
+                        }
+                        catch (e) {
+                            assert.ok(e);
+                            assert.strictEqual(e.message,
+                                "Stats function for fields of type number must be one of COUNT, DISTINCT_COUNT, SUM, or AVERAGE; found duration");
+                        }
+                        try {
+                            pivotSpecification.addLimitFilter("test_data", "host", "DEFAULT", 50, "list");
+                            assert.ok(false);
+                        }
+                        catch (e) {
+                            assert.ok(e);
+                            assert.strictEqual(e.message,
+                                "Stats function for fields of type object count must be COUNT; found list");
+                        }
+                        done();
+                    }
+                ],
+                    function (err) {
+                        assert.ok(!err);
+                        done();
+                    }
+                );
+            })
+
+            it("Callback#Pivot - test boolean filtering", function (done) {
+                if (this.skip) {
+                    done();
+                    return;
+                }
+                var name = "delete-me-" + getNextId();
+                var args;
+                try {
+                    args = JSON.parse(utils.readFile(__filename, "../../data/data_model_for_pivot.json"));
+                }
+                catch (err) {
+                    // Fail if we can't read the file, likely to occur in the browser
+                    assert.ok(!err);
+                    done();
+                }
+                var that = this;
+                Async.chain([
+                    function (done) {
+                        that.dataModels.create(name, args, done);
+                    },
+                    function (dataModel, done) {
+                        var obj = dataModel.objectByName("test_data");
+                        assert.ok(obj);
+
+                        var pivotSpecification = obj.createPivotSpecification();
+                        try {
+                            pivotSpecification.addFilter("has_boris", "boolean", "=", true);
+                            assert.strictEqual(1, pivotSpecification.filters.length);
+
+                            //Test the individual parts of the filter
+                            var filter = pivotSpecification.filters[0];
+
+                            assert.ok(filter.hasOwnProperty("fieldName"));
+                            assert.ok(filter.hasOwnProperty("type"));
+                            assert.ok(filter.hasOwnProperty("rule"));
+                            assert.ok(filter.hasOwnProperty("owner"));
+
+                            assert.strictEqual("has_boris", filter.fieldName);
+                            assert.strictEqual("boolean", filter.type);
+                            assert.strictEqual("=", filter.rule.comparator);
+                            assert.strictEqual(true, filter.rule.compareTo);
+                            assert.strictEqual("test_data", filter.owner);
+                        }
+                        catch (e) {
+                            assert.ok(false);
+                        }
+
+                        done();
+                    }
+                ],
+                    function (err) {
+                        assert.ok(!err);
+                        done();
+                    }
+                );
+            })
+
+            it("Callback#Pivot - test string filtering", function (done) {
+                if (this.skip) {
+                    done();
+                    return;
+                }
+                var name = "delete-me-" + getNextId();
+                var args;
+                try {
+                    args = JSON.parse(utils.readFile(__filename, "../../data/data_model_for_pivot.json"));
+                }
+                catch (err) {
+                    // Fail if we can't read the file, likely to occur in the browser
+                    assert.ok(!err);
+                    done();
+                }
+                var that = this;
+                Async.chain([
+                    function (done) {
+                        that.dataModels.create(name, args, done);
+                    },
+                    function (dataModel, done) {
+                        var obj = dataModel.objectByName("test_data");
+                        assert.ok(obj);
+
+                        var pivotSpecification = obj.createPivotSpecification();
+                        try {
+                            pivotSpecification.addFilter("host", "string", "contains", "abc");
+                            assert.strictEqual(1, pivotSpecification.filters.length);
+
+                            //Test the individual parts of the filter
+                            var filter = pivotSpecification.filters[0];
+
+                            assert.ok(filter.hasOwnProperty("fieldName"));
+                            assert.ok(filter.hasOwnProperty("type"));
+                            assert.ok(filter.hasOwnProperty("rule"));
+                            assert.ok(filter.hasOwnProperty("owner"));
+
+                            assert.strictEqual("host", filter.fieldName);
+                            assert.strictEqual("string", filter.type);
+                            assert.strictEqual("contains", filter.rule.comparator);
+                            assert.strictEqual("abc", filter.rule.compareTo);
+                            assert.strictEqual("BaseEvent", filter.owner);
+                        }
+                        catch (e) {
+                            assert.ok(false);
+                        }
+
+                        done();
+                    }
+                ],
+                    function (err) {
+                        assert.ok(!err);
+                        done();
+                    }
+                );
+            })
+
+            it("Callback#Pivot - test IPv4 filtering", function (done) {
+                if (this.skip) {
+                    done();
+                    return;
+                }
+                var name = "delete-me-" + getNextId();
+                var args;
+                try {
+                    args = JSON.parse(utils.readFile(__filename, "../../data/data_model_for_pivot.json"));
+                }
+                catch (err) {
+                    // Fail if we can't read the file, likely to occur in the browser
+                    assert.ok(!err);
+                    done();
+                }
+                var that = this;
+                Async.chain([
+                    function (done) {
+                        that.dataModels.create(name, args, done);
+                    },
+                    function (dataModel, done) {
+                        var obj = dataModel.objectByName("test_data");
+                        assert.ok(obj);
+
+                        var pivotSpecification = obj.createPivotSpecification();
+                        try {
+                            pivotSpecification.addFilter("hostip", "ipv4", "startsWith", "192.168");
+                            assert.strictEqual(1, pivotSpecification.filters.length);
+
+                            //Test the individual parts of the filter
+                            var filter = pivotSpecification.filters[0];
+
+                            assert.ok(filter.hasOwnProperty("fieldName"));
+                            assert.ok(filter.hasOwnProperty("type"));
+                            assert.ok(filter.hasOwnProperty("rule"));
+                            assert.ok(filter.hasOwnProperty("owner"));
+
+                            assert.strictEqual("hostip", filter.fieldName);
+                            assert.strictEqual("ipv4", filter.type);
+                            assert.strictEqual("startsWith", filter.rule.comparator);
+                            assert.strictEqual("192.168", filter.rule.compareTo);
+                            assert.strictEqual("test_data", filter.owner);
+                        }
+                        catch (e) {
+                            assert.ok(false);
+                        }
+
+                        done();
+                    }
+                ],
+                    function (err) {
+                        assert.ok(!err);
+                        done();
+                    }
+                );
+            })
+
+            it("Callback#Pivot - test number filtering", function (done) {
+                if (this.skip) {
+                    done();
+                    return;
+                }
+                var name = "delete-me-" + getNextId();
+                var args;
+                try {
+                    args = JSON.parse(utils.readFile(__filename, "../../data/data_model_for_pivot.json"));
+                }
+                catch (err) {
+                    // Fail if we can't read the file, likely to occur in the browser
+                    assert.ok(!err);
+                    done();
+                }
+                var that = this;
+                Async.chain([
+                    function (done) {
+                        that.dataModels.create(name, args, done);
+                    },
+                    function (dataModel, done) {
+                        var obj = dataModel.objectByName("test_data");
+                        assert.ok(obj);
+
+                        var pivotSpecification = obj.createPivotSpecification();
+                        try {
+                            pivotSpecification.addFilter("epsilon", "number", ">=", 2.3);
+                            assert.strictEqual(1, pivotSpecification.filters.length);
+
+                            //Test the individual parts of the filter
+                            var filter = pivotSpecification.filters[0];
+
+                            assert.ok(filter.hasOwnProperty("fieldName"));
+                            assert.ok(filter.hasOwnProperty("type"));
+                            assert.ok(filter.hasOwnProperty("rule"));
+                            assert.ok(filter.hasOwnProperty("owner"));
+
+                            assert.strictEqual("epsilon", filter.fieldName);
+                            assert.strictEqual("number", filter.type);
+                            assert.strictEqual(">=", filter.rule.comparator);
+                            assert.strictEqual(2.3, filter.rule.compareTo);
+                            assert.strictEqual("test_data", filter.owner);
+                        }
+                        catch (e) {
+                            assert.ok(false);
+                        }
+
+                        done();
+                    }
+                ],
+                    function (err) {
+                        assert.ok(!err);
+                        done();
+                    }
+                );
+            })
+
+            it("Callback#Pivot - test limit filtering", function (done) {
+                if (this.skip) {
+                    done();
+                    return;
+                }
+                var name = "delete-me-" + getNextId();
+                var args;
+                try {
+                    args = JSON.parse(utils.readFile(__filename, "../../data/data_model_for_pivot.json"));
+                }
+                catch (err) {
+                    // Fail if we can't read the file, likely to occur in the browser
+                    assert.ok(!err);
+                    done();
+                }
+                var that = this;
+                Async.chain([
+                    function (done) {
+                        that.dataModels.create(name, args, done);
+                    },
+                    function (dataModel, done) {
+                        var obj = dataModel.objectByName("test_data");
+                        assert.ok(obj);
+
+                        var pivotSpecification = obj.createPivotSpecification();
+                        try {
+                            pivotSpecification.addLimitFilter("epsilon", "host", "ASCENDING", 500, "average");
+                            assert.strictEqual(1, pivotSpecification.filters.length);
+
+                            //Test the individual parts of the filter
+                            var filter = pivotSpecification.filters[0];
+
+                            assert.ok(filter.hasOwnProperty("fieldName"));
+                            assert.ok(filter.hasOwnProperty("type"));
+                            assert.ok(filter.hasOwnProperty("owner"));
+                            assert.ok(filter.hasOwnProperty("attributeName"));
+                            assert.ok(filter.hasOwnProperty("attributeOwner"));
+                            assert.ok(filter.hasOwnProperty("limitType"));
+                            assert.ok(filter.hasOwnProperty("limitAmount"));
+                            assert.ok(filter.hasOwnProperty("statsFn"));
+
+                            assert.strictEqual("epsilon", filter.fieldName);
+                            assert.strictEqual("number", filter.type);
+                            assert.strictEqual("test_data", filter.owner);
+                            assert.strictEqual("host", filter.attributeName);
+                            assert.strictEqual("BaseEvent", filter.attributeOwner);
+                            assert.strictEqual("lowest", filter.limitType);
+                            assert.strictEqual(500, filter.limitAmount);
+                            assert.strictEqual("average", filter.statsFn);
+                        }
+                        catch (e) {
+                            assert.ok(false);
+                        }
+
+                        done();
+                    }
+                ],
+                    function (err) {
+                        assert.ok(!err);
+                        done();
+                    }
+                );
+            })
+
+            it("Callback#Pivot - test row split", function (done) {
+                if (this.skip) {
+                    done();
+                    return;
+                }
+                var name = "delete-me-" + getNextId();
+                var args;
+                try {
+                    args = JSON.parse(utils.readFile(__filename, "../../data/data_model_for_pivot.json"));
+                }
+                catch (err) {
+                    // Fail if we can't read the file, likely to occur in the browser
+                    assert.ok(!err);
+                    done();
+                }
+                var that = this;
+                Async.chain([
+                    function (done) {
+                        that.dataModels.create(name, args, done);
+                    },
+                    function (dataModel, done) {
+                        var obj = dataModel.objectByName("test_data");
+                        assert.ok(obj);
+
+                        var pivotSpecification = obj.createPivotSpecification();
+
+                        // Test error handling for row split
+                        try {
+                            pivotSpecification.addRowSplit("has_boris", "Wrong type here");
+                            assert.ok(false);
+                        }
+                        catch (e) {
+                            assert.ok(e);
+                            assert.strictEqual(e.message, "Field was of type " + obj.fieldByName("has_boris").type + ", expected number or string.");
+                        }
+                        var field = getNextId();
+                        try {
+
+                            pivotSpecification.addRowSplit(field, "Break Me!");
+                            assert.ok(false);
+                        }
+                        catch (e) {
+                            assert.ok(e);
+                            assert.strictEqual(e.message, "Did not find field " + field);
+                        }
+
+                        // Test row split, number
+                        pivotSpecification.addRowSplit("epsilon", "My Label");
+                        assert.strictEqual(1, pivotSpecification.rows.length);
+
+                        var row = pivotSpecification.rows[0];
+                        assert.ok(row.hasOwnProperty("fieldName"));
+                        assert.ok(row.hasOwnProperty("owner"));
+                        assert.ok(row.hasOwnProperty("type"));
+                        assert.ok(row.hasOwnProperty("label"));
+                        assert.ok(row.hasOwnProperty("display"));
+
+                        assert.strictEqual("epsilon", row.fieldName);
+                        assert.strictEqual("test_data", row.owner);
+                        assert.strictEqual("number", row.type);
+                        assert.strictEqual("My Label", row.label);
+                        assert.strictEqual("all", row.display);
+                        assert.deepEqual({
+                            fieldName: "epsilon",
+                            owner: "test_data",
+                            type: "number",
+                            label: "My Label",
+                            display: "all"
+                        },
+                            row);
+
+                        // Test row split, string
+                        pivotSpecification.addRowSplit("host", "My Label");
+                        assert.strictEqual(2, pivotSpecification.rows.length);
+
+                        row = pivotSpecification.rows[pivotSpecification.rows.length - 1];
+                        assert.ok(row.hasOwnProperty("fieldName"));
+                        assert.ok(row.hasOwnProperty("owner"));
+                        assert.ok(row.hasOwnProperty("type"));
+                        assert.ok(row.hasOwnProperty("label"));
+                        assert.ok(!row.hasOwnProperty("display"));
+
+                        assert.strictEqual("host", row.fieldName);
+                        assert.strictEqual("BaseEvent", row.owner);
+                        assert.strictEqual("string", row.type);
+                        assert.strictEqual("My Label", row.label);
+                        assert.deepEqual({
+                            fieldName: "host",
+                            owner: "BaseEvent",
+                            type: "string",
+                            label: "My Label"
+                        },
+                            row);
+
+                        // Test error handling on range row split
+                        try {
+                            pivotSpecification.addRangeRowSplit("has_boris", "Wrong type here", { start: 0, end: 100, step: 20, limit: 5 });
+                        }
+                        catch (e) {
+                            assert.ok(e);
+                            assert.strictEqual(e.message, "Field was of type " + obj.fieldByName("has_boris").type + ", expected number.");
+                        }
+                        try {
+                            pivotSpecification.addRangeRowSplit(field, "Break Me!", { start: 0, end: 100, step: 20, limit: 5 });
+                            assert.ok(false);
+                        }
+                        catch (e) {
+                            assert.ok(e);
+                            assert.strictEqual(e.message, "Did not find field " + field);
+                        }
+
+                        // Test range row split
+                        pivotSpecification.addRangeRowSplit("epsilon", "My Label", { start: 0, end: 100, step: 20, limit: 5 });
+                        assert.strictEqual(3, pivotSpecification.rows.length);
+
+                        row = pivotSpecification.rows[pivotSpecification.rows.length - 1];
+                        assert.ok(row.hasOwnProperty("fieldName"));
+                        assert.ok(row.hasOwnProperty("owner"));
+                        assert.ok(row.hasOwnProperty("type"));
+                        assert.ok(row.hasOwnProperty("label"));
+                        assert.ok(row.hasOwnProperty("display"));
+                        assert.ok(row.hasOwnProperty("ranges"));
+
+                        assert.strictEqual("epsilon", row.fieldName);
+                        assert.strictEqual("test_data", row.owner);
+                        assert.strictEqual("number", row.type);
+                        assert.strictEqual("My Label", row.label);
+                        assert.strictEqual("ranges", row.display);
+
+                        var ranges = {
+                            start: 0,
+                            end: 100,
+                            size: 20,
+                            maxNumberOf: 5
+                        };
+                        assert.deepEqual(ranges, row.ranges);
+                        assert.deepEqual({
+                            fieldName: "epsilon",
+                            owner: "test_data",
+                            type: "number",
+                            label: "My Label",
+                            display: "ranges",
+                            ranges: ranges
+                        },
+                            row);
+
+                        // Test error handling on boolean row split
+                        try {
+                            pivotSpecification.addBooleanRowSplit("epsilon", "Wrong type here", "t", "f");
+                        }
+                        catch (e) {
+                            assert.ok(e);
+                            assert.strictEqual(e.message, "Field was of type " + obj.fieldByName("epsilon").type + ", expected boolean.");
+                        }
+                        try {
+                            pivotSpecification.addBooleanRowSplit(field, "Break Me!", "t", "f");
+                            assert.ok(false);
+                        }
+                        catch (e) {
+                            assert.ok(e);
+                            assert.strictEqual(e.message, "Did not find field " + field);
+                        }
+
+                        // Test boolean row split
+                        pivotSpecification.addBooleanRowSplit("has_boris", "My Label", "is_true", "is_false");
+                        assert.strictEqual(4, pivotSpecification.rows.length);
+
+                        row = pivotSpecification.rows[pivotSpecification.rows.length - 1];
+                        assert.ok(row.hasOwnProperty("fieldName"));
+                        assert.ok(row.hasOwnProperty("owner"));
+                        assert.ok(row.hasOwnProperty("type"));
+                        assert.ok(row.hasOwnProperty("label"));
+                        assert.ok(row.hasOwnProperty("trueLabel"));
+                        assert.ok(row.hasOwnProperty("falseLabel"));
+
+                        assert.strictEqual("has_boris", row.fieldName);
+                        assert.strictEqual("My Label", row.label);
+                        assert.strictEqual("test_data", row.owner);
+                        assert.strictEqual("boolean", row.type);
+                        assert.strictEqual("is_true", row.trueLabel);
+                        assert.strictEqual("is_false", row.falseLabel);
+                        assert.deepEqual({
+                            fieldName: "has_boris",
+                            label: "My Label",
+                            owner: "test_data",
+                            type: "boolean",
+                            trueLabel: "is_true",
+                            falseLabel: "is_false"
+                        },
+                            row);
+
+                        // Test error handling on timestamp row split
+                        try {
+                            pivotSpecification.addTimestampRowSplit("epsilon", "Wrong type here", "some binning");
+                        }
+                        catch (e) {
+                            assert.ok(e);
+                            assert.strictEqual(e.message, "Field was of type " + obj.fieldByName("epsilon").type + ", expected timestamp.");
+                        }
+                        try {
+                            pivotSpecification.addTimestampRowSplit(field, "Break Me!", "some binning");
+                            assert.ok(false);
+                        }
+                        catch (e) {
+                            assert.ok(e);
+                            assert.strictEqual(e.message, "Did not find field " + field);
+                        }
+                        try {
+                            pivotSpecification.addTimestampRowSplit("_time", "some label", "Bogus binning value");
+                            assert.ok(false);
+                        }
+                        catch (e) {
+                            assert.ok(e);
+                            assert.strictEqual(e.message, "Invalid binning Bogus binning value found. Valid values are: " + pivotSpecification._binning.join(", "));
+                        }
+
+                        // Test timestamp row split
+                        pivotSpecification.addTimestampRowSplit("_time", "My Label", "day");
+                        assert.strictEqual(5, pivotSpecification.rows.length);
+
+                        row = pivotSpecification.rows[pivotSpecification.rows.length - 1];
+                        assert.ok(row.hasOwnProperty("fieldName"));
+                        assert.ok(row.hasOwnProperty("owner"));
+                        assert.ok(row.hasOwnProperty("type"));
+                        assert.ok(row.hasOwnProperty("label"));
+                        assert.ok(row.hasOwnProperty("period"));
+
+                        assert.strictEqual("_time", row.fieldName);
+                        assert.strictEqual("My Label", row.label);
+                        assert.strictEqual("BaseEvent", row.owner);
+                        assert.strictEqual("timestamp", row.type);
+                        assert.strictEqual("day", row.period);
+                        assert.deepEqual({
+                            fieldName: "_time",
+                            label: "My Label",
+                            owner: "BaseEvent",
+                            type: "timestamp",
+                            period: "day"
+                        },
+                            row);
+
+                        done();
+                    }
+                ],
+                    function (err) {
+                        assert.ok(!err);
+                        done();
+                    }
+                );
+            })
+
+            it("Callback#Pivot - test column split", function (done) {
+                if (this.skip) {
+                    done();
+                    return;
+                }
+                var name = "delete-me-" + getNextId();
+                var args;
+                try {
+                    args = JSON.parse(utils.readFile(__filename, "../../data/data_model_for_pivot.json"));
+                }
+                catch (err) {
+                    // Fail if we can't read the file, likely to occur in the browser
+                    assert.ok(!err);
+                    done();
+                }
+                var that = this;
+                Async.chain([
+                    function (done) {
+                        that.dataModels.create(name, args, done);
+                    },
+                    function (dataModel, done) {
+                        var obj = dataModel.objectByName("test_data");
+                        assert.ok(obj);
+
+                        var pivotSpecification = obj.createPivotSpecification();
+
+                        // Test error handling for column split
+                        try {
+                            pivotSpecification.addColumnSplit("has_boris", "Wrong type here");
+                            assert.ok(false);
+                        }
+                        catch (e) {
+                            assert.ok(e);
+                            assert.strictEqual(e.message, "Field was of type " + obj.fieldByName("has_boris").type + ", expected number or string.");
+                        }
+                        var field = getNextId();
+                        try {
+
+                            pivotSpecification.addColumnSplit(field, "Break Me!");
+                            assert.ok(false);
+                        }
+                        catch (e) {
+                            assert.ok(e);
+                            assert.strictEqual(e.message, "Did not find field " + field);
+                        }
+
+                        // Test column split, number
+                        pivotSpecification.addColumnSplit("epsilon");
+                        assert.strictEqual(1, pivotSpecification.columns.length);
+
+                        var col = pivotSpecification.columns[pivotSpecification.columns.length - 1];
+                        assert.ok(col.hasOwnProperty("fieldName"));
+                        assert.ok(col.hasOwnProperty("owner"));
+                        assert.ok(col.hasOwnProperty("type"));
+                        assert.ok(col.hasOwnProperty("display"));
+
+                        assert.strictEqual("epsilon", col.fieldName);
+                        assert.strictEqual("test_data", col.owner);
+                        assert.strictEqual("number", col.type);
+                        assert.strictEqual("all", col.display);
+                        assert.deepEqual({
+                            fieldName: "epsilon",
+                            owner: "test_data",
+                            type: "number",
+                            display: "all"
+                        },
+                            col);
+
+                        // Test column split, string
+                        pivotSpecification.addColumnSplit("host");
+                        assert.strictEqual(2, pivotSpecification.columns.length);
+
+                        col = pivotSpecification.columns[pivotSpecification.columns.length - 1];
+                        assert.ok(col.hasOwnProperty("fieldName"));
+                        assert.ok(col.hasOwnProperty("owner"));
+                        assert.ok(col.hasOwnProperty("type"));
+                        assert.ok(!col.hasOwnProperty("display"));
+
+                        assert.strictEqual("host", col.fieldName);
+                        assert.strictEqual("BaseEvent", col.owner);
+                        assert.strictEqual("string", col.type);
+                        assert.deepEqual({
+                            fieldName: "host",
+                            owner: "BaseEvent",
+                            type: "string"
+                        },
+                            col);
+
+                        done();
+
+                        // Test error handling for range column split
+                        try {
+                            pivotSpecification.addRangeColumnSplit("has_boris", "Wrong type here", { start: 0, end: 100, step: 20, limit: 5 });
+                        }
+                        catch (e) {
+                            assert.ok(e);
+                            assert.strictEqual(e.message, "Field was of type " + obj.fieldByName("has_boris").type + ", expected number.");
+                        }
+                        try {
+                            pivotSpecification.addRangeColumnSplit(field, { start: 0, end: 100, step: 20, limit: 5 });
+                            assert.ok(false);
+                        }
+                        catch (e) {
+                            assert.ok(e);
+                            assert.strictEqual(e.message, "Did not find field " + field);
+                        }
+
+                        // Test range column split
+                        pivotSpecification.addRangeColumnSplit("epsilon", { start: 0, end: 100, step: 20, limit: 5 });
+                        assert.strictEqual(3, pivotSpecification.columns.length);
+
+                        col = pivotSpecification.columns[pivotSpecification.columns.length - 1];
+                        assert.ok(col.hasOwnProperty("fieldName"));
+                        assert.ok(col.hasOwnProperty("owner"));
+                        assert.ok(col.hasOwnProperty("type"));
+                        assert.ok(col.hasOwnProperty("display"));
+                        assert.ok(col.hasOwnProperty("ranges"));
+
+                        assert.strictEqual("epsilon", col.fieldName);
+                        assert.strictEqual("test_data", col.owner);
+                        assert.strictEqual("number", col.type);
+                        assert.strictEqual("ranges", col.display);
+                        var ranges = {
+                            start: 0,
+                            end: 100,
+                            size: 20,
+                            maxNumberOf: 5
+                        };
+                        assert.deepEqual(ranges, col.ranges);
+                        assert.deepEqual({
+                            fieldName: "epsilon",
+                            owner: "test_data",
+                            type: "number",
+                            display: "ranges",
+                            ranges: ranges
+                        },
+                            col);
+
+                        // Test error handling on boolean column split
+                        try {
+                            pivotSpecification.addBooleanColumnSplit("epsilon", "t", "f");
+                        }
+                        catch (e) {
+                            assert.ok(e);
+                            assert.strictEqual(e.message, "Field was of type " + obj.fieldByName("epsilon").type + ", expected boolean.");
+                        }
+                        try {
+                            pivotSpecification.addBooleanColumnSplit(field, "t", "f");
+                            assert.ok(false);
+                        }
+                        catch (e) {
+                            assert.ok(e);
+                            assert.strictEqual(e.message, "Did not find field " + field);
+                        }
+
+                        // Test boolean column split
+                        pivotSpecification.addBooleanColumnSplit("has_boris", "is_true", "is_false");
+                        assert.strictEqual(4, pivotSpecification.columns.length);
+
+                        col = pivotSpecification.columns[pivotSpecification.columns.length - 1];
+                        assert.ok(col.hasOwnProperty("fieldName"));
+                        assert.ok(col.hasOwnProperty("owner"));
+                        assert.ok(col.hasOwnProperty("type"));
+                        assert.ok(!col.hasOwnProperty("label"));
+                        assert.ok(col.hasOwnProperty("trueLabel"));
+                        assert.ok(col.hasOwnProperty("falseLabel"));
+
+                        assert.strictEqual("has_boris", col.fieldName);
+                        assert.strictEqual("test_data", col.owner);
+                        assert.strictEqual("boolean", col.type);
+                        assert.strictEqual("is_true", col.trueLabel);
+                        assert.strictEqual("is_false", col.falseLabel);
+                        assert.deepEqual({
+                            fieldName: "has_boris",
+                            owner: "test_data",
+                            type: "boolean",
+                            trueLabel: "is_true",
+                            falseLabel: "is_false"
+                        },
+                            col);
+
+                        // Test error handling on timestamp column split
+                        try {
+                            pivotSpecification.addTimestampColumnSplit("epsilon", "Wrong type here");
+                        }
+                        catch (e) {
+                            assert.ok(e);
+                            assert.strictEqual(e.message, "Field was of type " + obj.fieldByName("epsilon").type + ", expected timestamp.");
+                        }
+                        try {
+                            pivotSpecification.addTimestampColumnSplit(field, "Break Me!");
+                            assert.ok(false);
+                        }
+                        catch (e) {
+                            assert.ok(e);
+                            assert.strictEqual(e.message, "Did not find field " + field);
+                        }
+                        try {
+                            pivotSpecification.addTimestampColumnSplit("_time", "Bogus binning value");
+                            assert.ok(false);
+                        }
+                        catch (e) {
+                            assert.ok(e);
+                            assert.strictEqual(e.message, "Invalid binning Bogus binning value found. Valid values are: " + pivotSpecification._binning.join(", "));
+                        }
+
+                        // Test timestamp column split
+                        pivotSpecification.addTimestampColumnSplit("_time", "day");
+                        assert.strictEqual(5, pivotSpecification.columns.length);
+
+                        col = pivotSpecification.columns[pivotSpecification.columns.length - 1];
+                        assert.ok(col.hasOwnProperty("fieldName"));
+                        assert.ok(col.hasOwnProperty("owner"));
+                        assert.ok(col.hasOwnProperty("type"));
+                        assert.ok(!col.hasOwnProperty("label"));
+                        assert.ok(col.hasOwnProperty("period"));
+
+                        assert.strictEqual("_time", col.fieldName);
+                        assert.strictEqual("BaseEvent", col.owner);
+                        assert.strictEqual("timestamp", col.type);
+                        assert.strictEqual("day", col.period);
+                        assert.deepEqual({
+                            fieldName: "_time",
+                            owner: "BaseEvent",
+                            type: "timestamp",
+                            period: "day"
+                        },
+                            col);
+                    }
+                ],
+                    function (err) {
+                        assert.ok(!err);
+                        done();
+                    }
+                );
+            })
+
+            it("Callback#Pivot - test cell value", function (done) {
+                if (this.skip) {
+                    done();
+                    return;
+                }
+                var name = "delete-me-" + getNextId();
+                var args;
+                try {
+                    args = JSON.parse(utils.readFile(__filename, "../../data/data_model_for_pivot.json"));
+                }
+                catch (err) {
+                    // Fail if we can't read the file, likely to occur in the browser
+                    assert.ok(!err);
+                    done();
+                }
+                var that = this;
+                Async.chain([
+                    function (done) {
+                        that.dataModels.create(name, args, done);
+                    },
+                    function (dataModel, done) {
+                        var obj = dataModel.objectByName("test_data");
+                        assert.ok(obj);
+
+                        var pivotSpecification = obj.createPivotSpecification();
+
+                        // Test error handling for cell value, string
+                        try {
+                            pivotSpecification.addCellValue("iDontExist", "Break Me!", "explosion");
+                            assert.ok(false);
+                        }
+                        catch (e) {
+                            assert.ok(e);
+                            assert.strictEqual(e.message, "Did not find field iDontExist");
+                        }
+                        try {
+                            pivotSpecification.addCellValue("source", "Wrong Stats Function", "stdev");
+                            assert.ok(false);
+                        }
+                        catch (e) {
+                            assert.ok(e);
+                            assert.strictEqual(e.message, "Stats function on string and IPv4 fields must be one of:" +
+                                " list, distinct_values, first, last, count, or distinct_count; found stdev");
+                        }
+
+                        // Add cell value, string
+                        pivotSpecification.addCellValue("source", "Source Value", "dc");
+                        assert.strictEqual(1, pivotSpecification.cells.length);
+
+                        var cell = pivotSpecification.cells[pivotSpecification.cells.length - 1];
+                        assert.ok(cell.hasOwnProperty("fieldName"));
+                        assert.ok(cell.hasOwnProperty("owner"));
+                        assert.ok(cell.hasOwnProperty("type"));
+                        assert.ok(cell.hasOwnProperty("label"));
+                        assert.ok(cell.hasOwnProperty("value"));
+                        assert.ok(cell.hasOwnProperty("sparkline"));
+
+                        assert.strictEqual("source", cell.fieldName);
+                        assert.strictEqual("BaseEvent", cell.owner);
+                        assert.strictEqual("string", cell.type);
+                        assert.strictEqual("Source Value", cell.label);
+                        assert.strictEqual("dc", cell.value);
+                        assert.strictEqual(false, cell.sparkline);
+                        assert.deepEqual({
+                            fieldName: "source",
+                            owner: "BaseEvent",
+                            type: "string",
+                            label: "Source Value",
+                            value: "dc",
+                            sparkline: false
+                        }, cell);
+
+                        // Test error handling for cell value, IPv4
+                        try {
+                            pivotSpecification.addCellValue("hostip", "Wrong Stats Function", "stdev");
+                            assert.ok(false);
+                        }
+                        catch (e) {
+                            assert.ok(e);
+                            assert.strictEqual(e.message, "Stats function on string and IPv4 fields must be one of:" +
+                                " list, distinct_values, first, last, count, or distinct_count; found stdev");
+                        }
+
+                        // Add cell value, IPv4
+                        pivotSpecification.addCellValue("hostip", "Source Value", "dc");
+                        assert.strictEqual(2, pivotSpecification.cells.length);
+
+                        cell = pivotSpecification.cells[pivotSpecification.cells.length - 1];
+                        assert.ok(cell.hasOwnProperty("fieldName"));
+                        assert.ok(cell.hasOwnProperty("owner"));
+                        assert.ok(cell.hasOwnProperty("type"));
+                        assert.ok(cell.hasOwnProperty("label"));
+                        assert.ok(cell.hasOwnProperty("value"));
+                        assert.ok(cell.hasOwnProperty("sparkline"));
+
+                        assert.strictEqual("hostip", cell.fieldName);
+                        assert.strictEqual("test_data", cell.owner);
+                        assert.strictEqual("ipv4", cell.type);
+                        assert.strictEqual("Source Value", cell.label);
+                        assert.strictEqual("dc", cell.value);
+                        assert.strictEqual(false, cell.sparkline);
+                        assert.deepEqual({
+                            fieldName: "hostip",
+                            owner: "test_data",
+                            type: "ipv4",
+                            label: "Source Value",
+                            value: "dc",
+                            sparkline: false
+                        }, cell);
+
+                        // Test error handling for cell value, boolean
+                        try {
+                            pivotSpecification.addCellValue("has_boris", "Booleans not allowed", "sum");
+                            assert.ok(false);
+                        }
+                        catch (e) {
+                            assert.ok(e);
+                            assert.strictEqual(e.message, "Cannot use boolean valued fields as cell values.");
+                        }
+
+                        // Test error handling for cell value, number
+                        try {
+                            pivotSpecification.addCellValue("epsilon", "Wrong Stats Function", "latest");
+                            assert.ok(false);
+                        }
+                        catch (e) {
+                            assert.ok(e);
+                            assert.strictEqual(e.message, "Stats function on number field must be must be one of:" +
+                                " sum, count, average, max, min, stdev, list, or distinct_values; found latest");
+                        }
+
+                        // Add cell value, number
+                        pivotSpecification.addCellValue("epsilon", "Source Value", "average");
+                        assert.strictEqual(3, pivotSpecification.cells.length);
+
+                        cell = pivotSpecification.cells[pivotSpecification.cells.length - 1];
+                        assert.ok(cell.hasOwnProperty("fieldName"));
+                        assert.ok(cell.hasOwnProperty("owner"));
+                        assert.ok(cell.hasOwnProperty("type"));
+                        assert.ok(cell.hasOwnProperty("label"));
+                        assert.ok(cell.hasOwnProperty("value"));
+                        assert.ok(cell.hasOwnProperty("sparkline"));
+
+                        assert.strictEqual("epsilon", cell.fieldName);
+                        assert.strictEqual("test_data", cell.owner);
+                        assert.strictEqual("number", cell.type);
+                        assert.strictEqual("Source Value", cell.label);
+                        assert.strictEqual("average", cell.value);
+                        assert.strictEqual(false, cell.sparkline);
+                        assert.deepEqual({
+                            fieldName: "epsilon",
+                            owner: "test_data",
+                            type: "number",
+                            label: "Source Value",
+                            value: "average",
+                            sparkline: false
+                        }, cell);
+
+                        // Test error handling for cell value, timestamp
+                        try {
+                            pivotSpecification.addCellValue("_time", "Wrong Stats Function", "max");
+                            assert.ok(false);
+                        }
+                        catch (e) {
+                            assert.ok(e);
+                            assert.strictEqual(e.message, "Stats function on timestamp field must be one of:" +
+                                " duration, earliest, latest, list, or distinct values; found max");
+                        }
+
+                        // Add cell value, timestamp
+                        pivotSpecification.addCellValue("_time", "Source Value", "earliest");
+                        assert.strictEqual(4, pivotSpecification.cells.length);
+
+                        cell = pivotSpecification.cells[pivotSpecification.cells.length - 1];
+                        assert.ok(cell.hasOwnProperty("fieldName"));
+                        assert.ok(cell.hasOwnProperty("owner"));
+                        assert.ok(cell.hasOwnProperty("type"));
+                        assert.ok(cell.hasOwnProperty("label"));
+                        assert.ok(cell.hasOwnProperty("value"));
+                        assert.ok(cell.hasOwnProperty("sparkline"));
+
+                        assert.strictEqual("_time", cell.fieldName);
+                        assert.strictEqual("BaseEvent", cell.owner);
+                        assert.strictEqual("timestamp", cell.type);
+                        assert.strictEqual("Source Value", cell.label);
+                        assert.strictEqual("earliest", cell.value);
+                        assert.strictEqual(false, cell.sparkline);
+                        assert.deepEqual({
+                            fieldName: "_time",
+                            owner: "BaseEvent",
+                            type: "timestamp",
+                            label: "Source Value",
+                            value: "earliest",
+                            sparkline: false
+                        }, cell);
+
+                        // Test error handling for cell value, count
+                        try {
+                            pivotSpecification.addCellValue("test_data", "Wrong Stats Function", "min");
+                            assert.ok(false);
+                        }
+                        catch (e) {
+                            assert.ok(e);
+                            assert.strictEqual(e.message, "Stats function on childcount and objectcount fields " +
+                                "must be count; found " + "min");
+                        }
+
+                        // Add cell value, count
+                        pivotSpecification.addCellValue("test_data", "Source Value", "count");
+                        assert.strictEqual(5, pivotSpecification.cells.length);
+
+                        cell = pivotSpecification.cells[pivotSpecification.cells.length - 1];
+                        assert.ok(cell.hasOwnProperty("fieldName"));
+                        assert.ok(cell.hasOwnProperty("owner"));
+                        assert.ok(cell.hasOwnProperty("type"));
+                        assert.ok(cell.hasOwnProperty("label"));
+                        assert.ok(cell.hasOwnProperty("value"));
+                        assert.ok(cell.hasOwnProperty("sparkline"));
+
+                        assert.strictEqual("test_data", cell.fieldName);
+                        assert.strictEqual("test_data", cell.owner);
+                        assert.strictEqual("objectCount", cell.type);
+                        assert.strictEqual("Source Value", cell.label);
+                        assert.strictEqual("count", cell.value);
+                        assert.strictEqual(false, cell.sparkline);
+                        assert.deepEqual({
+                            fieldName: "test_data",
+                            owner: "test_data",
+                            type: "objectCount",
+                            label: "Source Value",
+                            value: "count",
+                            sparkline: false
+                        }, cell);
+
+                        done();
+                    }
+                ],
+                    function (err) {
+                        assert.ok(!err);
+                        done();
+                    }
+                );
+            })
+
+            it("Callback#Pivot - test pivot throws HTTP exception", function (done) {
+                if (this.skip) {
+                    done();
+                    return;
+                }
+                var name = "delete-me-" + getNextId();
+                var args;
+                try {
+                    args = JSON.parse(utils.readFile(__filename, "../../data/data_model_for_pivot.json"));
+                }
+                catch (err) {
+                    // Fail if we can't read the file, likely to occur in the browser
+                    assert.ok(!err);
+                    done();
+                }
+                var that = this;
+                Async.chain([
+                    function (done) {
+                        that.dataModels.create(name, args, done);
+                    },
+                    function (dataModel, done) {
+                        var obj = dataModel.objectByName("test_data");
+                        assert.ok(obj);
+
+                        obj.createPivotSpecification().pivot(done);
+                    },
+                    function (pivot, done) {
+                        assert.ok(false);
+                    }
+                ],
+                    function (err) {
+                        assert.ok(err);
+                        var expectedErr = "In handler 'datamodelpivot': Error in 'PivotReport': Must have non-empty cells or non-empty rows.";
+                        assert.ok(utils.endsWith(err.message, expectedErr));
+                        done();
+                    }
+                );
+            })
+
+            it("Callback#Pivot - test pivot with simple namespace", function (done) {
+                if (this.skip) {
+                    done();
+                    return;
+                }
+                var name = "delete-me-" + getNextId();
+                var args;
+                try {
+                    args = JSON.parse(utils.readFile(__filename, "../../data/data_model_for_pivot.json"));
+                }
+                catch (err) {
+                    // Fail if we can't read the file, likely to occur in the browser
+                    assert.ok(!err);
+                    done();
+                }
+                var that = this;
+                var obj;
+                var pivotSpecification;
+                var adhocjob;
+                Async.chain([
+                    function (done) {
+                        that.dataModels.create(name, args, done);
+                    },
+                    function (dataModel, done) {
+                        obj = dataModel.objectByName("test_data");
+                        assert.ok(obj);
+                        obj.createLocalAccelerationJob(null, done);
+                    },
+                    function (job, done) {
+                        adhocjob = job;
+                        assert.ok(job);
+                        pivotSpecification = obj.createPivotSpecification();
+
+                        pivotSpecification.addBooleanRowSplit("has_boris", "Has Boris", "meep", "hilda");
+                        pivotSpecification.addCellValue("hostip", "Distinct IPs", "count");
+
+                        // Test setting a job
+                        pivotSpecification.setAccelerationJob(job);
+                        assert.strictEqual("string", typeof pivotSpecification.accelerationNamespace);
+                        assert.strictEqual("sid=" + job.sid, pivotSpecification.accelerationNamespace);
+
+                        // Test setting a job's SID
+                        pivotSpecification.setAccelerationJob(job.sid);
+                        assert.strictEqual("string", typeof pivotSpecification.accelerationNamespace);
+                        assert.strictEqual("sid=" + job.sid, pivotSpecification.accelerationNamespace);
+
+                        pivotSpecification.pivot(done);
+                    },
+                    function (pivot, done) {
+                        assert.ok(pivot.tstatsSearch);
+                        assert.ok(pivot.tstatsSearch.length > 0);
+                        assert.strictEqual(0, pivot.tstatsSearch.indexOf("| tstats"));
+                        // This test won't work with utils.startsWith due to the regex escaping
+                        assert.strictEqual("| tstats", pivot.tstatsSearch.match("^\\| tstats")[0]);
+                        assert.strictEqual(1, pivot.tstatsSearch.match("^\\| tstats").length);
+
+                        pivot.run(done);
+                    },
+                    function (job, done) {
+                        tutils.pollUntil(
+                            job,
+                            function (j) {
+                                return job.properties().isDone;
+                            },
+                            10,
+                            done
+                        );
+                    },
+                    function (job, done) {
+                        assert.ok("FAILED" !== job.properties().dispatchState);
+
+                        assert.strictEqual(0, job.properties().request.search.indexOf("| tstats"));
+                        // This test won't work with utils.startsWith due to the regex escaping
+                        assert.strictEqual("| tstats", job.properties().request.search.match("^\\| tstats")[0]);
+                        assert.strictEqual(1, job.properties().request.search.match("^\\| tstats").length);
+
+                        adhocjob.cancel(done);
+                    }
+                ],
+                    function (err) {
+                        assert.ok(!err);
+                        done();
+                    }
+                );
+            })
+
+            it("Callback#Pivot - test pivot column range split", function (done) {
                 // This test is here because we had a problem with fields that were supposed to be
                 // numbers being expected as strings in Splunk 6.0. This was fixed in Splunk 6.1, and accepts
                 // either strings or numbers.
 
                 if (this.skip) {
+                    done();
                     return;
                 }
                 var that = this;
-                let search;
-                let dataModels = await that.dataModels.fetch();
-                let dm = dataModels.item("internal_audit_logs");
-                let obj = dm.objectByName("searches");
-                let pivotSpecification = obj.createPivotSpecification();
-
-                pivotSpecification.addRowSplit("user", "Executing user");
-                pivotSpecification.addRangeColumnSplit("exec_time", { start: 0, end: 12, step: 5, limit: 4 });
-                pivotSpecification.addCellValue("search", "Search Query", "values");
-                let pivot = await pivotSpecification.pivot();
-                // If tstats is undefined, use pivotSearch
-                search = pivot.tstatsSearch || pivot.pivotSearch;
-                let job = await pivot.run();
-                await tutils.pollUntil(
-                    job,
-                    function (j) {
-                        return job.properties().isDone;
+                var search;
+                Async.chain([
+                    function (done) {
+                        that.dataModels.fetch(done);
                     },
-                    10
+                    function (dataModels, done) {
+                        var dm = dataModels.item("internal_audit_logs");
+                        var obj = dm.objectByName("searches");
+                        var pivotSpecification = obj.createPivotSpecification();
+
+                        pivotSpecification.addRowSplit("user", "Executing user");
+                        pivotSpecification.addRangeColumnSplit("exec_time", { start: 0, end: 12, step: 5, limit: 4 });
+                        pivotSpecification.addCellValue("search", "Search Query", "values");
+                        pivotSpecification.pivot(done);
+                    },
+                    function (pivot, done) {
+                        // If tstats is undefined, use pivotSearch
+                        search = pivot.tstatsSearch || pivot.pivotSearch;
+                        pivot.run(done);
+                    },
+                    function (job, done) {
+                        tutils.pollUntil(
+                            job,
+                            function (j) {
+                                return job.properties().isDone;
+                            },
+                            10,
+                            done
+                        );
+                    },
+                    function (job, done) {
+                        assert.notStrictEqual("FAILED", job.properties().dispatchState);
+                        // Make sure the job is run with the correct search query
+                        assert.strictEqual(search, job.properties().request.search);
+                        job.cancel(done);
+                    }
+                ],
+                    function (err) {
+                        assert.ok(!err);
+                        done();
+                    }
                 );
-                assert.notStrictEqual("FAILED", job.properties().dispatchState);
-                // Make sure the job is run with the correct search query
-                assert.strictEqual(search, job.properties().request.search);
-                await job.cancel();
             })
 
-            it("Pivot - test pivot with PivotSpecification.run and Job.track", async function () {
+            it("Callback#Pivot - test pivot with PivotSpecification.run and Job.track", function (done) {
                 if (this.skip) {
+                    done();
                     return;
                 }
                 var that = this;
-                let dataModels = await that.dataModels.fetch();
-                let dm = dataModels.item("internal_audit_logs");
-                let obj = dm.objectByName("searches");
-                let pivotSpecification = obj.createPivotSpecification();
+                Async.chain([
+                    function (done) {
+                        that.dataModels.fetch(done);
+                    },
+                    function (dataModels, done) {
+                        var dm = dataModels.item("internal_audit_logs");
+                        var obj = dm.objectByName("searches");
+                        var pivotSpecification = obj.createPivotSpecification();
 
-                pivotSpecification.addRowSplit("user", "Executing user");
-                pivotSpecification.addRangeColumnSplit("exec_time", { start: 0, end: 12, step: 5, limit: 4 });
-                pivotSpecification.addCellValue("search", "Search Query", "values");
+                        pivotSpecification.addRowSplit("user", "Executing user");
+                        pivotSpecification.addRangeColumnSplit("exec_time", { start: 0, end: 12, step: 5, limit: 4 });
+                        pivotSpecification.addCellValue("search", "Search Query", "values");
 
-                [job, pivot] = await pivotSpecification.run({});
-                job = await job.track({}, function (job) {
-                    assert.strictEqual(pivot.tstatsSearch || pivot.pivotSearch, job.properties().request.search);
-                    return job;
-                });
-                assert.notStrictEqual("FAILED", job.properties().dispatchState);
-                await job.cancel();
+                        pivotSpecification.run({}, done);
+                    },
+                    function (job, pivot, done) {
+                        job.track({}, function (job) {
+                            assert.strictEqual(pivot.tstatsSearch || pivot.pivotSearch, job.properties().request.search);
+                            done(null, job);
+                        });
+                    },
+                    function (job, done) {
+                        assert.notStrictEqual("FAILED", job.properties().dispatchState);
+                        job.cancel(done);
+                    }
+                ],
+                    function (err) {
+                        assert.ok(!err);
+                        done();
+                    }
+                );
             })
 
-            it("DataModels - delete any remaining data models created by the SDK tests", async function () {
+            it("Callback#DataModels - delete any remaining data models created by the SDK tests", function (done) {
                 if (this.skip) {
+                    done();
                     return;
                 }
-                let dataModels = await svc.dataModels().fetch();
-                let dms = dataModels.list();
-                dms.forEach(async (dataModel) => {
-                    if (utils.startsWith(dataModel.name, "delete-me")) {
-                        await dataModel.remove();
+                svc.dataModels().fetch(function (err, dataModels) {
+                    if (err) {
+                        assert.ok(!err);
                     }
+
+                    var dms = dataModels.list();
+                    Async.seriesEach(
+                        dms,
+                        function (datamodel, i, done) {
+                            // Delete any test data models that we created
+                            if (utils.startsWith(datamodel.name, "delete-me")) {
+                                datamodel.remove(done);
+                            }
+                            else {
+                                done();
+                            }
+                        },
+                        function (err) {
+                            assert.ok(!err);
+                            done();
+                        }
+                    );
                 });
             })
         })
@@ -71983,14 +73970,14 @@ if (module.id === __filename && module.parent.id.includes('mocha')) {
     var splunkjs = require('../../index');
     var options = require('../cmdline');
 
-    let cmdline = options.create().parse(process.argv);
+    var cmdline = options.create().parse(process.argv);
 
     // If there is no command line, we should return
     if (!cmdline) {
         throw new Error("Error in parsing command line parameters");
     }
 
-    let svc = new splunkjs.Service({
+    var svc = new splunkjs.Service({
         scheme: cmdline.opts.scheme,
         host: cmdline.opts.host,
         port: cmdline.opts.port,
@@ -72000,84 +73987,147 @@ if (module.id === __filename && module.parent.id.includes('mocha')) {
     });
 
     // Exports tests on a successful login
-    module.exports = new Promise(async (resolve, reject) => {
-        try {
-            await svc.login();
-            return resolve(exports.setup(svc))
-        } catch (error) {
-            throw new Error("Login failed - not running tests", error || "");
-        }
+    module.exports = new Promise((resolve, reject) => {
+        svc.login(function (err, success) {
+            if (err || !success) {
+                throw new Error("Login failed - not running tests", err || "");
+            }
+            return resolve(exports.setup(svc));
+        });
     });
 }
 
 }).call(this)}).call(this,require('_process'),"/tests/service_tests/pivot.js")
-},{"../../index":2,"../cmdline":296,"../utils":320,"_process":239,"chai":72}],309:[function(require,module,exports){
+},{"../../index":2,"../cmdline":297,"../utils":322,"_process":240,"chai":73}],310:[function(require,module,exports){
 (function (process,__filename){(function (){
 
 exports.setup = function (svc) {
     var assert = require('chai').assert;
 
     var splunkjs = require('../../index');
+
+    var Async = splunkjs.Async;
     var idCounter = 0;
 
     var getNextId = function () {
         return "id" + (idCounter++) + "_" + ((new Date()).valueOf());
     };
     return (
-        describe("Properties Tests", () => {
+        describe("Properties Test", function () {
 
-            beforeEach(function () {
+            beforeEach(function (done) {
                 this.service = svc;
+                done();
             })
 
-            it("List", async function () {
+            it("Callback#list", function (done) {
                 var that = this;
-                let namespace = { owner: "admin", app: "search" };
-                let props = await that.service.configurations(namespace).fetch();
-                let files = props.list();
-                assert.ok(files.length > 0);
+                var namespace = { owner: "admin", app: "search" };
+
+                Async.chain([
+                    function (done) {
+                        that.service.configurations(namespace).fetch(done);
+                    },
+                    function (props, done) {
+                        var files = props.list();
+                        assert.ok(files.length > 0);
+                        done();
+                    }
+                ],
+                    function (err) {
+                        assert.ok(!err);
+                        done();
+                    });
             })
 
-            it("Item", async function () {
+            it("Callback#item", function (done) {
                 var that = this;
-                let namespace = { owner: "admin", app: "search" };
-                let props = await that.service.configurations(namespace).fetch();
-                let file = props.item("web");
-                assert.ok(file);
-                file = await file.fetch();
-                assert.strictEqual(file.name, "web");
+                var namespace = { owner: "admin", app: "search" };
+
+                Async.chain([
+                    function (done) { that.service.configurations(namespace).fetch(done); },
+                    function (props, done) {
+                        var file = props.item("web");
+                        assert.ok(file);
+                        file.fetch(done);
+                    },
+                    function (file, done) {
+                        assert.strictEqual(file.name, "web");
+                        done();
+                    }
+                ],
+                    function (err) {
+                        assert.ok(!err);
+                        done();
+                    });
             })
 
-            it("Contains stanza", async function () {
+            it("Callback#contains stanza", function (done) {
                 var that = this;
-                let namespace = { owner: "admin", app: "search" };
-                let props = await that.service.configurations(namespace).fetch();
-                let file = props.item("web");
-                assert.ok(file);
-                file = await file.fetch();
-                assert.strictEqual(file.name, "web");
-                let stanza = file.item("settings");
-                assert.ok(stanza);
-                stanza = await stanza.fetch();
-                assert.ok(stanza.properties().hasOwnProperty("httpport"));
+                var namespace = { owner: "admin", app: "search" };
+
+                Async.chain([
+                    function (done) { that.service.configurations(namespace).fetch(done); },
+                    function (props, done) {
+                        var file = props.item("web");
+                        assert.ok(file);
+                        file.fetch(done);
+                    },
+                    function (file, done) {
+                        assert.strictEqual(file.name, "web");
+                        var stanza = file.item("settings");
+                        assert.ok(stanza);
+                        stanza.fetch(done);
+                    },
+                    function (stanza, done) {
+                        assert.ok(stanza.properties().hasOwnProperty("httpport"));
+                        done();
+                    }
+                ],
+                    function (err) {
+                        assert.ok(!err);
+                        done();
+                    });
             })
 
-            it("Create file, create stanza and update stanza", async function () {
+            it("Callback#create file + create stanza + update stanza", function (done) {
                 var that = this;
-                let fileName = "jssdk_file_" + getNextId();
-                let value = "barfoo_" + getNextId();
-                let namespace = { owner: "admin", app: "search" };
-                let properties = await that.service.configurations(namespace).fetch();
-                let file = await properties.create(fileName);
-                let stanza = await file.create("stanza");
-                stanza = await stanza.update({ "jssdk_foobar": value });
-                assert.strictEqual(stanza.properties()["jssdk_foobar"], value);
+                var fileName = "jssdk_file_" + getNextId();
+                var value = "barfoo_" + getNextId();
+                var namespace = { owner: "admin", app: "search" };
 
-                let configFile = new splunkjs.Service.ConfigurationFile(svc, fileName);
-                file = await configFile.fetch();
-                stanza = file.item("stanza");
-                assert.ok(stanza);
-                await stanza.remove();
+                Async.chain([
+                    function (done) {
+                        var properties = that.service.configurations(namespace);
+                        properties.fetch(done);
+                    },
+                    function (properties, done) {
+                        properties.create(fileName, done);
+                    },
+                    function (file, done) {
+                        file.create("stanza", done);
+                    },
+                    function (stanza, done) {
+                        stanza.update({ "jssdk_foobar": value }, done);
+                    },
+                    function (stanza, done) {
+                        assert.strictEqual(stanza.properties()["jssdk_foobar"], value);
+                        done();
+                    },
+                    function (done) {
+                        var file = new splunkjs.Service.ConfigurationFile(svc, fileName);
+                        file.fetch(done);
+                    },
+                    function (file, done) {
+                        var stanza = file.item("stanza");
+                        assert.ok(stanza);
+                        stanza.remove(done);
+                    }
+                ],
+                    function (err) {
+                        assert.ok(!err);
+                        done();
+                    });
             })
         })
     );
@@ -72087,14 +74137,14 @@ if (module.id === __filename && module.parent.id.includes('mocha')) {
     var splunkjs = require('../../index');
     var options = require('../cmdline');
 
-    let cmdline = options.create().parse(process.argv);
+    var cmdline = options.create().parse(process.argv);
 
     // If there is no command line, we should return
     if (!cmdline) {
         throw new Error("Error in parsing command line parameters");
     }
 
-    let svc = new splunkjs.Service({
+    var svc = new splunkjs.Service({
         scheme: cmdline.opts.scheme,
         host: cmdline.opts.host,
         port: cmdline.opts.port,
@@ -72104,370 +74154,474 @@ if (module.id === __filename && module.parent.id.includes('mocha')) {
     });
 
     // Exports tests on a successful login
-    module.exports = new Promise(async (resolve, reject) => {
-        try {
-            await svc.login();
-            return resolve(exports.setup(svc))
-        } catch (error) {
-            throw new Error("Login failed - not running tests", error || "");
-        }
+    module.exports = new Promise((resolve, reject) => {
+        svc.login(function (err, success) {
+            if (err || !success) {
+                throw new Error("Login failed - not running tests", err || "");
+            }
+            return resolve(exports.setup(svc));
+        });
     });
 }
 
 
 }).call(this)}).call(this,require('_process'),"/tests/service_tests/properties.js")
-},{"../../index":2,"../cmdline":296,"_process":239,"chai":72}],310:[function(require,module,exports){
+},{"../../index":2,"../cmdline":297,"_process":240,"chai":73}],311:[function(require,module,exports){
 (function (process,__filename){(function (){
 
 exports.setup = function (svc, loggedOutSvc) {
     var assert = require('chai').assert;
     var splunkjs = require('../../index');
     var tutils = require('../utils');
+    var Async = splunkjs.Async;
     var utils = splunkjs.Utils;
     var idCounter = 0;
     var getNextId = function () {
         return "id" + (idCounter++) + "_" + ((new Date()).valueOf());
     };
     return (
-        describe("Saved Search Tests", () => {
-            beforeEach(function () {
+        describe("Saved Search", function () {
+            beforeEach(function (done) {
                 this.service = svc;
                 this.loggedOutService = loggedOutSvc;
+                done();
             })
 
-            it("list", async function () {
-                let searches = this.service.savedSearches();
-                searches = await searches.fetch();
-                let savedSearches = searches.list();
-                assert.ok(savedSearches.length > 0);
+            it("Callback#list", function (done) {
+                var searches = this.service.savedSearches();
+                searches.fetch(function (err, searches) {
+                    var savedSearches = searches.list();
+                    assert.ok(savedSearches.length > 0);
 
-                for (let i = 0; i < savedSearches.length; i++) {
-                    assert.ok(savedSearches[i]);
-                };
+                    for (var i = 0; i < savedSearches.length; i++) {
+                        assert.ok(savedSearches[i]);
+                    }
+
+                    done();
+                });
             })
 
-            it("contains", async function () {
-                let searches = this.service.savedSearches();
-                searches = await searches.fetch();
-                let search = searches.item("Errors in the last hour");
-                assert.ok(search);
+            it("Callback#contains", function (done) {
+                var searches = this.service.savedSearches();
+                searches.fetch(function (err, searches) {
+                    var search = searches.item("Errors in the last hour");
+                    assert.ok(search);
+
+                    done();
+                });
             })
 
-            it("suppress", async function () {
-                let searches = this.service.savedSearches();
-                searches = await searches.fetch();
-                let search = searches.item("Errors in the last hour");
-                assert.ok(search);
-                await search.suppressInfo();
+            it("Callback#suppress", function (done) {
+                var searches = this.service.savedSearches();
+                searches.fetch(function (err, searches) {
+                    var search = searches.item("Errors in the last hour");
+                    assert.ok(search);
+
+                    search.suppressInfo(function (err, info, search) {
+                        assert.ok(!err);
+                        done();
+                    });
+                });
             })
 
-            it("list limit count", async function () {
-                let searches = this.service.savedSearches();
-                searches = await searches.fetch({ count: 2 });
-                let savedSearches = searches.list();
-                assert.strictEqual(savedSearches.length, 2);
+            it("Callback#list limit count", function (done) {
+                var searches = this.service.savedSearches();
+                searches.fetch({ count: 2 }, function (err, searches) {
+                    var savedSearches = searches.list();
+                    assert.strictEqual(savedSearches.length, 2);
 
-                for (let i = 0; i < savedSearches.length; i++) {
-                    assert.ok(savedSearches[i]);
-                }
+                    for (var i = 0; i < savedSearches.length; i++) {
+                        assert.ok(savedSearches[i]);
+                    }
+
+                    done();
+                });
             })
 
-            it("list filter", async function () {
-                let searches = this.service.savedSearches();
-                searches = await searches.fetch({ search: "Error" });
-                let savedSearches = searches.list();
-                assert.ok(savedSearches.length > 0);
+            it("Callback#list filter", function (done) {
+                var searches = this.service.savedSearches();
+                searches.fetch({ search: "Error" }, function (err, searches) {
+                    var savedSearches = searches.list();
+                    assert.ok(savedSearches.length > 0);
 
-                for (let i = 0; i < savedSearches.length; i++) {
-                    assert.ok(savedSearches[i]);
-                }
+                    for (var i = 0; i < savedSearches.length; i++) {
+                        assert.ok(savedSearches[i]);
+                    }
+
+                    done();
+                });
             })
 
-            it("list offset", async function () {
-                let searches = this.service.savedSearches();
-                searches = await searches.fetch({ offset: 2, count: 1 });
-                let savedSearches = searches.list();
-                assert.strictEqual(searches.paging().offset, 2);
-                assert.strictEqual(searches.paging().perPage, 1);
-                assert.strictEqual(savedSearches.length, 1);
+            it("Callback#list offset", function (done) {
+                var searches = this.service.savedSearches();
+                searches.fetch({ offset: 2, count: 1 }, function (err, searches) {
+                    var savedSearches = searches.list();
+                    assert.strictEqual(searches.paging().offset, 2);
+                    assert.strictEqual(searches.paging().perPage, 1);
+                    assert.strictEqual(savedSearches.length, 1);
 
-                for (let i = 0; i < savedSearches.length; i++) {
-                    assert.ok(savedSearches[i]);
-                }
+                    for (var i = 0; i < savedSearches.length; i++) {
+                        assert.ok(savedSearches[i]);
+                    }
+
+                    done();
+                });
             })
 
-            it("create, modify and delete", async function () {
-                let name = "jssdk_savedsearch3";
-                let originalSearch = "search * | head 1";
-                let updatedSearch = "search * | head 10";
-                let updatedDescription = "description";
+            it("Callback#create + modify + delete saved search", function (done) {
+                var name = "jssdk_savedsearch";
+                var originalSearch = "search * | head 1";
+                var updatedSearch = "search * | head 10";
+                var updatedDescription = "description";
 
-                let searches = this.service.savedSearches({ owner: this.service.username, app: "sdkappcollection" });
-                let search = await searches.create({ search: originalSearch, name: name });
-                assert.ok(search);
-                assert.strictEqual(search.name, name);
-                assert.strictEqual(search.properties().search, originalSearch);
-                assert.ok(!search.properties().description);
+                var searches = this.service.savedSearches({ owner: this.service.username, app: "sdkappcollection" });
 
-                search = await search.update({ search: updatedSearch });
-                assert.ok(search);
-                assert.strictEqual(search.name, name);
-                assert.strictEqual(search.properties().search, updatedSearch);
-                assert.ok(!search.properties().description);
+                Async.chain([
+                    function (done) {
+                        searches.create({ search: originalSearch, name: name }, done);
+                    },
+                    function (search, done) {
+                        assert.ok(search);
 
-                search = await search.update({ description: updatedDescription });
-                assert.ok(search);
-                assert.strictEqual(search.name, name);
-                assert.strictEqual(search.properties().search, updatedSearch);
-                assert.strictEqual(search.properties().description, updatedDescription);
+                        assert.strictEqual(search.name, name);
+                        assert.strictEqual(search.properties().search, originalSearch);
+                        assert.ok(!search.properties().description);
 
-                search = await search.fetch();
-                // Verify that we have the required fields
-                assert.ok(search.fields().optional.length > 1);
-                assert.ok(utils.indexOf(search.fields().optional, "disabled") > -1);
+                        search.update({ search: updatedSearch }, done);
+                    },
+                    function (search, done) {
+                        assert.ok(search);
+                        assert.ok(search);
 
-                await search.remove();
+                        assert.strictEqual(search.name, name);
+                        assert.strictEqual(search.properties().search, updatedSearch);
+                        assert.ok(!search.properties().description);
+
+                        search.update({ description: updatedDescription }, done);
+                    },
+                    function (search, done) {
+                        assert.ok(search);
+                        assert.ok(search);
+
+                        assert.strictEqual(search.name, name);
+                        assert.strictEqual(search.properties().search, updatedSearch);
+                        assert.strictEqual(search.properties().description, updatedDescription);
+
+                        search.fetch(done);
+                    },
+                    function (search, done) {
+                        // Verify that we have the required fields
+                        assert.ok(search.fields().optional.length > 1);
+                        assert.ok(utils.indexOf(search.fields().optional, "disabled") > -1);
+
+                        search.remove(done);
+                    }
+                ],
+                    function (err) {
+                        assert.ok(!err);
+                        done();
+                    }
+                );
             })
 
-            it("dispatch error", async function () {
-                let name = "jssdk_savedsearch_" + getNextId();
-                let search = new splunkjs.Service.SavedSearch(
+            it("Callback#dispatch error", function (done) {
+                var name = "jssdk_savedsearch_" + getNextId();
+                var originalSearch = "search index=_internal | head 1";
+                var search = new splunkjs.Service.SavedSearch(
                     this.loggedOutService,
                     name,
                     { owner: "nobody", app: "search" }
                 );
-                let res;
-                try {
-                    res = await search.dispatch();
-                } catch (err) {
+                search.dispatch(function (err) {
                     assert.ok(err);
-                }
-                assert.ok(!res);
+                    done();
+                });
             })
 
-            it("dispatch omitting optional arguments", async function () {
-                let name = "jssdk_savedsearch_" + getNextId();
-                let originalSearch = "search index=_internal | head 1";
+            it("Callback#dispatch omitting optional arguments", function (done) {
+                var name = "jssdk_savedsearch_" + getNextId();
+                var originalSearch = "search index=_internal | head 1";
 
-                let searches = this.service.savedSearches({ owner: this.service.username, app: "sdkappcollection" });
-                let search = await searches.create({ search: originalSearch, name: name });
-                assert.ok(search);
-                assert.strictEqual(search.name, name);
-                assert.strictEqual(search.properties().search, originalSearch);
-                assert.ok(!search.properties().description);
-                [job, search] = await search.dispatch();
-                assert.ok(job);
-                assert.ok(search);
-            })
+                var searches = this.service.savedSearches({ owner: this.service.username, app: "sdk-app-collection" });
 
-            it("history with pagination", async function () {
-                let name = "jssdk_savedsearch_" + getNextId();
-                let originalSearch = "search index=_internal | head 1";
-                let searches = this.service.savedSearches({ owner: this.service.username, app: "sdkappcollection" });
-                let search = await searches.create({ search: originalSearch, name: name });
-                assert.ok(search);
-                [job, search] = await search.dispatch();
-                assert.ok(job);
-                assert.ok(search);
-                await tutils.pollUntil(
-                    job,
-                    () => job.properties()["isDone"],
-                    10
-                );
-                assert.ok(job);
-                [jobs, search] = await search.history({ count: 1 });
-                assert.ok(jobs.length > 0);
-                assert.equal(jobs.length, 1);
-            });
-
-            it("history error", async function () {
-                const name = "jssdk_savedsearch_" + getNextId();
-                let search = new splunkjs.Service.SavedSearch(
-                    this.loggedOutService,
-                    name,
-                    { owner: "nobody", app: "search", sharing: "system" }
-                );
-                let res;
-                try {
-                    res = await search.history();
-                } catch (err) {
-                    assert.ok(err);
-                }
-                assert.ok(!res);
-            })
-
-            it("update error", async function () {
-                let name = "jssdk_savedsearch_" + getNextId();
-                let search = new splunkjs.Service.SavedSearch(
-                    this.loggedOutService,
-                    name,
-                    { owner: "nobody", app: "search", sharing: "system" }
-                );
-                let res;
-                try {
-                    res = await search.update({});
-                } catch (err) {
-                    assert.ok(err);
-                }
-                assert.ok(!res);
-            })
-
-            it("oneshot requires search string", async function () {
-                let res;
-                try {
-                    res = await this.service.oneshotSearch({ name: "jssdk_oneshot_" + getNextId() });
-                } catch (error) {
-                    assert.ok(error);
-                }
-                assert.ok(!res);
-            })
-
-            it("Create, dispatch and history", async function () {
-                let name = "jssdk_savedsearch_" + getNextId();
-                let originalSearch = "search index=_internal | head 1";
-
-                let searches = this.service.savedSearches({ owner: this.service.username, app: "sdkappcollection" });
-                let search = await searches.create({ search: originalSearch, name: name });
-                assert.ok(search);
-                assert.strictEqual(search.name, name);
-                assert.strictEqual(search.properties().search, originalSearch);
-                assert.ok(!search.properties().description);
-                [job, search] = await search.dispatch({ force_dispatch: false, "dispatch.buckets": 295 });
-                assert.ok(job);
-                assert.ok(search);
-                await tutils.pollUntil(
-                    job,
-                    function (j) {
-                        return job.properties()["isDone"];
+                Async.chain(
+                    [function (done) {
+                        searches.create({ search: originalSearch, name: name }, done);
                     },
-                    10
-                );
-                assert.strictEqual(job.properties().statusBuckets, 295);
-                let originalJob = job;
-                [jobs, search] = await search.history();
-                assert.ok(jobs);
-                assert.ok(jobs.length > 0);
-                assert.ok(search);
-                assert.ok(originalJob);
+                    function (search, done) {
+                        assert.ok(search);
 
-                let cancel = function (job) {
-                    return async function () {
-                        await job.cancel();
-                    };
-                };
-                let found = false;
-                let cancellations = [];
-                for (let i = 0; i < jobs.length; i++) {
-                    cancellations.push(cancel(jobs[i]));
-                    found = found || (jobs[i].sid === originalJob.sid);
-                }
-                assert.ok(found);
-                await search.remove();
-                await utils.parallel(cancellations);
+                        assert.strictEqual(search.name, name);
+                        assert.strictEqual(search.properties().search, originalSearch);
+                        assert.ok(!search.properties().description);
+
+                        search.dispatch(done);
+                    },
+                    function (job, search, done) {
+                        assert.ok(job);
+                        assert.ok(search);
+                    }]
+                );
+                done();
             })
 
-            it("delete test saved searches", async function () {
-                let searches = this.service.savedSearches({ owner: this.service.username, app: "sdkappcollection" });
-                searches = await searches.fetch();
-                let searchList = searches.list();
-                let err = await utils.parallelEach(
-                    searchList,
-                    async function (search, idx,) {
-                        if (utils.startsWith(search.name, "jssdk_")) {
-                            await search.remove();
-                        }
+            it("Callback#history with pagination", function (done) {
+                var name = "jssdk_savedsearch_" + getNextId();
+                var originalSearch = "search index=_internal | head 1";
+                var searches = this.service.savedSearches({ owner: this.service.username, app: "sdkappcollection" });
+
+                Async.chain([
+                    function (done) {
+                        searches.create({ search: originalSearch, name: name }, done);
+                    },
+                    function (search, done) {
+                        assert.ok(search);
+                        search.dispatch(done);
+                    },
+                    function (job, search, done) {
+                        assert.ok(job);
+                        assert.ok(search);
+                        search.dispatch(done);
+                    },
+                    function (job, search, done) {
+                        assert.ok(job);
+                        assert.ok(search);
+
+                        tutils.pollUntil(
+                            job, () => job.properties()["isDone"], 10, Async.augment(done, search)
+                        );
+                    },
+                    function (job, search, done) {
+                        search.history({ count: 1 }, Async.augment(done, job));
+                    },
+                    function (jobs, search, originalJob, done) {
+                        assert.ok(jobs.length > 0);
+                        assert.equal(jobs.length, 1);
+                        done();
+                    }],
+                    function (err) {
+                        assert.ok(!err);
+                        done();
                     }
                 );
-                assert.ok(!err);
-            })
+            });
 
-            it("Job events fails", async function () {
-                let job = new splunkjs.Service.Job(this.loggedOutService, "abc", {});
-                let res;
-                try {
-                    res = await job.events({});
-                } catch (err) {
+            it("Callback#history error", function (done) {
+                var name = "jssdk_savedsearch_" + getNextId();
+                var originalSearch = "search index=_internal | head 1";
+                var search = new splunkjs.Service.SavedSearch(
+                    this.loggedOutService,
+                    name,
+                    { owner: "nobody", app: "search", sharing: "system" }
+                );
+                search.history(function (err) {
                     assert.ok(err);
-                }
-                assert.ok(!res);
+                    done();
+                });
             })
 
-            it("Job preview fails", async function () {
-                let job = new splunkjs.Service.Job(this.loggedOutService, "abc", {});
-                try {
-                    job = await job.preview({});
-                } catch (err) {
+            it("Callback#Update error", function (done) {
+                var name = "jssdk_savedsearch_" + getNextId();
+                var originalSearch = "search index=_internal | head 1";
+                var search = new splunkjs.Service.SavedSearch(
+                    this.loggedOutService,
+                    name,
+                    { owner: "nobody", app: "search", sharing: "system" }
+                );
+                search.update(
+                    {},
+                    function (err) {
+                        assert.ok(err);
+                        done();
+                    });
+            })
+
+            it("Callback#oneshot requires search string", function (done) {
+                assert.throws(function () { this.service.oneshotSearch({ name: "jssdk_oneshot_" + getNextId() }, function (err) { }); });
+                done();
+            })
+
+            it("Callback#Create + dispatch + history", function (done) {
+                var name = "jssdk_savedsearch_" + getNextId();
+                var originalSearch = "search index=_internal | head 1";
+
+                var searches = this.service.savedSearches({ owner: this.service.username, app: "sdkappcollection" });
+
+                Async.chain(
+                    function (done) {
+                        searches.create({ search: originalSearch, name: name }, done);
+                    },
+                    function (search, done) {
+                        assert.ok(search);
+
+                        assert.strictEqual(search.name, name);
+                        assert.strictEqual(search.properties().search, originalSearch);
+                        assert.ok(!search.properties().description);
+
+                        search.dispatch({ force_dispatch: false, "dispatch.buckets": 295 }, done);
+                    },
+                    function (job, search, done) {
+                        assert.ok(job);
+                        assert.ok(search);
+
+                        tutils.pollUntil(
+                            job,
+                            function (j) {
+                                return job.properties()["isDone"];
+                            },
+                            10,
+                            Async.augment(done, search)
+                        );
+                    },
+                    function (job, search, done) {
+                        assert.strictEqual(job.properties().statusBuckets, 295);
+                        search.history(Async.augment(done, job));
+                    },
+                    function (jobs, search, originalJob, done) {
+                        assert.ok(jobs);
+                        assert.ok(jobs.length > 0);
+                        assert.ok(search);
+                        assert.ok(originalJob);
+
+                        var cancel = function (job) {
+                            return function (cb) {
+                                job.cancel(cb);
+                            };
+                        };
+
+                        var found = false;
+                        var cancellations = [];
+                        for (var i = 0; i < jobs.length; i++) {
+                            cancellations.push(cancel(jobs[i]));
+                            found = found || (jobs[i].sid === originalJob.sid);
+                        }
+
+                        assert.ok(found);
+
+                        search.remove(function (err) {
+                            if (err) {
+                                done(err);
+                            }
+                            else {
+                                Async.parallel(cancellations, done);
+                            }
+                        });
+                    },
+                    function (err) {
+                        assert.ok(!err);
+                        done();
+                    }
+                );
+            })
+
+            it("Callback#job events fails", function (done) {
+                var job = new splunkjs.Service.Job(this.loggedOutService, "abc", {});
+                job.events({}, function (err) {
                     assert.ok(err);
-                }
+                    done();
+                });
             })
 
-            it("Job results fails", async function () {
-                let job = new splunkjs.Service.Job(this.loggedOutService, "abc", {});
-                try {
-                    job = await job.results({});
-                } catch (err) {
+            it("Callback#job preview fails", function (done) {
+                var job = new splunkjs.Service.Job(this.loggedOutService, "abc", {});
+                job.preview({}, function (err) {
                     assert.ok(err);
-                }
+                    done();
+                });
             })
 
-            it("Job searchlog fails", async function () {
-                let job = new splunkjs.Service.Job(this.loggedOutService, "abc", {});
-                try {
-                    job = await job.searchlog();
-                } catch (err) {
+            it("Callback#job results fails", function (done) {
+                var job = new splunkjs.Service.Job(this.loggedOutService, "abc", {});
+                job.results({}, function (err) {
                     assert.ok(err);
-                }
+                    done();
+                });
             })
 
-            it("Job summary fails", async function () {
-                let job = new splunkjs.Service.Job(this.loggedOutService, "abc", {});
-                try {
-                    job = await job.summary({});
-                } catch (err) {
+            it("Callback#job searchlog fails", function (done) {
+                var job = new splunkjs.Service.Job(this.loggedOutService, "abc", {});
+                job.searchlog(function (err) {
                     assert.ok(err);
-                }
+                    done();
+                });
             })
 
-            it("Job timeline fails", async function () {
-                let job = new splunkjs.Service.Job(this.loggedOutService, "abc", {});
-                try {
-                    job = await job.timeline({});
-                } catch (err) {
+            it("Callback#job summary fails", function (done) {
+                var job = new splunkjs.Service.Job(this.loggedOutService, "abc", {});
+                job.summary({}, function (err) {
                     assert.ok(err);
-                }
+                    done();
+                });
             })
 
-            it("SetupInfo succeeds", async function () {
-                let app = new splunkjs.Service.Application(this.service, "sdkappcollection");
-                let response = await app.setupInfo();
-                app = response[1];
-                assert.ok(app);
-            })
-
-            it("SetupInfo failure", async function () {
-                let searches = new splunkjs.Service.Application(this.loggedOutService, "search");
-                try {
-                    await searches.setupInfo();
-                } catch (err) {
+            it("Callback#job timeline fails", function (done) {
+                var job = new splunkjs.Service.Job(this.loggedOutService, "abc", {});
+                job.timeline({}, function (err) {
                     assert.ok(err);
-                }
+                    done();
+                });
             })
 
-            it("UpdateInfo succeeds", async function () {
-                let app = new splunkjs.Service.Application(this.service, "search");
-                let response = await app.updateInfo();
-                app = response[1];
-                assert.ok(app);
-                assert.strictEqual(app.name, 'search');
+            it("Callback#delete test saved searches", function (done) {
+                var searches = this.service.savedSearches({ owner: this.service.username, app: "sdkappcollection" });
+                searches.fetch(function (err, searches) {
+                    var searchList = searches.list();
+                    Async.parallelEach(
+                        searchList,
+                        function (search, idx, callback) {
+                            if (utils.startsWith(search.name, "jssdk_")) {
+                                search.remove(callback);
+                            }
+                            else {
+                                callback();
+                            }
+                        }, function (err) {
+                            assert.ok(!err);
+                            done();
+                        }
+                    );
+                });
             })
 
-            it("UpdateInfo failure", async function () {
-                let app = new splunkjs.Service.Application(this.loggedOutService, "sdkappcollection");
-                try {
-                    await app.updateInfo();
-                } catch (err) {
+            it("Callback#setupInfo fails", function (done) {
+                var searches = new splunkjs.Service.Application(this.loggedOutService, "search");
+                searches.setupInfo(function (err, content, that) {
                     assert.ok(err);
-                }
+                    done();
+                });
+            })
+
+            it("Callback#setupInfo succeeds", function (done) {
+                var app = new splunkjs.Service.Application(this.service, "sdkappcollection");
+                app.setupInfo(function (err, content, app) {
+                    // This error message was removed in modern versions of Splunk
+                    if (err) {
+                        assert.ok(err.data.messages[0].text.match("Setup configuration file does not"));
+                        splunkjs.Logger.log("ERR ---", err.data.messages[0].text);
+                    }
+                    else {
+                        assert.ok(app);
+                    }
+                    done();
+                });
+            })
+
+            it("Callback#updateInfo", function (done) {
+                var app = new splunkjs.Service.Application(this.service, "search");
+                app.updateInfo(function (err, info, app) {
+                    assert.ok(!err);
+                    assert.ok(app);
+                    assert.strictEqual(app.name, 'search');
+                    done();
+                });
+            })
+
+            it("Callback#updateInfo failure", function (done) {
+                var app = new splunkjs.Service.Application(this.loggedOutService, "sdkappcollection");
+                app.updateInfo(function (err, info, app) {
+                    assert.ok(err);
+                    done();
+                });
             })
         })
     );
@@ -72477,14 +74631,14 @@ if (module.id === __filename && module.parent.id.includes('mocha')) {
     var splunkjs = require('../../index');
     var options = require('../cmdline');
 
-    let cmdline = options.create().parse(process.argv);
+    var cmdline = options.create().parse(process.argv);
 
     // If there is no command line, we should return
     if (!cmdline) {
         throw new Error("Error in parsing command line parameters");
     }
 
-    let svc = new splunkjs.Service({
+    var svc = new splunkjs.Service({
         scheme: cmdline.opts.scheme,
         host: cmdline.opts.host,
         port: cmdline.opts.port,
@@ -72493,7 +74647,7 @@ if (module.id === __filename && module.parent.id.includes('mocha')) {
         version: cmdline.opts.version
     });
 
-    let loggedOutSvc = new splunkjs.Service({
+    var loggedOutSvc = new splunkjs.Service({
         scheme: cmdline.opts.scheme,
         host: cmdline.opts.host,
         port: cmdline.opts.port,
@@ -72503,58 +74657,42 @@ if (module.id === __filename && module.parent.id.includes('mocha')) {
     });
 
     // Exports tests on a successful login
-    module.exports = new Promise(async (resolve, reject) => {
-        try {
-            await svc.login();
-            return resolve(exports.setup(svc, loggedOutSvc))
-        } catch (error) {
-            throw new Error("Login failed - not running tests", error || "");
-        }
+    module.exports = new Promise((resolve, reject) => {
+        svc.login(function (err, success) {
+            if (err || !success) {
+                throw new Error("Login failed - not running tests", err || "");
+            }
+            return resolve(exports.setup(svc, loggedOutSvc));
+        });
     });
 }
 
 }).call(this)}).call(this,require('_process'),"/tests/service_tests/savedsearch.js")
-},{"../../index":2,"../cmdline":296,"../utils":320,"_process":239,"chai":72}],311:[function(require,module,exports){
+},{"../../index":2,"../cmdline":297,"../utils":322,"_process":240,"chai":73}],312:[function(require,module,exports){
 (function (process,__filename){(function (){
 
 exports.setup = function (svc) {
     var assert = require('chai').assert;
     return (
-        describe("Server Info Test", () => {
-            beforeEach(function () {
+        describe("Server Info Test", function () {
+            beforeEach(function (done) {
                 this.service = svc;
-            })
-
-            it("Basic", async function () {
-                let service = this.service;
-                let info = await service.serverInfo();
-                assert.ok(info);
-                assert.strictEqual(info.name, "server-info");
-                assert.ok(info.properties().hasOwnProperty("version"));
-                assert.ok(info.properties().hasOwnProperty("serverName"));
-                assert.ok(info.properties().hasOwnProperty("os_version"));
-            })
-
-            it("V2 Search APIs Enable/Disabled", function (done) {
-                let service = this.service;
-                let flag = service.disableV2SearchApi();
-                if(service.instanceType == "cloud"){
-                    service.versionCompare("9.0.2209") < 0  ? assert.isTrue(flag) : assert.isFalse(flag);
-                }else{
-                    service.versionCompare("9.0.2") < 0 ? assert.isTrue(flag) : assert.isFalse(flag);
-                }
                 done();
             })
-            
-            it("V2 Search APIs Enable/Disabled", function (done) {
-                let service = this.service;
-                let flag = service.disableV2SearchApi();
-                if(service.instanceType == "cloud"){
-                    service.versionCompare("9.0.2209") < 0  ? assert.isTrue(flag) : assert.isFalse(flag);
-                }else{
-                    service.versionCompare("9.0.2") < 0 ? assert.isTrue(flag) : assert.isFalse(flag);
-                }
-                done();
+
+            it("Callback#Basic", function (done) {
+                var service = this.service;
+
+                service.serverInfo(function (err, info) {
+                    assert.ok(!err);
+                    assert.ok(info);
+                    assert.strictEqual(info.name, "server-info");
+                    assert.ok(info.properties().hasOwnProperty("version"));
+                    assert.ok(info.properties().hasOwnProperty("serverName"));
+                    assert.ok(info.properties().hasOwnProperty("os_version"));
+
+                    done();
+                });
             })
 
             it("V2 Search APIs Enable/Disabled", function (done) {
@@ -72575,14 +74713,14 @@ if (module.id === __filename && module.parent.id.includes('mocha')) {
     var splunkjs = require('../../index');
     var options = require('../cmdline');
 
-    let cmdline = options.create().parse(process.argv);
+    var cmdline = options.create().parse(process.argv);
 
     // If there is no command line, we should return
     if (!cmdline) {
         throw new Error("Error in parsing command line parameters");
     }
 
-    let svc = new splunkjs.Service({
+    var svc = new splunkjs.Service({
         scheme: cmdline.opts.scheme,
         host: cmdline.opts.host,
         port: cmdline.opts.port,
@@ -72592,144 +74730,245 @@ if (module.id === __filename && module.parent.id.includes('mocha')) {
     });
 
     // Exports tests on a successful login
-    module.exports = new Promise(async (resolve, reject) => {
-        try {
-            await svc.login();
-            return resolve(exports.setup(svc))
-        } catch (error) {
-            throw new Error("Login failed - not running tests", error || "");
-        }
+    module.exports = new Promise((resolve, reject) => {
+        svc.login(function (err, success) {
+            if (err || !success) {
+                throw new Error("Login failed - not running tests", err || "");
+            }
+            return resolve(exports.setup(svc));
+        });
     });
 }
 
 }).call(this)}).call(this,require('_process'),"/tests/service_tests/serverinfo.js")
-},{"../../index":2,"../cmdline":296,"_process":239,"chai":72}],312:[function(require,module,exports){
+},{"../../index":2,"../cmdline":297,"_process":240,"chai":73}],313:[function(require,module,exports){
 (function (process,__filename){(function (){
+
 exports.setup = function (svc) {
     var assert = require('chai').assert;
     var splunkjs = require('../../index');
     var options = require('../cmdline');
     var parser = new options.create();
     var cmdline = parser.parse(process.argv);
+    var Async = splunkjs.Async;
     var idCounter = 0;
     var getNextId = function () {
         return "id" + (idCounter++) + "_" + ((new Date()).valueOf());
     };
     return (
-        describe("Storage Password Tests", () => {
-            beforeEach(function () {
+        describe("Storage Password Tests", function () {
+            beforeEach(function (done) {
                 this.service = svc;
+                done();
             });
 
-            it("Create", async function () {
-                let startcount = -1;
-                let name = "delete-me-" + getNextId();
-                let realm = "delete-me-" + getNextId();
+            it("Callback#Create", function (done) {
+                var startcount = -1;
+                var name = "delete-me-" + getNextId();
+                var realm = "delete-me-" + getNextId();
                 var that = this;
-                let storagePasswords = await that.service.storagePasswords().fetch();
-                startcount = storagePasswords.list().length;
-                let storagePassword = await storagePasswords.create({ name: name, realm: realm, password: "changed!" });
-                assert.strictEqual(name, storagePassword.properties().username);
-                assert.strictEqual(realm + ":" + name + ":", storagePassword.name);
-                assert.strictEqual("changed!", storagePassword.properties().clear_password);
-                assert.strictEqual(realm, storagePassword.properties().realm);
-                storagePasswords = await that.service.storagePasswords().fetch();
-                assert.strictEqual(startcount + 1, storagePasswords.list().length);
-                await storagePassword.remove();
-                storagePasswords = await that.service.storagePasswords().fetch();
-                assert.strictEqual(startcount, storagePasswords.list().length);
+                Async.chain([
+                    function (done) {
+                        that.service.storagePasswords().fetch(done);
+                    },
+                    function (storagePasswords, done) {
+                        startcount = storagePasswords.list().length;
+                        storagePasswords.create({ name: name, realm: realm, password: "changed!" }, done);
+                    },
+                    function (storagePassword, done) {
+                        assert.strictEqual(name, storagePassword.properties().username);
+                        assert.strictEqual(realm + ":" + name + ":", storagePassword.name);
+                        assert.strictEqual("changed!", storagePassword.properties().clear_password);
+                        assert.strictEqual(realm, storagePassword.properties().realm);
+                        that.service.storagePasswords().fetch(Async.augment(done, storagePassword));
+                    },
+                    function (storagePasswords, storagePassword, done) {
+                        assert.strictEqual(startcount + 1, storagePasswords.list().length);
+                        storagePassword.remove(done);
+                    },
+                    function (done) {
+                        that.service.storagePasswords().fetch(done);
+                    },
+                    function (storagePasswords, done) {
+                        assert.strictEqual(startcount, storagePasswords.list().length);
+                        done();
+                    }
+                ],
+                    function (err) {
+                        assert.ok(!err);
+                        done();
+                    }
+                );
             })
 
-            it("Create with backslashes", async function () {
-                let startcount = -1;
-                let name = "\\delete-me-" + getNextId();
-                let realm = "\\delete-me-" + getNextId();
+            it("Callback#Create with backslashes", function (done) {
+                var startcount = -1;
+                var name = "\\delete-me-" + getNextId();
+                var realm = "\\delete-me-" + getNextId();
                 var that = this;
-                let storagePasswords = await that.service.storagePasswords().fetch();
-                startcount = storagePasswords.list().length;
-                let storagePassword = await storagePasswords.create({ name: name, realm: realm, password: "changed!" });
-                assert.strictEqual(name, storagePassword.properties().username);
-                assert.strictEqual("\\" + realm + ":\\" + name + ":", storagePassword.name);
-                assert.strictEqual("changed!", storagePassword.properties().clear_password);
-                assert.strictEqual(realm, storagePassword.properties().realm);
-                storagePasswords = await that.service.storagePasswords().fetch();
-                assert.strictEqual(startcount + 1, storagePasswords.list().length);
-                await storagePassword.remove();
-                storagePasswords = await that.service.storagePasswords().fetch();
-                assert.strictEqual(startcount, storagePasswords.list().length);
+                Async.chain([
+                    function (done) {
+                        that.service.storagePasswords().fetch(done);
+                    },
+                    function (storagePasswords, done) {
+                        startcount = storagePasswords.list().length;
+                        storagePasswords.create({ name: name, realm: realm, password: "changed!" }, done);
+                    },
+                    function (storagePassword, done) {
+                        assert.strictEqual(name, storagePassword.properties().username);
+                        assert.strictEqual("\\" + realm + ":\\" + name + ":", storagePassword.name);
+                        assert.strictEqual("changed!", storagePassword.properties().clear_password);
+                        assert.strictEqual(realm, storagePassword.properties().realm);
+                        that.service.storagePasswords().fetch(Async.augment(done, storagePassword));
+                    },
+                    function (storagePasswords, storagePassword, done) {
+                        assert.strictEqual(startcount + 1, storagePasswords.list().length);
+                        storagePassword.remove(done);
+                    },
+                    function (done) {
+                        that.service.storagePasswords().fetch(done);
+                    },
+                    function (storagePasswords, done) {
+                        assert.strictEqual(startcount, storagePasswords.list().length);
+                        done();
+                    }
+                ],
+                    function (err) {
+                        assert.ok(!err);
+                        done();
+                    }
+                );
             })
 
-            it("Create with slashes", async function () {
-                let startcount = -1;
-                let name = "/delete-me-" + getNextId();
-                let realm = "/delete-me-" + getNextId();
+            it("Callback#Create with slashes", function (done) {
+                var startcount = -1;
+                var name = "/delete-me-" + getNextId();
+                var realm = "/delete-me-" + getNextId();
                 var that = this;
-                let storagePasswords = await that.service.storagePasswords().fetch();
-                startcount = storagePasswords.list().length;
-                let storagePassword = await storagePasswords.create({ name: name, realm: realm, password: "changed!" });
-                assert.strictEqual(name, storagePassword.properties().username);
-                assert.strictEqual(realm + ":" + name + ":", storagePassword.name);
-                assert.strictEqual("changed!", storagePassword.properties().clear_password);
-                assert.strictEqual(realm, storagePassword.properties().realm);
-                storagePasswords = await that.service.storagePasswords().fetch();
-                assert.strictEqual(startcount + 1, storagePasswords.list().length);
-                await storagePassword.remove();
-                storagePasswords = await that.service.storagePasswords().fetch();
-                assert.strictEqual(startcount, storagePasswords.list().length);
+                Async.chain([
+                    function (done) {
+                        that.service.storagePasswords().fetch(done);
+                    },
+                    function (storagePasswords, done) {
+                        startcount = storagePasswords.list().length;
+                        storagePasswords.create({ name: name, realm: realm, password: "changed!" }, done);
+                    },
+                    function (storagePassword, done) {
+                        assert.strictEqual(name, storagePassword.properties().username);
+                        assert.strictEqual(realm + ":" + name + ":", storagePassword.name);
+                        assert.strictEqual("changed!", storagePassword.properties().clear_password);
+                        assert.strictEqual(realm, storagePassword.properties().realm);
+                        that.service.storagePasswords().fetch(Async.augment(done, storagePassword));
+                    },
+                    function (storagePasswords, storagePassword, done) {
+                        assert.strictEqual(startcount + 1, storagePasswords.list().length);
+                        storagePassword.remove(done);
+                    },
+                    function (done) {
+                        that.service.storagePasswords().fetch(done);
+                    },
+                    function (storagePasswords, done) {
+                        assert.strictEqual(startcount, storagePasswords.list().length);
+                        done();
+                    }
+                ],
+                    function (err) {
+                        assert.ok(!err);
+                        done();
+                    }
+                );
             })
 
-            it("Create without realm", async function () {
-                let startcount = -1;
-                let name = "delete-me-" + getNextId();
+            it("Callback#Create without realm", function (done) {
+                var startcount = -1;
+                var name = "delete-me-" + getNextId();
                 var that = this;
-                let storagePasswords = await that.service.storagePasswords().fetch();
-                startcount = storagePasswords.list().length;
-                let storagePassword = await storagePasswords.create({ name: name, password: "changed!" });
-                assert.strictEqual(name, storagePassword.properties().username);
-                assert.strictEqual(":" + name + ":", storagePassword.name);
-                assert.strictEqual("changed!", storagePassword.properties().clear_password);
-                assert.strictEqual("", storagePassword.properties().realm);
-                storagePasswords = await that.service.storagePasswords().fetch();
-                assert.strictEqual(startcount + 1, storagePasswords.list().length);
-                await storagePassword.remove();
-                storagePasswords = await that.service.storagePasswords().fetch();
-                assert.strictEqual(startcount, storagePasswords.list().length);
+                Async.chain([
+                    function (done) {
+                        that.service.storagePasswords().fetch(done);
+                    },
+                    function (storagePasswords, done) {
+                        startcount = storagePasswords.list().length;
+                        storagePasswords.create({ name: name, password: "changed!" }, done);
+                    },
+                    function (storagePassword, done) {
+                        assert.strictEqual(name, storagePassword.properties().username);
+                        assert.strictEqual(":" + name + ":", storagePassword.name);
+                        assert.strictEqual("changed!", storagePassword.properties().clear_password);
+                        assert.strictEqual("", storagePassword.properties().realm);
+                        that.service.storagePasswords().fetch(Async.augment(done, storagePassword));
+                    },
+                    function (storagePasswords, storagePassword, done) {
+                        assert.strictEqual(startcount + 1, storagePasswords.list().length);
+                        storagePassword.remove(done);
+                    },
+                    function (done) {
+                        that.service.storagePasswords().fetch(done);
+                    },
+                    function (storagePasswords, done) {
+                        assert.strictEqual(startcount, storagePasswords.list().length);
+                        done();
+                    }
+                ],
+                    function (err) {
+                        assert.ok(!err);
+                        done();
+                    }
+                );
             })
 
-            it("Create should fail without user, or realm", async function () {
+            it("Callback#Create should fail without user, or realm", function (done) {
                 var that = this;
-                let storagePasswords = that.service.storagePasswords().fetch();
-                try {
-                    let res = await storagePasswords.create({ name: null, password: "changed!" });
-                    assert.ok(!res);
-                } catch (error) {
-                    assert.ok(error);
-                }
+                Async.chain([
+                    function (done) {
+                        that.service.storagePasswords().fetch(done);
+                    },
+                    function (storagePasswords, done) {
+                        storagePasswords.create({ name: null, password: "changed!" }, done);
+                    }
+                ],
+                    function (err) {
+                        assert.ok(err);
+                        done();
+                    }
+                );
             })
 
-            it("Create should fail without password", async function () {
+            it("Callback#Create should fail without password", function (done) {
                 var that = this;
-                let storagePasswords = that.service.storagePasswords().fetch();
-                try {
-                    let res = await storagePasswords.create({ name: "something", password: null });
-                    assert.ok(!res);
-                } catch (error) {
-                    assert.ok(error);
-                }
+                Async.chain([
+                    function (done) {
+                        that.service.storagePasswords().fetch(done);
+                    },
+                    function (storagePasswords, done) {
+                        storagePasswords.create({ name: "something", password: null }, done);
+                    }
+                ],
+                    function (err) {
+                        assert.ok(err);
+                        done();
+                    }
+                );
             })
 
-            it("Create should fail without user, realm, or password", async function () {
+            it("Callback#Create should fail without user, realm, or password", function (done) {
                 var that = this;
-                let storagePasswords = that.service.storagePasswords().fetch();
-                try {
-                    let res = await storagePasswords.create({ name: null, password: null });
-                    assert.ok(!res);
-                } catch (error) {
-                    assert.ok(error);
-                }
+                Async.chain([
+                    function (done) {
+                        that.service.storagePasswords().fetch(done);
+                    },
+                    function (storagePasswords, done) {
+                        storagePasswords.create({ name: null, password: null }, done);
+                    }
+                ],
+                    function (err) {
+                        assert.ok(err);
+                        done();
+                    }
+                );
             })
 
-            it("Create should fail if app or owner have wildcard", async function () {
+            it("Callback#Create should fail if app or owner have wildcard", function (done) {
                 var service = new splunkjs.Service({
                     scheme: cmdline.opts.scheme,
                     host: cmdline.opts.host,
@@ -72744,128 +74983,246 @@ exports.setup = function (svc) {
                 assert.throws(function (){
                     storagePasswords.create({ name: "delete-me-" + getNextId(), password: 'changed!' })
                 });
+                done();
             })
-
-            it("Create with colons", async function () {
-                let startcount = -1;
-                let name = ":delete-me-" + getNextId();
-                let realm = ":delete-me-" + getNextId();
+            
+            it("Callback#Create with colons", function (done) {
+                var startcount = -1;
+                var name = ":delete-me-" + getNextId();
+                var realm = ":delete-me-" + getNextId();
                 var that = this;
-                let storagePasswords = await that.service.storagePasswords().fetch();
-                startcount = storagePasswords.list().length;
-                let storagePassword = await storagePasswords.create({ name: name, realm: realm, password: "changed!" });
-                assert.strictEqual(name, storagePassword.properties().username);
-                assert.strictEqual("\\" + realm + ":\\" + name + ":", storagePassword.name);
-                assert.strictEqual("changed!", storagePassword.properties().clear_password);
-                assert.strictEqual(realm, storagePassword.properties().realm);
-                storagePasswords = await that.service.storagePasswords().fetch();
-                assert.strictEqual(startcount + 1, storagePasswords.list().length);
-                await storagePassword.remove();
-                storagePasswords = await that.service.storagePasswords().fetch();
-                assert.strictEqual(startcount, storagePasswords.list().length);
-            })
-
-            it("Create crazy", async function () {
-                let startcount = -1;
-                let name = "delete-me-" + getNextId();
-                let realm = "delete-me-" + getNextId();
-                var that = this;
-                let storagePasswords = await that.service.storagePasswords().fetch();
-                startcount = storagePasswords.list().length;
-                let storagePassword = await storagePasswords.create({
-                    name: name + ":end!@#$%^&*()_+{}:|<>?",
-                    realm: ":start::!@#$%^&*()_+{}:|<>?" + realm,
-                    password: "changed!"
-                });
-                assert.strictEqual(name + ":end!@#$%^&*()_+{}:|<>?", storagePassword.properties().username);
-                assert.strictEqual("\\:start\\:\\:!@#$%^&*()_+{}\\:|<>?" + realm + ":" + name + "\\:end!@#$%^&*()_+{}\\:|<>?:", storagePassword.name);
-                assert.strictEqual("changed!", storagePassword.properties().clear_password);
-                assert.strictEqual(":start::!@#$%^&*()_+{}:|<>?" + realm, storagePassword.properties().realm);
-                storagePasswords = await that.service.storagePasswords().fetch();
-                assert.strictEqual(startcount + 1, storagePasswords.list().length);
-                await storagePassword.remove();
-                storagePasswords = await that.service.storagePasswords().fetch();
-                assert.strictEqual(startcount, storagePasswords.list().length);
-            })
-
-            it("Create with unicode chars", async function () {
-                let startcount = -1;
-                let name = "delete-me-" + getNextId();
-                let realm = "delete-me-" + getNextId();
-                var that = this;
-                let storagePasswords = await that.service.storagePasswords().fetch();
-                startcount = storagePasswords.list().length;
-                let storagePassword = await storagePasswords.create({
-                    name: name + ":end!@#$%^&*()_+{}:|<>?쎼 and 쎶 and &lt;&amp;&gt; für",
-                    realm: ":start::!@#$%^&*()_+{}:|<>?" + encodeURIComponent("쎼 and 쎶 and &lt;&amp;&gt; für") + realm,
-                    password: decodeURIComponent(encodeURIComponent("쎼 and 쎶 and &lt;&amp;&gt; für"))
-                });
-                assert.strictEqual(name + ":end!@#$%^&*()_+{}:|<>?쎼 and 쎶 and &lt;&amp;&gt; für", storagePassword.properties().username);
-                assert.strictEqual("\\:start\\:\\:!@#$%^&*()_+{}\\:|<>?" + encodeURIComponent("쎼 and 쎶 and &lt;&amp;&gt; für") + realm + ":" + name + "\\:end!@#$%^&*()_+{}\\:|<>?쎼 and 쎶 and &lt;&amp;&gt; für:", storagePassword.name);
-                assert.strictEqual(decodeURIComponent(encodeURIComponent("쎼 and 쎶 and &lt;&amp;&gt; für")), storagePassword.properties().clear_password);
-                assert.strictEqual(":start::!@#$%^&*()_+{}:|<>?" + encodeURIComponent("쎼 and 쎶 and &lt;&amp;&gt; für") + realm, storagePassword.properties().realm);
-                storagePasswords = await that.service.storagePasswords().fetch();
-                assert.strictEqual(startcount + 1, storagePasswords.list().length);
-                await storagePassword.remove();
-                storagePasswords = await that.service.storagePasswords().fetch();
-                assert.strictEqual(startcount, storagePasswords.list().length);
-            })
-
-            it("Read", async function () {
-                let startcount = -1;
-                let name = "delete-me-" + getNextId();
-                let realm = "delete-me-" + getNextId();
-                var that = this;
-                let storagePasswords = await that.service.storagePasswords().fetch();
-                startcount = storagePasswords.list().length;
-                let storagePassword = await storagePasswords.create({ name: name, realm: realm, password: "changed!" });
-                assert.strictEqual(name, storagePassword.properties().username);
-                assert.strictEqual(realm + ":" + name + ":", storagePassword.name);
-                assert.strictEqual("changed!", storagePassword.properties().clear_password);
-                assert.strictEqual(realm, storagePassword.properties().realm);
-                storagePasswords = await that.service.storagePasswords().fetch();
-                assert.ok(!!storagePasswords.item(realm + ":" + name + ":"));
-                let list = storagePasswords.list();
-                let found = false;
-
-                assert.strictEqual(startcount + 1, list.length);
-                for (let i = 0; i < list.length; i++) {
-                    if (realm + ":" + name + ":" === list[i].name) {
-                        found = true;
+                Async.chain([
+                    function (done) {
+                        that.service.storagePasswords().fetch(done);
+                    },
+                    function (storagePasswords, done) {
+                        startcount = storagePasswords.list().length;
+                        storagePasswords.create({ name: name, realm: realm, password: "changed!" }, done);
+                    },
+                    function (storagePassword, done) {
+                        assert.strictEqual(name, storagePassword.properties().username);
+                        assert.strictEqual("\\" + realm + ":\\" + name + ":", storagePassword.name);
+                        assert.strictEqual("changed!", storagePassword.properties().clear_password);
+                        assert.strictEqual(realm, storagePassword.properties().realm);
+                        that.service.storagePasswords().fetch(Async.augment(done, storagePassword));
+                    },
+                    function (storagePasswords, storagePassword, done) {
+                        assert.strictEqual(startcount + 1, storagePasswords.list().length);
+                        storagePassword.remove(done);
+                    },
+                    function (done) {
+                        that.service.storagePasswords().fetch(done);
+                    },
+                    function (storagePasswords, done) {
+                        assert.strictEqual(startcount, storagePasswords.list().length);
+                        done();
                     }
-                }
-                assert.ok(found);
-                await storagePassword.remove();
-                storagePasswords = await that.service.storagePasswords().fetch();
-                assert.strictEqual(startcount, storagePasswords.list().length);
+                ],
+                    function (err) {
+                        assert.ok(!err);
+                        done();
+                    }
+                );
             })
 
-            it("Read with slashes", async function () {
-                let startcount = -1;
-                let name = "/delete-me-" + getNextId();
-                let realm = "/delete-me-" + getNextId();
+            it("Callback#Create crazy", function (done) {
+                var startcount = -1;
+                var name = "delete-me-" + getNextId();
+                var realm = "delete-me-" + getNextId();
                 var that = this;
-                let storagePasswords = await that.service.storagePasswords().fetch();
-                startcount = storagePasswords.list().length;
-                let storagePassword = await storagePasswords.create({ name: name, realm: realm, password: "changed!" });
-                assert.strictEqual(name, storagePassword.properties().username);
-                assert.strictEqual(realm + ":" + name + ":", storagePassword.name);
-                assert.strictEqual("changed!", storagePassword.properties().clear_password);
-                assert.strictEqual(realm, storagePassword.properties().realm);
-                storagePasswords = await that.service.storagePasswords().fetch();
-                assert.ok(!!storagePasswords.item(realm + ":" + name + ":"));
-                let list = storagePasswords.list();
-                let found = false;
-                assert.strictEqual(startcount + 1, list.length);
-                for (let i = 0; i < list.length; i++) {
-                    if (realm + ":" + name + ":" === list[i].name) {
-                        found = true;
+                Async.chain([
+                    function (done) {
+                        that.service.storagePasswords().fetch(done);
+                    },
+                    function (storagePasswords, done) {
+                        startcount = storagePasswords.list().length;
+                        storagePasswords.create({
+                            name: name + ":end!@#$%^&*()_+{}:|<>?",
+                            realm: ":start::!@#$%^&*()_+{}:|<>?" + realm,
+                            password: "changed!"
+                        },
+                            done);
+                    },
+                    function (storagePassword, done) {
+                        assert.strictEqual(name + ":end!@#$%^&*()_+{}:|<>?", storagePassword.properties().username);
+                        assert.strictEqual("\\:start\\:\\:!@#$%^&*()_+{}\\:|<>?" + realm + ":" + name + "\\:end!@#$%^&*()_+{}\\:|<>?:", storagePassword.name);
+                        assert.strictEqual("changed!", storagePassword.properties().clear_password);
+                        assert.strictEqual(":start::!@#$%^&*()_+{}:|<>?" + realm, storagePassword.properties().realm);
+                        that.service.storagePasswords().fetch(Async.augment(done, storagePassword));
+                    },
+                    function (storagePasswords, storagePassword, done) {
+                        assert.strictEqual(startcount + 1, storagePasswords.list().length);
+                        storagePassword.remove(done);
+                    },
+                    function (done) {
+                        that.service.storagePasswords().fetch(done);
+                    },
+                    function (storagePasswords, done) {
+                        assert.strictEqual(startcount, storagePasswords.list().length);
+                        done();
                     }
-                }
-                assert.ok(found);
-                await storagePassword.remove();
-                storagePasswords = await that.service.storagePasswords().fetch();
-                assert.strictEqual(startcount, storagePasswords.list().length);
+                ],
+                    function (err) {
+                        assert.ok(!err);
+                        done();
+                    }
+                );
+            })
+
+            it("Callback#Create with unicode chars", function (done) {
+                var startcount = -1;
+                var name = "delete-me-" + getNextId();
+                var realm = "delete-me-" + getNextId();
+                var that = this;
+                Async.chain([
+                    function (done) {
+                        that.service.storagePasswords().fetch(done);
+                    },
+                    function (storagePasswords, done) {
+                        startcount = storagePasswords.list().length;
+                        storagePasswords.create({
+                            name: name + ":end!@#$%^&*()_+{}:|<>?쎼 and 쎶 and &lt;&amp;&gt; für",
+                            realm: ":start::!@#$%^&*()_+{}:|<>?" + encodeURIComponent("쎼 and 쎶 and &lt;&amp;&gt; für") + realm,
+                            password: decodeURIComponent(encodeURIComponent("쎼 and 쎶 and &lt;&amp;&gt; für"))
+                        },
+                            done);
+                    },
+                    function (storagePassword, done) {
+                        assert.strictEqual(name + ":end!@#$%^&*()_+{}:|<>?쎼 and 쎶 and &lt;&amp;&gt; für", storagePassword.properties().username);
+                        assert.strictEqual("\\:start\\:\\:!@#$%^&*()_+{}\\:|<>?" + encodeURIComponent("쎼 and 쎶 and &lt;&amp;&gt; für") + realm + ":" + name + "\\:end!@#$%^&*()_+{}\\:|<>?쎼 and 쎶 and &lt;&amp;&gt; für:", storagePassword.name);
+                        assert.strictEqual(decodeURIComponent(encodeURIComponent("쎼 and 쎶 and &lt;&amp;&gt; für")), storagePassword.properties().clear_password);
+                        assert.strictEqual(":start::!@#$%^&*()_+{}:|<>?" + encodeURIComponent("쎼 and 쎶 and &lt;&amp;&gt; für") + realm, storagePassword.properties().realm);
+                        that.service.storagePasswords().fetch(Async.augment(done, storagePassword));
+                    },
+                    function (storagePasswords, storagePassword, done) {
+                        assert.strictEqual(startcount + 1, storagePasswords.list().length);
+                        storagePassword.remove(done);
+                    },
+                    function (done) {
+                        that.service.storagePasswords().fetch(done);
+                    },
+                    function (storagePasswords, done) {
+                        assert.strictEqual(startcount, storagePasswords.list().length);
+                        done();
+                    }
+                ],
+                    function (err) {
+                        assert.ok(!err);
+                        done();
+                    }
+                );
+            })
+
+            it("Callback#Read", function (done) {
+                var startcount = -1;
+                var name = "delete-me-" + getNextId();
+                var realm = "delete-me-" + getNextId();
+                var that = this;
+                Async.chain([
+                    function (done) {
+                        that.service.storagePasswords().fetch(done);
+                    },
+                    function (storagePasswords, done) {
+                        startcount = storagePasswords.list().length;
+                        storagePasswords.create({ name: name, realm: realm, password: "changed!" }, done);
+                    },
+                    function (storagePassword, done) {
+                        assert.strictEqual(name, storagePassword.properties().username);
+                        assert.strictEqual(realm + ":" + name + ":", storagePassword.name);
+                        assert.strictEqual("changed!", storagePassword.properties().clear_password);
+                        assert.strictEqual(realm, storagePassword.properties().realm);
+                        that.service.storagePasswords().fetch(Async.augment(done, storagePassword));
+                    },
+                    function (storagePasswords, storagePassword, done) {
+                        try {
+                            assert.ok(!!storagePasswords.item(realm + ":" + name + ":"));
+                        }
+                        catch (e) {
+                            assert.ok(false);
+                        }
+
+                        var list = storagePasswords.list();
+                        var found = false;
+
+                        assert.strictEqual(startcount + 1, list.length);
+                        for (var i = 0; i < list.length; i++) {
+                            if (realm + ":" + name + ":" === list[i].name) {
+                                found = true;
+                            }
+                        }
+                        assert.ok(found);
+
+                        storagePassword.remove(done);
+                    },
+                    function (done) {
+                        that.service.storagePasswords().fetch(done);
+                    },
+                    function (storagePasswords, done) {
+                        assert.strictEqual(startcount, storagePasswords.list().length);
+                        done();
+                    }
+                ],
+                    function (err) {
+                        assert.ok(!err);
+                        done();
+                    }
+                );
+            })
+
+            it("Callback#Read with slashes", function (done) {
+                var startcount = -1;
+                var name = "/delete-me-" + getNextId();
+                var realm = "/delete-me-" + getNextId();
+                var that = this;
+                Async.chain([
+                    function (done) {
+                        that.service.storagePasswords().fetch(done);
+                    },
+                    function (storagePasswords, done) {
+                        startcount = storagePasswords.list().length;
+                        storagePasswords.create({ name: name, realm: realm, password: "changed!" }, done);
+                    },
+                    function (storagePassword, done) {
+                        assert.strictEqual(name, storagePassword.properties().username);
+                        assert.strictEqual(realm + ":" + name + ":", storagePassword.name);
+                        assert.strictEqual("changed!", storagePassword.properties().clear_password);
+                        assert.strictEqual(realm, storagePassword.properties().realm);
+                        that.service.storagePasswords().fetch(Async.augment(done, storagePassword));
+                    },
+                    function (storagePasswords, storagePassword, done) {
+                        try {
+                            assert.ok(!!storagePasswords.item(realm + ":" + name + ":"));
+                        }
+                        catch (e) {
+                            assert.ok(false);
+                        }
+
+                        var list = storagePasswords.list();
+                        var found = false;
+
+                        assert.strictEqual(startcount + 1, list.length);
+                        for (var i = 0; i < list.length; i++) {
+                            if (realm + ":" + name + ":" === list[i].name) {
+                                found = true;
+                            }
+                        }
+                        assert.ok(found);
+
+                        storagePassword.remove(done);
+                    },
+                    function (done) {
+                        that.service.storagePasswords().fetch(done);
+                    },
+                    function (storagePasswords, done) {
+                        assert.strictEqual(startcount, storagePasswords.list().length);
+                        done();
+                    }
+                ],
+                    function (err) {
+                        assert.ok(!err);
+                        done();
+                    }
+                );
             })
 
             // Disabling this test because clear_password field has been removed in Splunk 8.2
@@ -72942,50 +75299,80 @@ exports.setup = function (svc) {
             //     );
             // },
 
-            it("Delete", async function () {
-                let startcount = -1;
-                let name = "delete-me-" + getNextId();
-                let realm = "delete-me-" + getNextId();
+            it("Callback#Delete", function (done) {
+                var startcount = -1;
+                var name = "delete-me-" + getNextId();
+                var realm = "delete-me-" + getNextId();
                 var that = this;
-                let storagePasswords = await that.service.storagePasswords().fetch();
-                startcount = storagePasswords.list().length;
-                let storagePassword = await storagePasswords.create({ name: name, realm: realm, password: "changed!" });
-                assert.strictEqual(name, storagePassword.properties().username);
-                assert.strictEqual(realm + ":" + name + ":", storagePassword.name);
-                assert.strictEqual("changed!", storagePassword.properties().clear_password);
-                assert.strictEqual(realm, storagePassword.properties().realm);
-                storagePasswords = await that.service.storagePasswords().fetch();
-                assert.strictEqual(startcount + 1, storagePasswords.list().length);
-                await storagePassword.remove();
-                storagePasswords = await that.service.storagePasswords().fetch();
-                assert.strictEqual(startcount, storagePasswords.list().length);
-                storagePassword = await storagePasswords.create({ name: name, realm: realm, password: "changed!" });
-                assert.strictEqual(name, storagePassword.properties().username);
-                storagePasswords = await that.service.storagePasswords().fetch();
-                assert.strictEqual(startcount + 1, storagePasswords.list().length);
-                let list = storagePasswords.list();
-                let found = false;
-                let index = -1;
-                assert.strictEqual(startcount + 1, list.length);
-                for (let i = 0; i < list.length; i++) {
-                    if (realm + ":" + name + ":" === list[i].name) {
-                        found = true;
-                        index = i;
-                        assert.strictEqual(name, list[i].properties().username);
-                        assert.strictEqual(realm + ":" + name + ":", list[i].name);
-                        assert.strictEqual("changed!", list[i].properties().clear_password);
-                        assert.strictEqual(realm, list[i].properties().realm);
+                Async.chain([
+                    function (done) {
+                        that.service.storagePasswords().fetch(done);
+                    },
+                    function (storagePasswords, done) {
+                        startcount = storagePasswords.list().length;
+                        storagePasswords.create({ name: name, realm: realm, password: "changed!" }, done);
+                    },
+                    function (storagePassword, done) {
+                        assert.strictEqual(name, storagePassword.properties().username);
+                        assert.strictEqual(realm + ":" + name + ":", storagePassword.name);
+                        assert.strictEqual("changed!", storagePassword.properties().clear_password);
+                        assert.strictEqual(realm, storagePassword.properties().realm);
+                        that.service.storagePasswords().fetch(Async.augment(done, storagePassword));
+                    },
+                    function (storagePasswords, storagePassword, done) {
+                        assert.strictEqual(startcount + 1, storagePasswords.list().length);
+                        storagePassword.remove(done);
+                    },
+                    function (done) {
+                        that.service.storagePasswords().fetch(done);
+                    },
+                    function (storagePasswords, done) {
+                        assert.strictEqual(startcount, storagePasswords.list().length);
+                        storagePasswords.create({ name: name, realm: realm, password: "changed!" }, done);
+                    },
+                    function (storagePassword, done) {
+                        assert.strictEqual(name, storagePassword.properties().username);
+                        that.service.storagePasswords().fetch(done);
+                    },
+                    function (storagePasswords, done) {
+                        assert.strictEqual(startcount + 1, storagePasswords.list().length);
+                        var list = storagePasswords.list();
+                        var found = false;
+                        var index = -1;
+
+                        assert.strictEqual(startcount + 1, list.length);
+                        for (var i = 0; i < list.length; i++) {
+                            if (realm + ":" + name + ":" === list[i].name) {
+                                found = true;
+                                index = i;
+                                assert.strictEqual(name, list[i].properties().username);
+                                assert.strictEqual(realm + ":" + name + ":", list[i].name);
+                                assert.strictEqual("changed!", list[i].properties().clear_password);
+                                assert.strictEqual(realm, list[i].properties().realm);
+                            }
+                        }
+                        assert.ok(found);
+
+                        if (!found) {
+                            done(new Error("Didn't find the created password"));
+                        }
+                        else {
+                            list[index].remove(done);
+                        }
+                    },
+                    function (done) {
+                        that.service.storagePasswords().fetch(done);
+                    },
+                    function (storagePasswords, done) {
+                        assert.strictEqual(startcount, storagePasswords.list().length);
+                        done();
                     }
-                }
-                assert.ok(found);
-                if (!found) {
-                    throw new Error("Didn't find the created password");
-                }
-                else {
-                    await list[index].remove();
-                }
-                storagePasswords = await that.service.storagePasswords().fetch();
-                assert.strictEqual(startcount, storagePasswords.list().length);
+                ],
+                    function (err) {
+                        assert.ok(!err);
+                        done();
+                    }
+                );
             })
         })
     );
@@ -72995,14 +75382,14 @@ if (module.id === __filename && module.parent.id.includes('mocha')) {
     var splunkjs = require('../../index');
     var options = require('../cmdline');
 
-    let cmdline = options.create().parse(process.argv);
+    var cmdline = options.create().parse(process.argv);
 
     // If there is no command line, we should return
     if (!cmdline) {
         throw new Error("Error in parsing command line parameters");
     }
 
-    let svc = new splunkjs.Service({
+    var svc = new splunkjs.Service({
         scheme: cmdline.opts.scheme,
         host: cmdline.opts.host,
         port: cmdline.opts.port,
@@ -73012,52 +75399,57 @@ if (module.id === __filename && module.parent.id.includes('mocha')) {
     });
 
     // Exports tests on a successful login
-    module.exports = new Promise(async (resolve, reject) => {
-        try {
-            await svc.login();
-            return resolve(exports.setup(svc))
-        } catch (error) {
-            throw new Error("Login failed - not running tests", error || "");
-        }
+    module.exports = new Promise((resolve, reject) => {
+        svc.login(function (err, success) {
+            if (err || !success) {
+                throw new Error("Login failed - not running tests", err || "");
+            }
+            return resolve(exports.setup(svc));
+        });
     });
 }
 
 }).call(this)}).call(this,require('_process'),"/tests/service_tests/storagepasswords.js")
-},{"../../index":2,"../cmdline":296,"_process":239,"chai":72}],313:[function(require,module,exports){
+},{"../../index":2,"../cmdline":297,"_process":240,"chai":73}],314:[function(require,module,exports){
 (function (process,__filename){(function (){
 
 exports.setup = function (svc, loggedOutSvc) {
     var assert = require('chai').assert;
     return (
-        describe("Typeahead Tests", () => {
-            beforeEach(function () {
+        describe("Typeahad Tests", function () {
+            beforeEach(function (done) {
                 this.service = svc;
                 this.loggedOutService = loggedOutSvc;
+                done();
             })
 
-            it("Typeahead failure", async function () {
-                let service = this.loggedOutService;
-                let res;
-                try {
-                    res = await service.typeahead("index=", 1);
-                } catch (err) {
+            it("Callback#Typeahead failure", function (done) {
+                var service = this.loggedOutService;
+                service.typeahead("index=", 1, function (err, options) {
                     assert.ok(err);
-                }
-                assert.ok(!res);
+                    done();
+                });
             })
 
-            it("Typeahead basic", async function () {
-                let service = this.service;
-                let options = await service.typeahead("index=", 1);
-                assert.ok(options);
-                assert.strictEqual(options.length, 1);
-                assert.ok(options[0]);
+            it("Callback#Basic typeahead", function (done) {
+                var service = this.service;
+
+                service.typeahead("index=", 1, function (err, options) {
+                    assert.ok(!err);
+                    assert.ok(options);
+                    assert.strictEqual(options.length, 1);
+                    assert.ok(options[0]);
+                    done();
+                });
             })
 
-            it("Typeahead with omitted optional arguments", async function () {
-                let service = this.service;
-                let options = await service.typeahead("index=");
-                assert.ok(options);
+            it("Typeahead with omitted optional arguments", function (done) {
+                var service = this.service;
+                service.typeahead("index=", function (err, options) {
+                    assert.ok(!err);
+                    assert.ok(options);
+                    done();
+                });
             })
         })
     );
@@ -73067,14 +75459,14 @@ if (module.id === __filename && module.parent.id.includes('mocha')) {
     var splunkjs = require('../../index');
     var options = require('../cmdline');
 
-    let cmdline = options.create().parse(process.argv);
+    var cmdline = options.create().parse(process.argv);
 
     // If there is no command line, we should return
     if (!cmdline) {
         throw new Error("Error in parsing command line parameters");
     }
 
-    let svc = new splunkjs.Service({
+    var svc = new splunkjs.Service({
         scheme: cmdline.opts.scheme,
         host: cmdline.opts.host,
         port: cmdline.opts.port,
@@ -73083,7 +75475,7 @@ if (module.id === __filename && module.parent.id.includes('mocha')) {
         version: cmdline.opts.version
     });
 
-    let loggedOutSvc = new splunkjs.Service({
+    var loggedOutSvc = new splunkjs.Service({
         scheme: cmdline.opts.scheme,
         host: cmdline.opts.host,
         port: cmdline.opts.port,
@@ -73093,23 +75485,24 @@ if (module.id === __filename && module.parent.id.includes('mocha')) {
     });
 
     // Exports tests on a successful login
-    module.exports = new Promise(async (resolve, reject) => {
-        try {
-            await svc.login();
-            return resolve(exports.setup(svc,loggedOutSvc))
-        } catch (error) {
-            throw new Error("Login failed - not running tests", error || "");
-        }
+    module.exports = new Promise((resolve, reject) => {
+        svc.login(function (err, success) {
+            if (err || !success) {
+                throw new Error("Login failed - not running tests", err || "");
+            }
+            return resolve(exports.setup(svc, loggedOutSvc));
+        });
     });
 }
 
 }).call(this)}).call(this,require('_process'),"/tests/service_tests/typeahead.js")
-},{"../../index":2,"../cmdline":296,"_process":239,"chai":72}],314:[function(require,module,exports){
+},{"../../index":2,"../cmdline":297,"_process":240,"chai":73}],315:[function(require,module,exports){
 (function (process,__filename){(function (){
 
 exports.setup = function (svc, loggedOutSvc) {
     var assert = require('chai').assert;
     var splunkjs = require('../../index');
+    var Async = splunkjs.Async;
     var utils = splunkjs.Utils;
     var idCounter = 0;
 
@@ -73117,178 +75510,241 @@ exports.setup = function (svc, loggedOutSvc) {
         return "id" + (idCounter++) + "_" + ((new Date()).valueOf());
     };
     return (
-        describe("User Tests", () => {
+        describe("User Tests", function () {
 
-            beforeEach(function () {
+            beforeEach(function (done) {
                 this.service = svc;
                 this.loggedOutService = loggedOutSvc;
+                done();
             })
 
-            afterEach(async function () {
-                await this.service.logout();
+            afterEach(function (done) {
+                this.service.logout(done);
             })
 
-            it("Current user", async function () {
+            it("Callback#Current user", function (done) {
                 var service = this.service;
-                let user = await service.currentUser();
-                assert.ok(user);
-                assert.strictEqual(user.name, service.username);
-            })
 
-            it("Current user fails", async function () {
-                var service = this.loggedOutService;
-                let res
-                try {
-                    res = await service.currentUser();
-                } catch (err) {
-                    assert.ok(err);
-                }
-                assert.ok(!res);
-            })
-
-            it("List users", async function () {
-                var service = this.service;
-                let users = await service.users().fetch();
-                let userList = users.list();
-                assert.ok(users);
-                assert.ok(userList);
-                assert.ok(userList.length > 0);
-            })
-
-            it("Create user failure", async function () {
-                let res;
-                try {
-                    res = await this.loggedOutService.users().create(
-                        { name: "jssdk_testuser", password: "abcdefg!", roles: "user" });
-                } catch (err) {
-                    assert.ok(err);
-                }
-                assert.ok(!res);
-            })
-
-            it("User - Create, update and delete user", async function () {
-                var service = this.service;
-                let name = "jssdk_testuser";
-                let users = service.users();
-                let user = await users.create({ name: "jssdk_testuser", password: "abcdefg!", roles: "user" });
-                assert.ok(user);
-                assert.strictEqual(user.name, name);
-                assert.strictEqual(user.properties().roles.length, 1);
-                assert.strictEqual(user.properties().roles[0], "user");
-
-                let updatedUser = await user.update({ realname: "JS SDK", roles: ["admin", "user"] });
-                assert.ok(updatedUser);
-                assert.strictEqual(updatedUser.properties().realname, "JS SDK");
-                assert.strictEqual(updatedUser.properties().roles.length, 2);
-                assert.strictEqual(updatedUser.properties().roles[0], "admin");
-                assert.strictEqual(updatedUser.properties().roles[1], "user");
-
-                await updatedUser.remove();
-            })
-
-            it("User - Roles", async function () {
-                var service = this.service;
-                let name = "jssdk_testuser_" + getNextId();
-
-                let user = await service.users().create({ name: name, password: "abcdefg!", roles: "user" });
-                assert.ok(user);
-                assert.strictEqual(user.name, name);
-                assert.strictEqual(user.properties().roles.length, 1);
-                assert.strictEqual(user.properties().roles[0], "user");
-
-                user = await user.update({ roles: ["admin", "user"] });
-                assert.ok(user);
-                assert.strictEqual(user.properties().roles.length, 2);
-                assert.strictEqual(user.properties().roles[0], "admin");
-                assert.strictEqual(user.properties().roles[1], "user");
-
-                user = await user.update({ roles: "user" });
-                assert.ok(user);
-                assert.strictEqual(user.properties().roles.length, 1);
-                assert.strictEqual(user.properties().roles[0], "user");
-                let res;
-                try {
-                    res = await user.update({ roles: "__unknown__" });
-                } catch (error) {
-                    assert.ok(error);
-                    assert.strictEqual(error[0].status, 400);
-                }
-                assert.ok(!res);
-            })
-
-            it("User - Passwords", async function () {
-                var service = this.service;
-                let name = "jssdk_testuser_" + getNextId();
-
-                let firstPassword = "abcdefg!";
-                let secondPassword = "hijklmn!";
-
-                let useOldPassword = false;
-
-                let info = await service.serverInfo();
-                let versionParts = info.properties().version.split(".");
-
-                let isDevBuild = versionParts.length === 1;
-                let newerThan72 = (parseInt(versionParts[0], 10) > 7 ||
-                    (parseInt(versionParts[0], 10) === 7 && parseInt(versionParts[1], 10) >= 2));
-
-                if (isDevBuild || newerThan72) {
-                    useOldPassword = true;
-                }
-                let user = await service.users().create({ name: name, password: firstPassword, roles: "user" });
-                assert.ok(user);
-                assert.strictEqual(user.name, name);
-                assert.strictEqual(user.properties().roles.length, 1);
-                assert.strictEqual(user.properties().roles[0], "user");
-
-                let newService = new splunkjs.Service(service.http, {
-                    username: name,
-                    password: firstPassword,
-                    host: service.host,
-                    port: service.port,
-                    scheme: service.scheme,
-                    version: service.version
+                service.currentUser(function (err, user) {
+                    assert.ok(!err);
+                    assert.ok(user);
+                    assert.strictEqual(user.name, service.username);
+                    done();
                 });
-                success = await newService.login();
-                assert.ok(success);
-                assert.ok(user);
-                let body = {
-                    password: secondPassword
-                };
-                if (useOldPassword) {
-                    body['oldpassword'] = firstPassword;
-                }
-                user = await user.update(body);
-                try {
-                    let res = await newService.login();;
-                    assert.ok(!res);
-                } catch (error) {
-                    assert.ok(error);
-                }
-                body = {
-                    password: firstPassword
-                };
-                if (useOldPassword) {
-                    body['oldpassword'] = secondPassword;
-                }
-                user = await user.update(body);
-                assert.ok(user);
-                await newService.login();
             })
 
-            it("Delete test users", async function () {
-                let users = this.service.users();
-                users = await users.fetch();
-                let userList = users.list();
-                let err = await utils.parallelEach(
-                    userList,
-                    async function (user, idx) {
-                        if (utils.startsWith(user.name, "jssdk_")) {
-                            await user.remove();
-                        }
+            it("Callback#Current user fails", function (done) {
+                var service = this.loggedOutService;
+
+                service.currentUser(function (err, user) {
+                    assert.ok(err);
+                    done();
+                });
+            })
+
+            it("Callback#List users", function (done) {
+                var service = this.service;
+
+                service.users().fetch(function (err, users) {
+                    var userList = users.list();
+                    assert.ok(!err);
+                    assert.ok(users);
+
+                    assert.ok(userList);
+                    assert.ok(userList.length > 0);
+                    done();
+                });
+            })
+
+            it("Callback#create user failure", function (done) {
+                this.loggedOutService.users().create(
+                    { name: "jssdk_testuser", password: "abcdefg!", roles: "user" },
+                    function (err, response) {
+                        assert.ok(err);
+                        done();
                     }
                 );
-                assert.ok(!err);
+            })
+
+            it("Callback#Create + update + delete user", function (done) {
+                var service = this.service;
+                var name = "jssdk_testuser";
+
+                Async.chain([
+                    function (done) {
+                        service.users().create({ name: "jssdk_testuser", password: "abcdefg!", roles: "user" }, done);
+                    },
+                    function (user, done) {
+                        assert.ok(user);
+                        assert.strictEqual(user.name, name);
+                        assert.strictEqual(user.properties().roles.length, 1);
+                        assert.strictEqual(user.properties().roles[0], "user");
+
+                        user.update({ realname: "JS SDK", roles: ["admin", "user"] }, done);
+                    },
+                    function (user, done) {
+                        assert.ok(user);
+                        assert.strictEqual(user.properties().realname, "JS SDK");
+                        assert.strictEqual(user.properties().roles.length, 2);
+                        assert.strictEqual(user.properties().roles[0], "admin");
+                        assert.strictEqual(user.properties().roles[1], "user");
+
+                        user.remove(done);
+                    }
+                ],
+                    function (err) {
+                        assert.ok(!err);
+                        done();
+                    }
+                );
+            })
+
+            it("Callback#Roles", function (done) {
+                var service = this.service;
+                var name = "jssdk_testuser_" + getNextId();
+
+                Async.chain([
+                    function (done) {
+                        service.users().create({ name: name, password: "abcdefg!", roles: "user" }, done);
+                    },
+                    function (user, done) {
+                        assert.ok(user);
+                        assert.strictEqual(user.name, name);
+                        assert.strictEqual(user.properties().roles.length, 1);
+                        assert.strictEqual(user.properties().roles[0], "user");
+
+                        user.update({ roles: ["admin", "user"] }, done);
+                    },
+                    function (user, done) {
+                        assert.ok(user);
+                        assert.strictEqual(user.properties().roles.length, 2);
+                        assert.strictEqual(user.properties().roles[0], "admin");
+                        assert.strictEqual(user.properties().roles[1], "user");
+
+                        user.update({ roles: "user" }, done);
+                    },
+                    function (user, done) {
+                        assert.ok(user);
+                        assert.strictEqual(user.properties().roles.length, 1);
+                        assert.strictEqual(user.properties().roles[0], "user");
+
+                        user.update({ roles: "__unknown__" }, done);
+                    }
+                ],
+                    function (err) {
+                        assert.ok(err);
+                        assert.strictEqual(err.status, 400);
+                        done();
+                    }
+                );
+            })
+
+            it("Callback#Passwords", function (done) {
+                var service = this.service;
+                var newService = null;
+                var name = "jssdk_testuser_" + getNextId();
+
+                var firstPassword = "abcdefg!";
+                var secondPassword = "hijklmn!";
+
+                var useOldPassword = false;
+
+                Async.chain([
+                    function (done) {
+                        service.serverInfo(done);
+                    },
+                    function (info, done) {
+                        var versionParts = info.properties().version.split(".");
+
+                        var isDevBuild = versionParts.length === 1;
+                        var newerThan72 = (parseInt(versionParts[0], 10) > 7 ||
+                            (parseInt(versionParts[0], 10) === 7 && parseInt(versionParts[1], 10) >= 2));
+
+                        if (isDevBuild || newerThan72) {
+                            useOldPassword = true;
+                        }
+                        done();
+                    },
+                    function (done) {
+                        service.users().create({ name: name, password: firstPassword, roles: "user" }, done);
+                    },
+                    function (user, done) {
+                        assert.ok(user);
+                        assert.strictEqual(user.name, name);
+                        assert.strictEqual(user.properties().roles.length, 1);
+                        assert.strictEqual(user.properties().roles[0], "user");
+
+                        newService = new splunkjs.Service(service.http, {
+                            username: name,
+                            password: firstPassword,
+                            host: service.host,
+                            port: service.port,
+                            scheme: service.scheme,
+                            version: service.version
+                        });
+
+                        newService.login(Async.augment(done, user));
+                    },
+                    function (success, user, done) {
+                        assert.ok(success);
+                        assert.ok(user);
+
+                        var body = {
+                            password: secondPassword
+                        };
+                        if (useOldPassword) {
+                            body['oldpassword'] = firstPassword;
+                        }
+
+                        user.update(body, done);
+                    },
+                    function (user, done) {
+                        newService.login(function (err, success) {
+                            assert.ok(err);
+                            assert.ok(!success);
+
+                            var body = {
+                                password: firstPassword
+                            };
+                            if (useOldPassword) {
+                                body['oldpassword'] = secondPassword;
+                            }
+
+                            user.update(body, done);
+                        });
+                    },
+                    function (user, done) {
+                        assert.ok(user);
+                        newService.login(done);
+                    }
+                ],
+                    function (err) {
+                        assert.ok(!err, JSON.stringify(err));
+                        done();
+                    }
+                );
+            })
+
+            it("Callback#delete test users", function (done) {
+                var users = this.service.users();
+                users.fetch(function (err, users) {
+                    var userList = users.list();
+
+                    Async.parallelEach(
+                        userList,
+                        function (user, idx, callback) {
+                            if (utils.startsWith(user.name, "jssdk_")) {
+                                user.remove(callback);
+                            }
+                            else {
+                                callback();
+                            }
+                        }, function (err) {
+                            assert.ok(!err);
+                            done();
+                        }
+                    );
+                });
             })
         })
     );
@@ -73298,14 +75754,14 @@ if (module.id === __filename && module.parent.id.includes('mocha')) {
     var splunkjs = require('../../index');
     var options = require('../cmdline');
 
-    let cmdline = options.create().parse(process.argv);
+    var cmdline = options.create().parse(process.argv);
 
     // If there is no command line, we should return
     if (!cmdline) {
         throw new Error("Error in parsing command line parameters");
     }
 
-    let svc = new splunkjs.Service({
+    var svc = new splunkjs.Service({
         scheme: cmdline.opts.scheme,
         host: cmdline.opts.host,
         port: cmdline.opts.port,
@@ -73314,7 +75770,7 @@ if (module.id === __filename && module.parent.id.includes('mocha')) {
         version: cmdline.opts.version
     });
 
-    let loggedOutSvc = new splunkjs.Service({
+    var loggedOutSvc = new splunkjs.Service({
         scheme: cmdline.opts.scheme,
         host: cmdline.opts.host,
         port: cmdline.opts.port,
@@ -73324,60 +75780,81 @@ if (module.id === __filename && module.parent.id.includes('mocha')) {
     });
 
     // Exports tests on a successful login
-    module.exports = new Promise(async (resolve, reject) => {
-        try {
-            await svc.login();
-            return resolve(exports.setup(svc, loggedOutSvc))
-        } catch (error) {
-            throw new Error("Login failed - not running tests", error || "");
-        }
+    module.exports = new Promise((resolve, reject) => {
+        svc.login(function (err, success) {
+            if (err || !success) {
+                throw new Error("Login failed - not running tests", err || "");
+            }
+            return resolve(exports.setup(svc, loggedOutSvc));
+        });
     });
 }
 
 }).call(this)}).call(this,require('_process'),"/tests/service_tests/user.js")
-},{"../../index":2,"../cmdline":296,"_process":239,"chai":72}],315:[function(require,module,exports){
+},{"../../index":2,"../cmdline":297,"_process":240,"chai":73}],316:[function(require,module,exports){
 (function (process,__filename){(function (){
 
 exports.setup = function (svc) {
     var assert = require('chai').assert;
-
+    var splunkjs = require('../../index');
+    var Async = splunkjs.Async;
     return (
-        describe("Views ", () => {
+        describe("Views ", function () {
 
-            beforeEach(function () {
+            beforeEach(function (done) {
                 this.service = svc;
+                done();
             })
 
-            it("List views", async function () {
+            it("Callback#List views", function (done) {
                 var service = this.service;
-                let views = await service.views({ owner: "admin", app: "search" }).fetch();
-                assert.ok(views);
 
-                let viewsList = views.list();
-                assert.ok(viewsList);
-                assert.ok(viewsList.length > 0);
+                service.views({ owner: "admin", app: "search" }).fetch(function (err, views) {
+                    assert.ok(!err);
+                    assert.ok(views);
 
-                for (let i = 0; i < viewsList.length; i++) {
-                    assert.ok(viewsList[i]);
-                }
+                    var viewsList = views.list();
+                    assert.ok(viewsList);
+                    assert.ok(viewsList.length > 0);
+
+                    for (var i = 0; i < viewsList.length; i++) {
+                        assert.ok(viewsList[i]);
+                    }
+
+                    done();
+                });
             })
 
-            it("Views - Create, update and delete view", async function () {
+            it("Callback#Create + update + delete view", function (done) {
                 var service = this.service;
-                let name = "jssdk_testview";
-                let originalData = "<view/>";
-                let newData = "<view isVisible='false'></view>";
+                var name = "jssdk_testview";
+                var originalData = "<view/>";
+                var newData = "<view isVisible='false'></view>";
 
-                let view = await service.views({ owner: "admin", app: "sdkappcollection" }).create({ name: name, "eai:data": originalData });
-                assert.ok(view);
-                assert.strictEqual(view.name, name);
-                assert.strictEqual(view.properties()["eai:data"], originalData);
+                Async.chain([
+                    function (done) {
+                        service.views({ owner: "admin", app: "sdkappcollection" }).create({ name: name, "eai:data": originalData }, done);
+                    },
+                    function (view, done) {
+                        assert.ok(view);
 
-                let updatedView = await view.update({ "eai:data": newData });
-                assert.ok(updatedView);
-                assert.strictEqual(updatedView.properties()["eai:data"], newData);
+                        assert.strictEqual(view.name, name);
+                        assert.strictEqual(view.properties()["eai:data"], originalData);
 
-                await updatedView.remove();
+                        view.update({ "eai:data": newData }, done);
+                    },
+                    function (view, done) {
+                        assert.ok(view);
+                        assert.strictEqual(view.properties()["eai:data"], newData);
+
+                        view.remove(done);
+                    }
+                ],
+                    function (err) {
+                        assert.ok(!err);
+                        done();
+                    }
+                );
             })
         })
     );
@@ -73387,14 +75864,14 @@ if (module.id === __filename && module.parent.id.includes('mocha')) {
     var splunkjs = require('../../index');
     var options = require('../cmdline');
 
-    let cmdline = options.create().parse(process.argv);
+    var cmdline = options.create().parse(process.argv);
 
     // If there is no command line, we should return
     if (!cmdline) {
         throw new Error("Error in parsing command line parameters");
     }
 
-    let svc = new splunkjs.Service({
+    var svc = new splunkjs.Service({
         scheme: cmdline.opts.scheme,
         host: cmdline.opts.host,
         port: cmdline.opts.port,
@@ -73404,18 +75881,559 @@ if (module.id === __filename && module.parent.id.includes('mocha')) {
     });
 
     // Exports tests on a successful login
-    module.exports = new Promise(async (resolve, reject) => {
-        try {
-            await svc.login();
-            return resolve(exports.setup(svc))
-        } catch (error) {
-            throw new Error("Login failed - not running tests", error || "");
-        }
+    module.exports = new Promise((resolve, reject) => {
+        svc.login(function (err, success) {
+            if (err || !success) {
+                throw new Error("Login failed - not running tests", err || "");
+            }
+            return resolve(exports.setup(svc));
+        });
     });
 }
 
 }).call(this)}).call(this,require('_process'),"/tests/service_tests/view.js")
-},{"../../index":2,"../cmdline":296,"_process":239,"chai":72}],316:[function(require,module,exports){
+},{"../../index":2,"../cmdline":297,"_process":240,"chai":73}],317:[function(require,module,exports){
+(function (__filename){(function (){
+
+// Copyright 2011 Splunk, Inc.
+//
+// Licensed under the Apache License, Version 2.0 (the "License"): you may
+// not use this file except in compliance with the License. You may obtain
+// a copy of the License at
+//
+//     http://www.apache.org/licenses/LICENSE-2.0
+//
+// Unless required by applicable law or agreed to in writing, software
+// distributed under the License is distributed on an "AS IS" BASIS, WITHOUT
+// WARRANTIES OR CONDITIONS OF ANY KIND, either express or implied. See the
+// License for the specific language governing permissions and limitations
+// under the License.
+
+exports.setup = function () {
+    var assert = require('chai').assert;
+    var splunkjs = require('../index');
+    var Async = splunkjs.Async;
+    var isBrowser = typeof "window" !== "undefined";
+    splunkjs.Logger.setLevel("ALL");
+
+    return (
+        describe('Async tests', function () {
+
+            it("While success", function (done) {
+                var i = 0;
+                Async.whilst(
+                    function () { return i++ < 3; },
+                    function (done) {
+                        Async.sleep(0, function () { done(); });
+                    },
+                    function (err) {
+                        assert.ok(!err);
+                        done();
+                    }
+                );
+            });
+
+            it("While success deep", function (done) {
+                var i = 0;
+                Async.whilst(
+                    function () { return i++ < (isBrowser ? 100 : 10000); },
+                    function (done) {
+                        Async.sleep(0, function () { done(); });
+                    },
+                    function (err) {
+                        assert.ok(!err);
+                        done();
+                    }
+                );
+            });
+
+            it("While error", function (done) {
+                var i = 0;
+                Async.whilst(
+                    function () { return i++ < (isBrowser ? 100 : 10000); },
+                    function (done) {
+                        Async.sleep(0, function () { done(i === (isBrowser ? 50 : 10000) ? 1 : null); });
+                    },
+                    function (err) {
+                        assert.ok(err);
+                        assert.strictEqual(err, 1);
+                        done();
+                    }
+                );
+            });
+
+            it("Whilst sans condition is never", function (done) {
+                var i = false;
+                Async.whilst(
+                    undefined,
+                    function (done) { i = true; done(); },
+                    function (err) {
+                        assert.strictEqual(i, false);
+                        done();
+                    }
+                );
+            });
+
+            it("Whilst with empty body does nothing", function (done) {
+                var i = true;
+                Async.whilst(
+                    function () {
+                        if (i) {
+                            i = false;
+                            return true;
+                        }
+                        else {
+                            return i;
+                        }
+                    },
+                    undefined,
+                    function (err) {
+                        done();
+                    }
+                );
+            });
+
+            it("Parallel success", function (done) {
+                Async.parallel([
+                    function (done) {
+                        done(null, 1);
+                    },
+                    function (done) {
+                        done(null, 2, 3);
+                    }],
+                    function (err, one, two) {
+                        assert.ok(!err);
+                        assert.strictEqual(one, 1);
+                        assert.strictEqual(two[0], 2);
+                        assert.strictEqual(two[1], 3);
+                        done();
+                    }
+                );
+            });
+
+            it("Parallel success - outside of arrays", function (done) {
+                Async.parallel(
+                    function (done) { done(null, 1); },
+                    function (done) { done(null, 2, 3); },
+                    function (err, one, two) {
+                        assert.ok(!err);
+                        assert.strictEqual(one, 1);
+                        assert.strictEqual(two[0], 2);
+                        assert.strictEqual(two[1], 3);
+                        done();
+                    });
+            });
+
+            it("Parallel success - no reordering", function (done) {
+                Async.parallel([
+                    function (done) {
+                        Async.sleep(1, function () { done(null, 1); });
+                    },
+                    function (done) {
+                        done(null, 2, 3);
+                    }],
+                    function (err, one, two) {
+                        assert.ok(!err);
+                        assert.strictEqual(one, 1);
+                        assert.strictEqual(two[0], 2);
+                        assert.strictEqual(two[1], 3);
+                        done();
+                    }
+                );
+            });
+
+            it("Parallel error", function (done) {
+                Async.parallel([
+                    function (done) {
+                        done(null, 1);
+                    },
+                    function (done) {
+                        done(null, 2, 3);
+                    },
+                    function (done) {
+                        Async.sleep(0, function () {
+                            done("ERROR");
+                        });
+                    }],
+                    function (err, one, two) {
+                        assert.ok(err === "ERROR");
+                        assert.ok(!one);
+                        assert.ok(!two);
+                        done();
+                    }
+                );
+            });
+
+            it("Parallel no tasks", function (done) {
+                Async.parallel(
+                    [],
+                    function (err) {
+                        assert.ok(!err);
+                        done();
+                    }
+                );
+            });
+
+            it("Series success", function (done) {
+                Async.series([
+                    function (done) {
+                        done(null, 1);
+                    },
+                    function (done) {
+                        done(null, 2, 3);
+                    }],
+                    function (err, one, two) {
+                        assert.ok(!err);
+                        assert.strictEqual(one, 1);
+                        assert.strictEqual(two[0], 2);
+                        assert.strictEqual(two[1], 3);
+                        done();
+                    }
+                );
+            });
+
+            it("Series success - outside of array", function (done) {
+                Async.series(
+                    function (done) {
+                        done(null, 1);
+                    },
+                    function (done) {
+                        done(null, 2, 3);
+                    },
+                    function (err, one, two) {
+                        assert.ok(!err);
+                        assert.strictEqual(one, 1);
+                        assert.strictEqual(two[0], 2);
+                        assert.strictEqual(two[1], 3);
+                        done();
+                    }
+                );
+            });
+
+            it("Series reordering success", function (done) {
+                var keeper = 0;
+                Async.series([
+                    function (done) {
+                        Async.sleep(10, function () {
+                            assert.strictEqual(keeper++, 0);
+                            done(null, 1);
+                        });
+                    },
+                    function (done) {
+                        assert.strictEqual(keeper++, 1);
+                        done(null, 2, 3);
+                    }],
+                    function (err, one, two) {
+                        assert.ok(!err);
+                        assert.strictEqual(keeper, 2);
+                        assert.strictEqual(one, 1);
+                        assert.strictEqual(two[0], 2);
+                        assert.strictEqual(two[1], 3);
+                        done();
+                    }
+                );
+            });
+
+            it("Series error", function (done) {
+                Async.series([
+                    function (done) {
+                        done(null, 1);
+                    },
+                    function (done) {
+                        done("ERROR", 2, 3);
+                    }],
+                    function (err, one, two) {
+                        assert.strictEqual(err, "ERROR");
+                        assert.ok(!one);
+                        assert.ok(!two);
+                        done();
+                    }
+                );
+            });
+
+            it("Series no tasks", function (done) {
+                Async.series(
+                    [],
+                    function (err) {
+                        assert.ok(!err);
+                        done();
+                    }
+                );
+            });
+
+            it("Parallel map success", function (done) {
+                Async.parallelMap(
+                    [1, 2, 3],
+                    function (val, idx, done) {
+                        done(null, val + 1);
+                    },
+                    function (err, vals) {
+                        assert.ok(!err);
+                        assert.strictEqual(vals[0], 2);
+                        assert.strictEqual(vals[1], 3);
+                        assert.strictEqual(vals[2], 4);
+                        done();
+                    }
+                );
+            });
+
+            it("Parallel map reorder success", function (done) {
+                Async.parallelMap(
+                    [1, 2, 3],
+                    function (val, idx, done) {
+                        if (val === 2) {
+                            Async.sleep(100, function () { done(null, val + 1); });
+                        }
+                        else {
+                            done(null, val + 1);
+                        }
+                    },
+                    function (err, vals) {
+                        assert.strictEqual(vals[0], 2);
+                        assert.strictEqual(vals[1], 3);
+                        assert.strictEqual(vals[2], 4);
+                        done();
+                    }
+                );
+            });
+
+            it("Parallel map error", function (done) {
+                Async.parallelMap(
+                    [1, 2, 3],
+                    function (val, idx, done) {
+                        if (val === 2) {
+                            done(5);
+                        }
+                        else {
+                            done(null, val + 1);
+                        }
+                    },
+                    function (err, vals) {
+                        assert.ok(err);
+                        assert.ok(!vals);
+                        assert.strictEqual(err, 5);
+                        done();
+                    }
+                );
+            });
+
+            it("Series map success", function (done) {
+                var keeper = 1;
+                Async.seriesMap(
+                    [1, 2, 3],
+                    function (val, idx, done) {
+                        assert.strictEqual(keeper++, val);
+                        done(null, val + 1);
+                    },
+                    function (err, vals) {
+                        assert.ok(!err);
+                        assert.strictEqual(vals[0], 2);
+                        assert.strictEqual(vals[1], 3);
+                        assert.strictEqual(vals[2], 4);
+                        assert.strictEqual(vals[2], keeper);
+                        done();
+                    }
+                );
+            });
+
+            it("Series map error", function (done) {
+                Async.seriesMap(
+                    [1, 2, 3],
+                    function (val, idx, done) {
+                        if (val === 2) {
+                            done(5);
+                        }
+                        else {
+                            done(null, val + 1);
+                        }
+                    },
+                    function (err, vals) {
+                        assert.ok(err);
+                        assert.ok(!vals);
+                        assert.strictEqual(err, 5);
+                        done();
+                    }
+                );
+            });
+
+            it("Chain single success", function (done) {
+                Async.chain([
+                    function (callback) {
+                        callback(null, 1);
+                    },
+                    function (val, callback) {
+                        callback(null, val + 1);
+                    },
+                    function (val, callback) {
+                        callback(null, val + 1);
+                    }],
+                    function (err, val) {
+                        assert.ok(!err);
+                        assert.strictEqual(val, 3);
+                        done();
+                    }
+                );
+            });
+
+            it("Chain flat single success", function (done) {
+                Async.chain(
+                    function (callback) {
+                        callback(null, 1);
+                    },
+                    function (val, callback) {
+                        callback(null, val + 1);
+                    },
+                    function (val, callback) {
+                        callback(null, val + 1);
+                    },
+                    function (err, val) {
+                        assert.ok(!err);
+                        assert.strictEqual(val, 3);
+                        done();
+                    }
+                );
+            });
+
+            it("Chain flat multiple success", function (done) {
+                Async.chain(
+                    function (callback) {
+                        callback(null, 1, 2);
+                    },
+                    function (val1, val2, callback) {
+                        callback(null, val1 + 1, val2 + 1);
+                    },
+                    function (val1, val2, callback) {
+                        callback(null, val1 + 1, val2 + 1);
+                    },
+                    function (err, val1, val2) {
+                        assert.ok(!err);
+                        assert.strictEqual(val1, 3);
+                        assert.strictEqual(val2, 4);
+                        done();
+                    }
+                );
+            });
+
+            it("Chain flat arity change success", function (done) {
+                Async.chain(
+                    function (callback) {
+                        callback(null, 1, 2);
+                    },
+                    function (val1, val2, callback) {
+                        callback(null, val1 + 1);
+                    },
+                    function (val1, callback) {
+                        callback(null, val1 + 1, 5);
+                    },
+                    function (err, val1, val2) {
+                        assert.ok(!err);
+                        assert.strictEqual(val1, 3);
+                        assert.strictEqual(val2, 5);
+                        done();
+                    }
+                );
+            });
+
+            it("Chain error", function (done) {
+                Async.chain([
+                    function (callback) {
+                        callback(null, 1, 2);
+                    },
+                    function (val1, val2, callback) {
+                        callback(5, val1 + 1);
+                    },
+                    function (val1, callback) {
+                        callback(null, val1 + 1, 5);
+                    }],
+                    function (err, val1, val2) {
+                        assert.ok(err);
+                        assert.ok(!val1);
+                        assert.ok(!val2);
+                        assert.strictEqual(err, 5);
+                        done();
+                    }
+                );
+            });
+
+            it("Chain no tasks", function (done) {
+                Async.chain([],
+                    function (err, val1, val2) {
+                        assert.ok(!err);
+                        assert.ok(!val1);
+                        assert.ok(!val2);
+                        done();
+                    }
+                );
+            });
+
+            it("Parallel each reodrder success", function (done) {
+                var total = 0;
+                Async.parallelEach(
+                    [1, 2, 3],
+                    function (val, idx, done) {
+                        var go = function () {
+                            total += val;
+                            done();
+                        };
+
+                        if (idx === 1) {
+                            Async.sleep(100, go);
+                        }
+                        else {
+                            go();
+                        }
+                    },
+                    function (err) {
+                        assert.ok(!err);
+                        assert.strictEqual(total, 6);
+                        done();
+                    }
+                );
+            });
+
+            it("Series each success", function (done) {
+                var results = [1, 3, 6];
+                var total = 0;
+                Async.seriesEach(
+                    [1, 2, 3],
+                    function (val, idx, done) {
+                        total += val;
+                        assert.strictEqual(total, results[idx]);
+                        done();
+                    },
+                    function (err) {
+                        assert.ok(!err);
+                        assert.strictEqual(total, 6);
+                        done();
+                    }
+                );
+            });
+
+            it("Augment callback", function (done) {
+                var callback = function (a, b) {
+                    assert.ok(a);
+                    assert.ok(b);
+                    assert.strictEqual(a, 1);
+                    assert.strictEqual(b, 2);
+
+                    done();
+                };
+
+                var augmented = Async.augment(callback, 2);
+                augmented(1);
+            });
+
+        })
+    );
+};
+
+// Run the individual test suite
+if (module.id === __filename && module.parent.id.includes('mocha')) {
+    module.exports = exports.setup();
+}
+
+}).call(this)}).call(this,"/tests/test_async.js")
+},{"../index":2,"chai":73}],318:[function(require,module,exports){
 (function (process,__filename){(function (){
 
 // Copyright 2011 Splunk, Inc.
@@ -73435,6 +76453,7 @@ if (module.id === __filename && module.parent.id.includes('mocha')) {
 exports.setup = function (svc) {
     var splunkjs = require('../index');
     var tutils = require('./utils');
+    var Async = splunkjs.Async;
     var utils = splunkjs.Utils;
     var assert = require('chai').assert;
 
@@ -73442,9 +76461,10 @@ exports.setup = function (svc) {
     var isBrowser = typeof window !== "undefined";
 
     var suite = (
-        describe("General Context Test", () => {
-            before(function () {
+        describe("General Context Test", function (done) {
+            before(function (done) {
                 this.service = svc;
+                done();
             });
 
             it("Service exists", function (done) {
@@ -73452,16 +76472,17 @@ exports.setup = function (svc) {
                 done();
             });
 
-            it("Create test search", async function () {
+            it("Create test search", function (done) {
                 // The search created here is used by several of the following tests, specifically those using get()
-                let searchID = "DELETEME_JSSDK_UNITTEST";
-                let res = await this.service.post("search/jobs", { search: "search index=_internal | head 1", exec_mode: "blocking", id: searchID });
-                assert.ok(res.data.sid);
-
+                var searchID = "DELETEME_JSSDK_UNITTEST";
+                this.service.post("search/jobs", { search: "search index=_internal | head 1", exec_mode: "blocking", id: searchID }, function (err, res) {
+                    assert.ok(res.data.sid);
+                    done();
+                });
             });
 
-            it("Login", async function () {
-                let newService = new splunkjs.Service(svc.http, {
+            it("Callback#login", function (done) {
+                var newService = new splunkjs.Service(svc.http, {
                     scheme: svc.scheme,
                     host: svc.host,
                     port: svc.port,
@@ -73469,16 +76490,15 @@ exports.setup = function (svc) {
                     password: svc.password,
                     version: svc.version
                 });
-                //ASK assert.ok(await newService.login());
-                try {
-                    await newService.login();
-                } catch (error) {
-                    assert.ok(!error);
-                }
+
+                newService.login(function (err, success) {
+                    assert.ok(success);
+                    done();
+                });
             });
 
-            it("Login fail", async function () {
-                let newService = new splunkjs.Service(svc.http, {
+            it("Callback#login fail", function (done) {
+                var newService = new splunkjs.Service(svc.http, {
                     scheme: svc.scheme,
                     host: svc.host,
                     port: svc.port,
@@ -73487,573 +76507,625 @@ exports.setup = function (svc) {
                     version: svc.version
                 });
                 if (!isBrowser) {
-                    let res;
-                    try {
-                        res = await newService.login();
-                    } catch (error) {
-                        assert.ok(error);
+                    newService.login(function (err, success) {
+                        assert.ok(err);
+                        assert.ok(!success);
+                        done();
+                    });
+                }
+                else {
+                    done();
+                }
+            });
+
+            it("Callback#get", function (done) {
+                this.service.get("search/jobs", { count: 1 }, function (err, res) {
+                    assert.strictEqual(res.data.paging.offset, 0);
+                    assert.ok(res.data.entry.length <= res.data.paging.total);
+                    assert.strictEqual(res.data.entry.length, 1);
+                    assert.ok(res.data.entry[0].content.sid);
+                    done();
+                });
+            });
+
+            it("Callback#get error", function (done) {
+                this.service.get("search/jobs/1234_nosuchjob", {}, function (res) {
+                    assert.ok(!!res);
+                    assert.strictEqual(res.status, 404);
+                    done();
+                });
+            });
+
+            it("Callback#get autologin - success", function (done) {
+                var service = new splunkjs.Service(
+                    {
+                        scheme: this.service.scheme,
+                        host: this.service.host,
+                        port: this.service.port,
+                        username: this.service.username,
+                        password: this.service.password,
+                        version: svc.version
                     }
-                    assert.ok(!res);
-                }
-            });
-
-            it("Get", async function () {
-                let res = await this.service.get("search/jobs", { count: 1 });
-                assert.strictEqual(res.data.paging.offset, 0);
-                assert.ok(res.data.entry.length <= res.data.paging.total);
-                assert.strictEqual(res.data.entry.length, 1);
-                assert.ok(res.data.entry[0].content.sid);
-            });
-
-            it("Get error", async function () {
-                let res;
-                try {
-                    res = await this.service.get("search/jobs/1234_nosuchjob", {});
-                } catch (error) {
-                    assert.strictEqual(error.status, 404);
-                }
-                assert.ok(!res);
-            });
-
-            it("Get autologin - success", async function () {
-                let service = new splunkjs.Service({
-                    scheme: this.service.scheme,
-                    host: this.service.host,
-                    port: this.service.port,
-                    username: this.service.username,
-                    password: this.service.password,
-                    version: svc.version
-                }
-                );
-                let res = await service.get("search/jobs", { count: 1 });
-                assert.strictEqual(res.data.paging.offset, 0);
-                assert.ok(res.data.entry.length <= res.data.paging.total);
-                assert.strictEqual(res.data.entry.length, 1);
-                assert.ok(res.data.entry[0].content.sid);
-            });
-
-            it("Get autologin - error", async function () {
-                let service = new splunkjs.Service({
-                    scheme: this.service.scheme,
-                    host: this.service.host,
-                    port: this.service.port,
-                    username: this.service.username,
-                    password: this.service.password + "ABC",
-                    version: svc.version
-                });
-                let res;
-                try {
-                    res = await service.get("search/jobs", { count: 1 });
-                } catch (error) {
-                    assert.ok(error);
-                    assert.strictEqual(error.status, 401);
-                }
-                assert.ok(!res);
-            });
-
-            it("Get autologin - disabled", async function () {
-                let service = new splunkjs.Service({
-                    scheme: this.service.scheme,
-                    host: this.service.host,
-                    port: this.service.port,
-                    username: this.service.username,
-                    password: this.service.password,
-                    autologin: false,
-                    version: svc.version
-                });
-                let res;
-                try {
-                    res = await service.get("search/jobs", { count: 1 });
-                } catch (error) {
-                    assert.ok(error);
-                    assert.strictEqual(error.status, 401);
-                }
-                assert.ok(!res);
-            });
-
-            it("Get relogin - success", async function () {
-                let service = new splunkjs.Service({
-                    scheme: this.service.scheme,
-                    host: this.service.host,
-                    port: this.service.port,
-                    username: this.service.username,
-                    password: this.service.password,
-                    sessionKey: "ABCDEF-not-real",
-                    version: svc.version
-                });
-
-                let res = await service.get("search/jobs", { count: 1 });
-
-                assert.strictEqual(res.data.paging.offset, 0);
-                assert.ok(res.data.entry.length <= res.data.paging.total);
-                assert.strictEqual(res.data.entry.length, 1);
-                assert.ok(res.data.entry[0].content.sid);
-            });
-
-            it("Get relogin - error", async function () {
-                let service = new splunkjs.Service({
-                    scheme: this.service.scheme,
-                    host: this.service.host,
-                    port: this.service.port,
-                    username: this.service.username,
-                    password: this.service.password + "ABC",
-                    sessionKey: "ABCDEF-not-real",
-                    version: svc.version
-                });
-                let res;
-                try {
-                    res = await service.get("search/jobs", { count: 1 });
-                } catch (error) {
-                    assert.ok(error);
-                    assert.strictEqual(error.status, 401);
-                }
-                assert.ok(!res);
-            });
-
-            it("Post", async function () {
-                let service = this.service;
-                let res = await this.service.post("search/jobs", { search: "search index=_internal | head 1" });
-                let sid = res.data.sid;
-                assert.ok(sid);
-                let endpoint = "search/jobs/" + sid + "/control";
-                res = await service.post(endpoint, { action: "cancel" });
-                assert.ok(res);
-            });
-
-            it("Post error", async function () {
-                let res;
-                try {
-                    res = await this.service.post("search/jobs", { search: "index_internal | head 1" });
-                } catch (error) {
-                    assert.ok(error);
-                    assert.strictEqual(error.status, 400);
-                }
-                assert.ok(!res);
-            });
-
-            it("Post autologin - success", async function () {
-                let service = new splunkjs.Service({
-                    scheme: this.service.scheme,
-                    host: this.service.host,
-                    port: this.service.port,
-                    username: this.service.username,
-                    password: this.service.password,
-                    version: svc.version
-                });
-
-                let res = await service.post("search/jobs", { search: "search index=_internal | head 1" });
-                let sid = res.data.sid;
-                assert.ok(sid);
-                let endpoint = "search/jobs/" + sid + "/control";
-                res = await service.post(endpoint, { action: "cancel" });
-            });
-
-            it("Post autologin - error", async function () {
-                let service = new splunkjs.Service({
-                    scheme: this.service.scheme,
-                    host: this.service.host,
-                    port: this.service.port,
-                    username: this.service.username,
-                    password: this.service.password + "ABC",
-                    version: svc.version
-                });
-                let res ;
-                try {
-                    res = await service.post("search/jobs", { search: "search index=_internal | head 1" });
-                } catch (error) {
-                    assert.ok(error);
-                    assert.strictEqual(error.status, 401);
-                }
-                assert.ok(!res);
-            });
-
-            it("Post autologin - disabled", async function () {
-                let service = new splunkjs.Service({
-                    scheme: this.service.scheme,
-                    host: this.service.host,
-                    port: this.service.port,
-                    username: this.service.username,
-                    password: this.service.password,
-                    autologin: false,
-                    version: svc.version
-                });
-                let res;
-                try {
-                    res = await service.post("search/jobs", { search: "search index=_internal | head 1" });
-                } catch (error) {
-                    assert.ok(error);
-                    assert.strictEqual(error.status, 401);
-                }
-                assert.ok(!res);
-            });
-
-            it("Post relogin - success", async function () {
-                let service = new splunkjs.Service({
-                    scheme: this.service.scheme,
-                    host: this.service.host,
-                    port: this.service.port,
-                    username: this.service.username,
-                    password: this.service.password,
-                    sessionKey: "ABCDEF-not-real",
-                    version: svc.version
-                }
                 );
 
-                let res = await service.post("search/jobs", { search: "search index=_internal | head 1" });
-                let sid = res.data.sid;
-                assert.ok(sid);
-
-                let endpoint = "search/jobs/" + sid + "/control";
-                service.post(endpoint, { action: "cancel" });
-            });
-
-            it("Post relogin - error", async function () {
-                let service = new splunkjs.Service({
-                    scheme: this.service.scheme,
-                    host: this.service.host,
-                    port: this.service.port,
-                    username: this.service.username,
-                    password: this.service.password + "ABC",
-                    sessionKey: "ABCDEF-not-real",
-                    version: svc.version
+                service.get("search/jobs", { count: 1 }, function (err, res) {
+                    assert.strictEqual(res.data.paging.offset, 0);
+                    assert.ok(res.data.entry.length <= res.data.paging.total);
+                    assert.strictEqual(res.data.entry.length, 1);
+                    assert.ok(res.data.entry[0].content.sid);
+                    done();
                 });
-                let res
-                try {
-                    res = await service.post("search/jobs", { search: "search index=_internal | head 1" });
-                } catch (error) {
-                    assert.ok(error);
-                    assert.strictEqual(error.status, 401);
-                }
-                assert.ok(!res);
             });
 
-            it("Delete", async function () {
-                let service = this.service;
-                let res = await this.service.post("search/jobs", { search: "search index=_internal | head 1" });
-                let sid = res.data.sid;
-                assert.ok(sid);
+            it("Callback#get autologin - error", function (done) {
+                var service = new splunkjs.Service(
+                    {
+                        scheme: this.service.scheme,
+                        host: this.service.host,
+                        port: this.service.port,
+                        username: this.service.username,
+                        password: this.service.password + "ABC",
+                        version: svc.version
+                    }
+                );
 
-                let endpoint = "search/jobs/" + sid;
-                await service.del(endpoint, {});
-            });
-
-            it("Delete error", async function () {
-                let res;
-                try {
-                    res = await this.service.del("search/jobs/1234_nosuchjob", {});
-                } catch (error) {
-                    assert.ok(error);
-                    assert.strictEqual(error.status, 404);
-                }
-                assert.ok(!res);
-            });
-
-            it("Delete autologin - success", async function () {
-                let service = new splunkjs.Service({
-                    scheme: this.service.scheme,
-                    host: this.service.host,
-                    port: this.service.port,
-                    username: this.service.username,
-                    password: this.service.password,
-                    version: svc.version
+                service.get("search/jobs", { count: 1 }, function (err, res) {
+                    assert.ok(err);
+                    assert.strictEqual(err.status, 401);
+                    done();
                 });
-
-                let res = await service.post("search/jobs", { search: "search index=_internal | head 1" });
-                let sid = res.data.sid;
-                assert.ok(sid);
-
-                service.sessionKey = null;
-                let endpoint = "search/jobs/" + sid;
-                await service.del(endpoint, {});
             });
 
-            it("Delete autologin - error", async function () {
-                let service = new splunkjs.Service({
-                    scheme: this.service.scheme,
-                    host: this.service.host,
-                    port: this.service.port,
-                    username: this.service.username,
-                    password: this.service.password + "ABC",
-                    version: svc.version
+
+            it("Callback#get autologin - disabled", function (done) {
+                var service = new splunkjs.Service(
+                    {
+                        scheme: this.service.scheme,
+                        host: this.service.host,
+                        port: this.service.port,
+                        username: this.service.username,
+                        password: this.service.password,
+                        autologin: false,
+                        version: svc.version
+                    }
+                );
+
+                service.get("search/jobs", { count: 1 }, function (err, res) {
+                    assert.ok(err);
+                    assert.strictEqual(err.status, 401);
+                    done();
                 });
-                let res;
-                try {
-                    res = await service.del("search/jobs/NO_SUCH_SID", {});
-                } catch (error) {
-                    assert.ok(error);
-                    assert.strictEqual(error.status, 401);
-                }
-                assert.ok(!res);
             });
 
-            it("Delete autologin - disabled", async function () {
-                let service = new splunkjs.Service({
-                    scheme: this.service.scheme,
-                    host: this.service.host,
-                    port: this.service.port,
-                    username: this.service.username,
-                    password: this.service.password,
-                    autologin: false,
-                    version: svc.version
+            it("Callback#get relogin - success", function (done) {
+                var service = new splunkjs.Service(
+                    {
+                        scheme: this.service.scheme,
+                        host: this.service.host,
+                        port: this.service.port,
+                        username: this.service.username,
+                        password: this.service.password,
+                        sessionKey: "ABCDEF-not-real",
+                        version: svc.version
+                    }
+                );
+
+                service.get("search/jobs", { count: 1 }, function (err, res) {
+                    assert.ok(!err);
+                    assert.strictEqual(res.data.paging.offset, 0);
+                    assert.ok(res.data.entry.length <= res.data.paging.total);
+                    assert.strictEqual(res.data.entry.length, 1);
+                    assert.ok(res.data.entry[0].content.sid);
+                    done();
                 });
-                let res;
-                try {
-                    res = await service.del("search/jobs/NO_SUCH_SID", {});
-                } catch (error) {
-                    assert.ok(error);
-                    assert.strictEqual(error.status, 401);
-                }
-                assert.ok(!res);
             });
 
-            it("Delete relogin - success", async function () {
-                let service = new splunkjs.Service({
-                    scheme: this.service.scheme,
-                    host: this.service.host,
-                    port: this.service.port,
-                    username: this.service.username,
-                    password: this.service.password,
-                    sessionKey: "ABCDEF-not-real",
-                    version: svc.version
+            it("Callback#get relogin - error", function (done) {
+                var service = new splunkjs.Service(
+                    {
+                        scheme: this.service.scheme,
+                        host: this.service.host,
+                        port: this.service.port,
+                        username: this.service.username,
+                        password: this.service.password + "ABC",
+                        sessionKey: "ABCDEF-not-real",
+                        version: svc.version
+                    }
+                );
+
+                service.get("search/jobs", { count: 1 }, function (err, res) {
+                    assert.ok(err);
+                    assert.strictEqual(err.status, 401);
+                    done();
                 });
-
-                let res = await service.post("search/jobs", { search: "search index=_internal | head 1" });
-                var sid = res.data.sid;
-                assert.ok(sid);
-
-                service.sessionKey = "ABCDEF-not-real";
-                let endpoint = "search/jobs/" + sid;
-                await service.del(endpoint, {});
             });
 
-            it("Delete relogin - error", async function () {
-                let service = new splunkjs.Service({
-                    scheme: this.service.scheme,
-                    host: this.service.host,
-                    port: this.service.port,
-                    username: this.service.username,
-                    password: this.service.password + "ABC",
-                    sessionKey: "ABCDEF-not-real",
-                    version: svc.version
+            it("Callback#post", function (done) {
+                var service = this.service;
+                this.service.post("search/jobs", { search: "search index=_internal | head 1" }, function (err, res) {
+                    var sid = res.data.sid;
+                    assert.ok(sid);
+
+                    var endpoint = "search/jobs/" + sid + "/control";
+                    service.post(endpoint, { action: "cancel" }, function (err, res) {
+                        done();
+                    }
+                    );
+                }
+                );
+            });
+
+            it("Callback#post error", function (done) {
+                this.service.post("search/jobs", { search: "index_internal | head 1" }, function (res) {
+                    assert.ok(!!res);
+                    assert.strictEqual(res.status, 400);
+                    done();
                 });
-                let res;
-                try {
-                    res = await service.del("search/jobs/NO_SUCH_SID", {});
-                } catch (error) {
-                    assert.ok(error);
-                    assert.strictEqual(error.status, 401);
+            });
+
+            it("Callback#post autologin - success", function (done) {
+                var service = new splunkjs.Service(
+                    {
+                        scheme: this.service.scheme,
+                        host: this.service.host,
+                        port: this.service.port,
+                        username: this.service.username,
+                        password: this.service.password,
+                        version: svc.version
+                    }
+                );
+
+                service.post("search/jobs", { search: "search index=_internal | head 1" }, function (err, res) {
+                    var sid = res.data.sid;
+                    assert.ok(sid);
+
+                    var endpoint = "search/jobs/" + sid + "/control";
+                    service.post(endpoint, { action: "cancel" }, function (err, res) {
+                        done();
+                    }
+                    );
                 }
-                assert.ok(!res);
+                );
             });
 
-            it("Request get", async function () {
-                let get = { count: 1 };
-                let post = null;
-                let body = null;
-                let res = await this.service.request("search/jobs", "GET", get, post, body, { "X-TestHeader": 1 });
-                assert.strictEqual(res.data.paging.offset, 0);
-                assert.ok(res.data.entry.length <= res.data.paging.total);
-                assert.strictEqual(res.data.entry.length, 1);
-                assert.ok(res.data.entry[0].content.sid);
+            it("Callback#post autologin - error", function (done) {
+                var service = new splunkjs.Service(
+                    {
+                        scheme: this.service.scheme,
+                        host: this.service.host,
+                        port: this.service.port,
+                        username: this.service.username,
+                        password: this.service.password + "ABC",
+                        version: svc.version
+                    }
+                );
 
-                if (res.response.request) {
-                    assert.strictEqual(res.response.request.headers["X-TestHeader"], 1);
+                service.post("search/jobs", { search: "search index=_internal | head 1" }, function (err, res) {
+                    assert.ok(err);
+                    assert.strictEqual(err.status, 401);
+                    done();
+                });
+            });
+
+            it("Callback#post autologin - disabled", function (done) {
+                var service = new splunkjs.Service(
+                    {
+                        scheme: this.service.scheme,
+                        host: this.service.host,
+                        port: this.service.port,
+                        username: this.service.username,
+                        password: this.service.password,
+                        autologin: false,
+                        version: svc.version
+                    }
+                );
+
+                service.post("search/jobs", { search: "search index=_internal | head 1" }, function (err, res) {
+                    assert.ok(err);
+                    assert.strictEqual(err.status, 401);
+                    done();
+                });
+            });
+
+            it("Callback#post relogin - success", function (done) {
+                var service = new splunkjs.Service(
+                    {
+                        scheme: this.service.scheme,
+                        host: this.service.host,
+                        port: this.service.port,
+                        username: this.service.username,
+                        password: this.service.password,
+                        sessionKey: "ABCDEF-not-real",
+                        version: svc.version
+                    }
+                );
+
+                service.post("search/jobs", { search: "search index=_internal | head 1" }, function (err, res) {
+                    var sid = res.data.sid;
+                    assert.ok(sid);
+
+                    var endpoint = "search/jobs/" + sid + "/control";
+                    service.post(endpoint, { action: "cancel" }, function (err, res) {
+                        done();
+                    }
+                    );
                 }
+                );
             });
 
-            it("Request post", async function () {
-                let body = "search=" + encodeURIComponent("search index=_internal | head 1");
-                let headers = {
-                    "Content-Type": "application/x-www-form-urlencoded"
-                };
-                let service = this.service;
-                let res = await this.service.request("search/jobs", "POST", null, null, body, headers);
-                assert.ok(res);
-                let sid = res.data.sid;
-                assert.ok(sid);
+            it("Callback#post relogin - error", function (done) {
+                var service = new splunkjs.Service(
+                    {
+                        scheme: this.service.scheme,
+                        host: this.service.host,
+                        port: this.service.port,
+                        username: this.service.username,
+                        password: this.service.password + "ABC",
+                        sessionKey: "ABCDEF-not-real",
+                        version: svc.version
+                    }
+                );
 
-                let endpoint = "search/jobs/" + sid + "/control";
-                await service.post(endpoint, { action: "cancel" });
-
+                service.post("search/jobs", { search: "search index=_internal | head 1" }, function (err, res) {
+                    assert.ok(err);
+                    assert.strictEqual(err.status, 401);
+                    done();
+                });
             });
 
-            it("Request error", async function () {
-                let res;
-                try {
-                    res = await this.service.request("search/jobs/1234_nosuchjob", "GET", null, null, null, { "X-TestHeader": 1 });
-                } catch (error) {
-                    if (error.response.request) {
+            it("Callback#delete", function (done) {
+                var service = this.service;
+                this.service.post("search/jobs", { search: "search index=_internal | head 1" }, function (err, res) {
+                    var sid = res.data.sid;
+                    assert.ok(sid);
+
+                    var endpoint = "search/jobs/" + sid;
+                    service.del(endpoint, {}, function (err, res) {
+                        done();
+                    });
+                });
+            });
+
+            it("Callback#delete error", function (done) {
+                this.service.del("search/jobs/1234_nosuchjob", {}, function (res) {
+                    assert.ok(!!res);
+                    assert.strictEqual(res.status, 404);
+                    done();
+                });
+            });
+
+            it("Callback#delete autologin - success", function (done) {
+                var service = new splunkjs.Service(
+                    {
+                        scheme: this.service.scheme,
+                        host: this.service.host,
+                        port: this.service.port,
+                        username: this.service.username,
+                        password: this.service.password,
+                        version: svc.version
+                    }
+                );
+
+                service.post("search/jobs", { search: "search index=_internal | head 1" }, function (err, res) {
+                    var sid = res.data.sid;
+                    assert.ok(sid);
+
+                    service.sessionKey = null;
+                    var endpoint = "search/jobs/" + sid;
+                    service.del(endpoint, {}, function (err, res) {
+                        done();
+                    });
+                });
+            });
+
+            it("Callback#delete autologin - error", function (done) {
+                var service = new splunkjs.Service(
+                    {
+                        scheme: this.service.scheme,
+                        host: this.service.host,
+                        port: this.service.port,
+                        username: this.service.username,
+                        password: this.service.password + "ABC",
+                        version: svc.version
+                    }
+                );
+
+                service.del("search/jobs/NO_SUCH_SID", {}, function (err, res) {
+                    assert.ok(err);
+                    assert.strictEqual(err.status, 401);
+                    done();
+                });
+            });
+
+            it("Callback#delete autologin - disabled", function (done) {
+                var service = new splunkjs.Service(
+                    {
+                        scheme: this.service.scheme,
+                        host: this.service.host,
+                        port: this.service.port,
+                        username: this.service.username,
+                        password: this.service.password,
+                        autologin: false,
+                        version: svc.version
+                    }
+                );
+
+                service.del("search/jobs/NO_SUCH_SID", {}, function (err, res) {
+                    assert.ok(err);
+                    assert.strictEqual(err.status, 401);
+                    done();
+                });
+            });
+
+            it("Callback#delete relogin - success", function (done) {
+                var service = new splunkjs.Service(
+                    {
+                        scheme: this.service.scheme,
+                        host: this.service.host,
+                        port: this.service.port,
+                        username: this.service.username,
+                        password: this.service.password,
+                        sessionKey: "ABCDEF-not-real",
+                        version: svc.version
+                    }
+                );
+
+                service.post("search/jobs", { search: "search index=_internal | head 1" }, function (err, res) {
+                    var sid = res.data.sid;
+                    assert.ok(sid);
+
+                    service.sessionKey = "ABCDEF-not-real";
+                    var endpoint = "search/jobs/" + sid;
+                    service.del(endpoint, {}, function (err, res) {
+                        done();
+                    });
+                });
+            });
+
+            it("Callback#delete relogin - error", function (done) {
+                var service = new splunkjs.Service(
+                    {
+                        scheme: this.service.scheme,
+                        host: this.service.host,
+                        port: this.service.port,
+                        username: this.service.username,
+                        password: this.service.password + "ABC",
+                        sessionKey: "ABCDEF-not-real",
+                        version: svc.version
+                    }
+                );
+
+                service.del("search/jobs/NO_SUCH_SID", {}, function (err, res) {
+                    assert.ok(err);
+                    assert.strictEqual(err.status, 401);
+                    done();
+                });
+            });
+
+            it("Callback#request get", function (done) {
+                var get = { count: 1 };
+                var post = null;
+                var body = null;
+                this.service.request("search/jobs", "GET", get, post, body, { "X-TestHeader": 1 }, function (err, res) {
+                    assert.strictEqual(res.data.paging.offset, 0);
+                    assert.ok(res.data.entry.length <= res.data.paging.total);
+                    assert.strictEqual(res.data.entry.length, 1);
+                    assert.ok(res.data.entry[0].content.sid);
+
+                    if (res.response.request) {
                         assert.strictEqual(res.response.request.headers["X-TestHeader"], 1);
                     }
-                    assert.strictEqual(error.status, 404);
-                }
-                assert.ok(!res);
-            });
 
-            it("Request autologin - success", async function () {
-                let service = new splunkjs.Service({
-                    scheme: this.service.scheme,
-                    host: this.service.host,
-                    port: this.service.port,
-                    username: this.service.username,
-                    password: this.service.password,
-                    version: svc.version
+                    done();
                 });
-
-                let get = { count: 1 };
-                let post = null;
-                let body = null;
-                let res = await service.request("search/jobs", "GET", get, post, body, { "X-TestHeader": 1 });
-                assert.ok(res);
-                assert.strictEqual(res.data.paging.offset, 0);
-                assert.ok(res.data.entry.length <= res.data.paging.total);
-                assert.strictEqual(res.data.entry.length, 1);
-                assert.ok(res.data.entry[0].content.sid);
-
-                if (res.response.request) {
-                    assert.strictEqual(res.response.request.headers["X-TestHeader"], 1);
-                }
             });
 
-            it("Request autologin - error", async function () {
-                let service = new splunkjs.Service({
-                    scheme: this.service.scheme,
-                    host: this.service.host,
-                    port: this.service.port,
-                    username: this.service.username,
-                    password: this.service.password + "ABC",
-                    version: svc.version
+            it("Callback#request post", function (done) {
+                var body = "search=" + encodeURIComponent("search index=_internal | head 1");
+                var headers = {
+                    "Content-Type": "application/x-www-form-urlencoded"
+                };
+                var service = this.service;
+                this.service.request("search/jobs", "POST", null, null, body, headers, function (err, res) {
+                    var sid = res.data.sid;
+                    assert.ok(sid);
+
+                    var endpoint = "search/jobs/" + sid + "/control";
+                    service.post(endpoint, { action: "cancel" }, function (err, res) {
+                        done();
+                    });
                 });
-
-                let get = { count: 1 };
-                let post = null;
-                let body = null;
-                let res;
-                try {
-                    res = await service.request("search/jobs", "GET", get, post, body, { "X-TestHeader": 1 });
-                } catch (error) {
-                    assert.ok(error);
-                    assert.strictEqual(error.status, 401);
-                }
-                assert.ok(!res);
             });
 
-            it("Request autologin - disabled", async function () {
-                let service = new splunkjs.Service({
-                    scheme: this.service.scheme,
-                    host: this.service.host,
-                    port: this.service.port,
-                    username: this.service.username,
-                    password: this.service.password,
-                    autologin: false,
-                    version: svc.version
+            it("Callback#request error", function (done) {
+                this.service.request("search/jobs/1234_nosuchjob", "GET", null, null, null, { "X-TestHeader": 1 }, function (res) {
+                    assert.ok(!!res);
+
+                    if (res.response.request) {
+                        assert.strictEqual(res.response.request.headers["X-TestHeader"], 1);
+                    }
+
+                    assert.strictEqual(res.status, 404);
+                    done();
                 });
-
-                let get = { count: 1 };
-                let post = null;
-                let body = null;
-                let res;
-                try {
-                    res = await service.request("search/jobs", "GET", get, post, body, { "X-TestHeader": 1 });
-                } catch (error) {
-                    assert.ok(error);
-                    assert.strictEqual(error.status, 401);
-                }
-                assert.ok(!res);
             });
 
-            it("Request relogin - success", async function () {
-                let service = new splunkjs.Service({
-                    scheme: this.service.scheme,
-                    host: this.service.host,
-                    port: this.service.port,
-                    username: this.service.username,
-                    password: this.service.password,
-                    sessionKey: "ABCDEF-not-real",
-                    version: svc.version
-                });
-
-                let get = { count: 1 };
-                let post = null;
-                let body = null;
-                let res = await service.request("search/jobs", "GET", get, post, body, { "X-TestHeader": 1 });
-                assert.ok(res);
-                assert.strictEqual(res.data.paging.offset, 0);
-                assert.ok(res.data.entry.length <= res.data.paging.total);
-                assert.strictEqual(res.data.entry.length, 1);
-                assert.ok(res.data.entry[0].content.sid);
-
-                if (res.response.request) {
-                    assert.strictEqual(res.response.request.headers["X-TestHeader"], 1);
-                }
-            });
-
-            it("Request relogin - error", async function () {
-                let service = new splunkjs.Service({
-                    scheme: this.service.scheme,
-                    host: this.service.host,
-                    port: this.service.port,
-                    username: this.service.username,
-                    password: this.service.password + "ABC",
-                    sessionKey: "ABCDEF-not-real",
-                    version: svc.version
-                }
+            it("Callback#request autologin - success", function (done) {
+                var service = new splunkjs.Service(
+                    {
+                        scheme: this.service.scheme,
+                        host: this.service.host,
+                        port: this.service.port,
+                        username: this.service.username,
+                        password: this.service.password,
+                        version: svc.version
+                    }
                 );
 
-                let get = { count: 1 };
-                let post = null;
-                let body = null;
-                let res;
-                try {
-                    res = await service.request("search/jobs", "GET", get, post, body, { "X-TestHeader": 1 });
-                } catch (error) {
-                    assert.ok(error);
-                    assert.strictEqual(error.status, 401);
-                }
-                assert.ok(!res);
-            });
+                var get = { count: 1 };
+                var post = null;
+                var body = null;
+                service.request("search/jobs", "GET", get, post, body, { "X-TestHeader": 1 }, function (err, res) {
+                    assert.strictEqual(res.data.paging.offset, 0);
+                    assert.ok(res.data.entry.length <= res.data.paging.total);
+                    assert.strictEqual(res.data.entry.length, 1);
+                    assert.ok(res.data.entry[0].content.sid);
 
-            it("Abort", async function () {
-                let res;
-                try {
-                    res = await this.service.get("search/jobs", { count: 1 }, response_timeout = 1);
-                } catch (error) {
-                    assert.ok(error);
-                    assert.strictEqual(error.error, "abort");
-                    assert.strictEqual(error.status, "abort");
-                }
-                assert.ok(!res);
-            });
+                    if (res.response.request) {
+                        assert.strictEqual(res.response.request.headers["X-TestHeader"], 1);
+                    }
 
-            it("Timeout default test", async function () {
-                let service = new splunkjs.Service({
-                    scheme: this.service.scheme,
-                    host: this.service.host,
-                    port: this.service.port,
-                    username: this.service.username,
-                    password: this.service.password,
-                    version: svc.version
+                    done();
                 });
+            });
+
+            it("Callback#request autologin - error", function (done) {
+                var service = new splunkjs.Service(
+                    {
+                        scheme: this.service.scheme,
+                        host: this.service.host,
+                        port: this.service.port,
+                        username: this.service.username,
+                        password: this.service.password + "ABC",
+                        version: svc.version
+                    }
+                );
+
+                var get = { count: 1 };
+                var post = null;
+                var body = null;
+                service.request("search/jobs", "GET", get, post, body, { "X-TestHeader": 1 }, function (err, res) {
+                    assert.ok(err);
+                    assert.strictEqual(err.status, 401);
+                    done();
+                });
+            });
+
+            it("Callback#request autologin - disabled", function (done) {
+                var service = new splunkjs.Service(
+                    {
+                        scheme: this.service.scheme,
+                        host: this.service.host,
+                        port: this.service.port,
+                        username: this.service.username,
+                        password: this.service.password,
+                        autologin: false,
+                        version: svc.version
+                    }
+                );
+
+                var get = { count: 1 };
+                var post = null;
+                var body = null;
+                service.request("search/jobs", "GET", get, post, body, { "X-TestHeader": 1 }, function (err, res) {
+                    assert.ok(err);
+                    assert.strictEqual(err.status, 401);
+                    done();
+                });
+            });
+
+            it("Callback#request relogin - success", function (done) {
+                var service = new splunkjs.Service(
+                    {
+                        scheme: this.service.scheme,
+                        host: this.service.host,
+                        port: this.service.port,
+                        username: this.service.username,
+                        password: this.service.password,
+                        sessionKey: "ABCDEF-not-real",
+                        version: svc.version
+                    }
+                );
+
+                var get = { count: 1 };
+                var post = null;
+                var body = null;
+                service.request("search/jobs", "GET", get, post, body, { "X-TestHeader": 1 }, function (err, res) {
+                    assert.strictEqual(res.data.paging.offset, 0);
+                    assert.ok(res.data.entry.length <= res.data.paging.total);
+                    assert.strictEqual(res.data.entry.length, 1);
+                    assert.ok(res.data.entry[0].content.sid);
+
+                    if (res.response.request) {
+                        assert.strictEqual(res.response.request.headers["X-TestHeader"], 1);
+                    }
+
+                    done();
+                });
+            });
+
+            it("Callback#request relogin - error", function (done) {
+                var service = new splunkjs.Service(
+                    {
+                        scheme: this.service.scheme,
+                        host: this.service.host,
+                        port: this.service.port,
+                        username: this.service.username,
+                        password: this.service.password + "ABC",
+                        sessionKey: "ABCDEF-not-real",
+                        version: svc.version
+                    }
+                );
+
+                var get = { count: 1 };
+                var post = null;
+                var body = null;
+                service.request("search/jobs", "GET", get, post, body, { "X-TestHeader": 1 }, function (err, res) {
+                    assert.ok(err);
+                    assert.strictEqual(err.status, 401);
+                    done();
+                });
+            });
+
+            it("Callback#abort", function (done) {
+                var req = this.service.get("search/jobs", { count: 1 }, function (err, res) {
+                    assert.ok(!res);
+                    assert.ok(err);
+                    assert.strictEqual(err.error, "abort");
+                    assert.strictEqual(err.status, "abort");
+                    done();
+                });
+
+                req.abort();
+            });
+
+            it("Callback#timeout default test", function (done) {
+                var service = new splunkjs.Service(
+                    {
+                        scheme: this.service.scheme,
+                        host: this.service.host,
+                        port: this.service.port,
+                        username: this.service.username,
+                        password: this.service.password,
+                        version: svc.version
+                    }
+                );
 
                 assert.strictEqual(0, service.timeout);
-                let res = await service.request("search/jobs", "GET", { count: 1 }, null, null, { "X-TestHeader": 1 });
-                assert.ok(res);
+                service.request("search/jobs", "GET", { count: 1 }, null, null, { "X-TestHeader": 1 }, function (err, res) {
+                    assert.ok(res);
+                    done();
+                });
             });
 
-            it("Timeout timed test", async function () {
-                let service = new splunkjs.Service({
-                    scheme: this.service.scheme,
-                    host: this.service.host,
-                    port: this.service.port,
-                    username: this.service.username,
-                    password: this.service.password,
-                    version: svc.version,
-                    timeout: 10000
-                });
+            it("Callback#timeout timed test", function (done) {
+                var service = new splunkjs.Service(
+                    {
+                        scheme: this.service.scheme,
+                        host: this.service.host,
+                        port: this.service.port,
+                        username: this.service.username,
+                        password: this.service.password,
+                        version: svc.version,
+                        timeout: 10000
+                    }
+                );
 
                 assert.strictEqual(service.timeout, 10000);
-                let res = await service.request("search/jobs", "GET", { count: 1 }, null, null, { "X-TestHeader": 1 });
-                assert.ok(res);
+                service.request("search/jobs", "GET", { count: 1 }, null, null, { "X-TestHeader": 1 }, function (err, res) {
+                    assert.ok(res);
+                    done();
+                });
             });
 
             // This test is not stable, commenting it out until we figure it out
@@ -74081,22 +77153,24 @@ exports.setup = function (svc) {
             //     });
             // },
 
-            it("Cancel test search", async function () {
+            it("Cancel test search", function (done) {
                 // Here, the search created for several of the previous tests is terminated, it is no longer necessary
-                let endpoint = "search/jobs/DELETEME_JSSDK_UNITTEST/control";
-                await this.service.post(endpoint, { action: "cancel" });
+                var endpoint = "search/jobs/DELETEME_JSSDK_UNITTEST/control";
+                this.service.post(endpoint, { action: "cancel" }, function (err, res) {
+                    done();
+                });
             });
 
-            it("Fullpath gets its owner/app from the right places", function (done) {
-                let http = tutils.DummyHttp;
-                let ctx = new splunkjs.Context(http, { /*nothing*/ });
+            it("fullpath gets its owner/app from the right places", function (done) {
+                var http = tutils.DummyHttp;
+                var ctx = new splunkjs.Context(http, { /*nothing*/ });
 
                 // Absolute paths are unchanged
                 assert.strictEqual(ctx.fullpath("/a/b/c"), "/a/b/c");
                 // Fall through to /services if there is no app
                 assert.strictEqual(ctx.fullpath("meep"), "/services/meep");
                 // Are username and app set properly?
-                let ctx2 = new splunkjs.Context(http, { owner: "alpha", app: "beta" });
+                var ctx2 = new splunkjs.Context(http, { owner: "alpha", app: "beta" });
                 assert.strictEqual(ctx2.fullpath("meep"), "/servicesNS/alpha/beta/meep");
                 assert.strictEqual(ctx2.fullpath("meep", { owner: "boris" }), "/servicesNS/boris/beta/meep");
                 assert.strictEqual(ctx2.fullpath("meep", { app: "factory" }), "/servicesNS/alpha/factory/meep");
@@ -74106,14 +77180,14 @@ exports.setup = function (svc) {
                 assert.strictEqual(ctx2.fullpath("meep", { sharing: "global" }), "/servicesNS/nobody/beta/meep");
                 assert.strictEqual(ctx2.fullpath("meep", { sharing: "system" }), "/servicesNS/nobody/system/meep");
                 // Do special characters get encoded?
-                let ctx3 = new splunkjs.Context(http, { owner: "alpha@beta.com", app: "beta" });
+                var ctx3 = new splunkjs.Context(http, { owner: "alpha@beta.com", app: "beta" });
                 assert.strictEqual(ctx3.fullpath("meep"), "/servicesNS/alpha%40beta.com/beta/meep");
                 done();
             });
 
-            it("Version check", function (done) {
-                let http = tutils.DummyHttp;
-                let ctx;
+            it("version check", function (done) {
+                var http = tutils.DummyHttp;
+                var ctx;
 
                 ctx = new splunkjs.Context(http, { "version": "4.0" });
                 assert.ok(ctx.version === "4.0");
@@ -74151,245 +77225,283 @@ exports.setup = function (svc) {
         }),
 
         describe("Cookie Tests", function (done) {
-            before(async function () {
+            before(function (done) {
                 this.service = svc;
                 this.skip = false;
                 var that = this;
-                let info = await svc.serverInfo();
-                let majorVersion = parseInt(info.properties().version.split(".")[0], 10);
-                let minorVersion = parseInt(info.properties().version.split(".")[1], 10);
-                // Skip cookie tests if Splunk older than 6.2
-                if (majorVersion < 6 || (majorVersion === 6 && minorVersion < 2)) {
-                    that.skip = true;
-                    splunkjs.Logger.log("Skipping cookie tests...");
-                }
+                svc.serverInfo(function (err, info) {
+                    var majorVersion = parseInt(info.properties().version.split(".")[0], 10);
+                    var minorVersion = parseInt(info.properties().version.split(".")[1], 10);
+                    // Skip cookie tests if Splunk older than 6.2
+                    if (majorVersion < 6 || (majorVersion === 6 && minorVersion < 2)) {
+                        that.skip = true;
+                        splunkjs.Logger.log("Skipping cookie tests...");
+                    }
+                    done();
+                });
             });
 
-            after(async function () {
-                await this.service.logout();
+            after(function (done) {
+                this.service.logout(done);
             });
 
             it("_getCookieString works as expected", function (done) {
-                let service = new splunkjs.Service({
-                    scheme: svc.scheme,
-                    host: svc.host,
-                    port: svc.port
-                });
+                var service = new splunkjs.Service(
+                    {
+                        scheme: svc.scheme,
+                        host: svc.host,
+                        port: svc.port
+                    });
 
                 service.http._cookieStore = {
                     'cookie': 'format',
                     'another': 'one'
                 };
 
-                let expectedCookieString = 'cookie=format; another=one; ';
-                let cookieString = service.http._getCookieString();
+                var expectedCookieString = 'cookie=format; another=one; ';
+                var cookieString = service.http._getCookieString();
 
                 assert.strictEqual(cookieString, expectedCookieString);
                 done();
             });
 
-            it("Login and store cookie", async function () {
+            it("login and store cookie", function (done) {
                 if (this.skip) {
+                    done();
                     return;
                 }
-                let service = new splunkjs.Service({
-                    scheme: svc.scheme,
-                    host: svc.host,
-                    port: svc.port,
-                    username: svc.username,
-                    password: svc.password,
-                    version: svc.version
-                });
+                var service = new splunkjs.Service(
+                    {
+                        scheme: svc.scheme,
+                        host: svc.host,
+                        port: svc.port,
+                        username: svc.username,
+                        password: svc.password,
+                        version: svc.version
+                    });
 
                 // Check that there are no cookies
                 assert.ok(utils.isEmpty(service.http._cookieStore));
-                await service.login();
-                // Check that cookies were saved
-                assert.ok(!utils.isEmpty(service.http._cookieStore));
-                assert.notStrictEqual(service.http._getCookieString(), '');
+
+
+                service.login(function (err, success) {
+                    // Check that cookies were saved
+                    assert.ok(!utils.isEmpty(service.http._cookieStore));
+                    assert.notStrictEqual(service.http._getCookieString(), '');
+                    done();
+                });
             });
 
-            it("Request with cookie", async function () {
+            it("request with cookie", function (done) {
                 if (this.skip) {
+                    done();
                     return;
                 }
-                let service = new splunkjs.Service({
-                    scheme: svc.scheme,
-                    host: svc.host,
-                    port: svc.port,
-                    username: svc.username,
-                    password: svc.password,
-                    version: svc.version
-                });
+                var service = new splunkjs.Service(
+                    {
+                        scheme: svc.scheme,
+                        host: svc.host,
+                        port: svc.port,
+                        username: svc.username,
+                        password: svc.password,
+                        version: svc.version
+                    });
                 // Create another service to put valid cookie into, give no other authentication information
-                let service2 = new splunkjs.Service({
-                    scheme: svc.scheme,
-                    host: svc.host,
-                    port: svc.port,
-                    version: svc.version
-                });
+                var service2 = new splunkjs.Service(
+                    {
+                        scheme: svc.scheme,
+                        host: svc.host,
+                        port: svc.port,
+                        version: svc.version
+                    });
 
-                try {
-                    // Login to service to get a valid cookie
-                    await service.login();
-                    // Save the cookie store
-                    let cookieStore = service.http._cookieStore;
-                    // Test that there are cookies
-                    assert.ok(!utils.isEmpty(cookieStore));
-                    // Add the cookies to a service with no other authentication information
-                    service2.http._cookieStore = cookieStore;
-                    // Make a request that requires authentication
-                    let resp = await service2.get("search/jobs", { count: 1 });
-                    // Test that a response was returned
-                    assert.ok(resp);
-                } catch (error) {
-                    // Test that no errors were returned
-                    assert.ok(!error);
-                }
+                // Login to service to get a valid cookie
+                Async.chain([
+                    function (done) {
+                        service.login(done);
+                    },
+                    function (job, done) {
+                        // Save the cookie store
+                        var cookieStore = service.http._cookieStore;
+                        // Test that there are cookies
+                        assert.ok(!utils.isEmpty(cookieStore));
+                        // Add the cookies to a service with no other authentication information
+                        service2.http._cookieStore = cookieStore;
+                        // Make a request that requires authentication
+                        service2.get("search/jobs", { count: 1 }, done);
+                    },
+                    function (res, done) {
+                        // Test that a response was returned
+                        assert.ok(res);
+                        done();
+                    }
+                ],
+                    function (err) {
+                        // Test that no errors were returned
+                        assert.ok(!err);
+                        done();
+                    }
+                );
             });
 
-            it("Request fails with bad cookie", async function () {
+            it("request fails with bad cookie", function (done) {
                 if (this.skip) {
+                    done();
                     return;
                 }
                 // Create a service with no login information
-                let service = new splunkjs.Service({
-                    scheme: svc.scheme,
-                    host: svc.host,
-                    port: svc.port,
-                    version: svc.version
-                });
+                var service = new splunkjs.Service(
+                    {
+                        scheme: svc.scheme,
+                        host: svc.host,
+                        port: svc.port,
+                        version: svc.version
+                    });
 
                 // Put a bad cookie into the service
                 service.http._cookieStore = { "bad": "cookie" };
 
                 // Try requesting something that requires authentication
-                let resp;
-                try {
-                    resp = await service.get("search/jobs", { count: 1 });
-                } catch (err) {
+                service.get("search/jobs", { count: 1 }, function (err, res) {
                     // Test if an error is returned
                     assert.ok(err);
                     // Check that it is an unauthorized error
                     assert.strictEqual(err.status, 401);
-                }
-                assert.ok(!resp);
+                    done();
+                });
             });
 
-            it("Autologin with cookie", async function () {
+            it("autologin with cookie", function (done) {
                 if (this.skip) {
+                    done();
                     return;
                 }
-                let service = new splunkjs.Service({
-                    scheme: svc.scheme,
-                    host: svc.host,
-                    port: svc.port,
-                    username: svc.username,
-                    password: svc.password,
-                    version: svc.version
-                });
+                var service = new splunkjs.Service(
+                    {
+                        scheme: svc.scheme,
+                        host: svc.host,
+                        port: svc.port,
+                        username: svc.username,
+                        password: svc.password,
+                        version: svc.version
+                    });
 
                 // Test if service has no cookies
                 assert.ok(utils.isEmpty(service.http._cookieStore));
 
-                await service.get("search/jobs", { count: 1 });
-                // Test if service now has a cookie
-                assert.ok(service.http._cookieStore);
+                service.get("search/jobs", { count: 1 }, function (err, res) {
+                    // Test if service now has a cookie
+                    assert.ok(service.http._cookieStore);
+                    done();
+                });
             });
 
-            it("Login fails with no cookie and no sessionKey", async function () {
+            it("login fails with no cookie and no sessionKey", function (done) {
                 if (this.skip) {
+                    done();
                     return;
                 }
-                let service = new splunkjs.Service({
-                    scheme: svc.scheme,
-                    host: svc.host,
-                    port: svc.port,
-                    version: svc.version
-                });
+                var service = new splunkjs.Service(
+                    {
+                        scheme: svc.scheme,
+                        host: svc.host,
+                        port: svc.port,
+                        version: svc.version
+                    });
 
                 // Test there is no authentication information
                 assert.ok(utils.isEmpty(service.http._cookieStore));
                 assert.strictEqual(service.sessionKey, '');
                 assert.ok(!service.username);
                 assert.ok(!service.password);
-                let res;
-                try {
-                    res = await service.get("search/jobs", { count: 1 });
-                } catch (error) {
+
+                service.get("search/jobs", { count: 1 }, function (err, res) {
                     // Test if an error is returned
-                    assert.ok(error);
-                }
-                assert.ok(!res);
+                    assert.ok(err);
+                    done();
+                });
             });
 
-            it("Login with multiple cookies", async function () {
+            it("login with multiple cookies", function (done) {
                 if (this.skip) {
+                    done();
                     return;
                 }
-                let service = new splunkjs.Service({
-                    scheme: svc.scheme,
-                    host: svc.host,
-                    port: svc.port,
-                    username: svc.username,
-                    password: svc.password,
-                    version: svc.version
-                });
+                var service = new splunkjs.Service(
+                    {
+                        scheme: svc.scheme,
+                        host: svc.host,
+                        port: svc.port,
+                        username: svc.username,
+                        password: svc.password,
+                        version: svc.version
+                    });
                 // Create another service to put valid cookie into, give no other authentication information
-                let service2 = new splunkjs.Service({
-                    scheme: svc.scheme,
-                    host: svc.host,
-                    port: svc.port,
-                    version: svc.version
-                });
+                var service2 = new splunkjs.Service(
+                    {
+                        scheme: svc.scheme,
+                        host: svc.host,
+                        port: svc.port,
+                        version: svc.version
+                    });
 
                 // Login to service to get a valid cookie
-                let res;
-                try {
-                    await service.login();
-                    // Save the cookie store
-                    let cookieStore = service.http._cookieStore;
-                    // Test that there are cookies
-                    assert.ok(!utils.isEmpty(cookieStore));
+                Async.chain([
+                    function (done) {
+                        service.login(done);
+                    },
+                    function (job, done) {
+                        // Save the cookie store
+                        var cookieStore = service.http._cookieStore;
+                        // Test that there are cookies
+                        assert.ok(!utils.isEmpty(cookieStore));
 
-                    // Add a bad cookie to the cookieStore
-                    cookieStore['bad'] = 'cookie';
+                        // Add a bad cookie to the cookieStore
+                        cookieStore['bad'] = 'cookie';
 
-                    // Add the cookies to a service with no other authenitcation information
-                    service2.http._cookieStore = cookieStore;
+                        // Add the cookies to a service with no other authenitcation information
+                        service2.http._cookieStore = cookieStore;
 
-                    // Make a request that requires authentication
-                    res = await service2.get("search/jobs", { count: 1 });
-                    // Test that a response was returned
-                } catch (error) {
-                    assert.ok(!error);
-                }
-                assert.ok(res);
+                        // Make a request that requires authentication
+                        service2.get("search/jobs", { count: 1 }, done);
+                    },
+                    function (res, done) {
+                        // Test that a response was returned
+                        assert.ok(res);
+                        done();
+                    }
+                ],
+                    function (err) {
+                        // Test that no errors were returned
+                        assert.ok(!err);
+                        done();
+                    }
+                );
             });
 
-            it("Autologin with cookie and bad sessionKey", async function () {
+            it("autologin with cookie and bad sessionKey", function (done) {
                 if (this.skip) {
+                    done();
                     return;
                 }
-                let service = new splunkjs.Service({
-                    scheme: svc.scheme,
-                    host: svc.host, port: svc.port,
-                    username: svc.username,
-                    password: svc.password,
-                    sessionKey: 'ABC-BADKEY',
-                    version: svc.version
-                });
+                var service = new splunkjs.Service(
+                    {
+                        scheme: svc.scheme,
+                        host: svc.host, port: svc.port,
+                        username: svc.username,
+                        password: svc.password,
+                        sessionKey: 'ABC-BADKEY',
+                        version: svc.version
+                    });
 
                 // Test if service has no cookies
                 assert.ok(utils.isEmpty(service.http._cookieStore));
-                try {
-                    await service.get("search/jobs", { count: 1 });
+
+                service.get("search/jobs", { count: 1 }, function (err, res) {
                     // Test if service now has a cookie
                     assert.ok(service.http._cookieStore);
-                } catch (error) {
-                    assert.ok(!error);
-                }
-
+                    done();
+                });
             });
         })
     )
@@ -74403,14 +77515,14 @@ if (module.id === __filename && module.parent.id.includes('mocha')) {
     var options = require('./cmdline');
     var splunkjs = require('../index');
 
-    let cmdline = new options.create().parse(process.argv);
+    var cmdline = new options.create().parse(process.argv);
 
     // If there is no command line, we should return
     if (!cmdline) {
         throw new Error("Error in parsing command line parameters");
     }
 
-    let svc = new splunkjs.Service({
+    var svc = new splunkjs.Service({
         scheme: cmdline.opts.scheme,
         host: cmdline.opts.host,
         port: cmdline.opts.port,
@@ -74420,18 +77532,18 @@ if (module.id === __filename && module.parent.id.includes('mocha')) {
     });
 
     // Exports tests on a successful login
-    module.exports = new Promise(async (resolve, reject) => {
-        try {
-            await svc.login();
-            return resolve(exports.setup(svc))
-        } catch (error) {
-            throw new Error("Login failed - not running tests", error || "");
-        }
+    module.exports = new Promise((resolve, reject) => {
+        svc.login(function (err, success) {
+            if (err || !success) {
+                throw new Error("Login failed - not running tests", err || "");
+            }
+            return resolve(exports.setup(svc));
+        });
     });
 }
 
 }).call(this)}).call(this,require('_process'),"/tests/test_context.js")
-},{"../index":2,"./cmdline":296,"./utils":320,"_process":239,"chai":72}],317:[function(require,module,exports){
+},{"../index":2,"./cmdline":297,"./utils":322,"_process":240,"chai":73}],319:[function(require,module,exports){
 (function (__filename){(function (){
 
 // Copyright 2011 Splunk, Inc.
@@ -74455,238 +77567,272 @@ exports.setup = function (http) {
     splunkjs.Logger.setLevel("ALL");
 
     return (
-        describe("HTTP GET Tests", () => {
-            before(function () {
+        describe("HTTP GET Tests", function (done) {
+            before(function (done) {
                 this.http = http;
+                done();
             });
 
-            it("Timeout simple", async function () {
-                try {
-                    //Response timeout set to 1ms i.e service call will abort after 1ms
-                    let res = await this.http.get("https://httpbin.org/get", {}, {}, 0, response_timeout = 1);
-                    assert.ok(!res);
-                } catch (error) {
-                    assert.ok(error);
-                    assert.strictEqual(error.error, "abort");
-                }
+            it("Callback#abort simple", function (done) {
+                var req = this.http.get("https://httpbin.org/get", {}, {}, 0, function (err, res) {
+                    assert.ok(err);
+                    assert.strictEqual(err.error, "abort");
+                    done();
+                });
+
+                req.abort();
             });
 
-            it("Timeout delay", async function () {
-                try {
-                    let req = await this.http.get("https://httpbin.org/delay/20", {}, {}, 0, response_timeout = 1000);
-                    assert.ok(!req);
-                } catch (error) {
-                    assert.ok(error);
-                    assert.strictEqual(error.error, "abort");
-                }
+            it("Callback#abort delay", function (done) {
+                var req = this.http.get("https://httpbin.org/delay/20", {}, {}, 0, function (err, res) {
+                    assert.ok(err);
+                    assert.strictEqual(err.error, "abort");
+                    done();
+                });
+
+                splunkjs.Async.sleep(1000, function () {
+                    req.abort();
+                });
             });
 
-            it("No args", async function () {
-                let res = await this.http.get("https://httpbin.org/get", [], {}, 0);
-                assert.strictEqual(res.data.url, "https://httpbin.org/get");
-            });
-
-            it("Success and Error", async function () {
-                try {
-                    let res = await this.http.get("https://httpbin.org/get", [], {}, 0);
+            it("Callback#no args", function (done) {
+                this.http.get("https://httpbin.org/get", [], {}, 0, function (err, res) {
                     assert.strictEqual(res.data.url, "https://httpbin.org/get");
-                } catch (error) {
-                    assert.ok(!error);
-                }
+                    done();
+                });
             });
 
-            it("Error all", async function () {
-                this.timeout(40000);
-                try {
-                    let res = await this.http.get("https://httpbin.org/status/404", [], {}, 0);
-                    assert.ok(!res);
-                } catch (error) {
-                    assert.strictEqual(error.status, 404);
-                }
+            it("Callback#success success+error", function (done) {
+                this.http.get("https://httpbin.org/get", [], {}, 0, function (err, res) {
+                    assert.ok(!err);
+                    assert.strictEqual(res.data.url, "https://httpbin.org/get");
+                    done();
+                });
             });
 
-            it("With args", async function () {
+            it("Callback#error all", function (done) {
                 this.timeout(40000);
-                let res = await this.http.get("https://httpbin.org/get", [], { a: 1, b: 2, c: [1, 2, 3], d: "a/b" }, 0);
-                let args = res.data.args;
-                assert.strictEqual(args.a, "1");
-                assert.strictEqual(args.b, "2");
-                assert.deepEqual(args.c, ["1", "2", "3"]);
-                assert.strictEqual(args.d, "a/b");
-                assert.strictEqual(res.data.url, "https://httpbin.org/get?a=1&b=2&c=1&c=2&c=3&d=a%2Fb");
+                this.http.get("https://httpbin.org/status/404", [], {}, 0, function (err, res) {
+                    assert.strictEqual(err.status, 404);
+                    done();
+                });
             });
 
-            it("Args with objects", async function () {
+            it("Callback#args", function (done) {
                 this.timeout(40000);
-                let res = await this.http.get("https://httpbin.org/get", [], { a: 1, b: { c: "ab", d: 12 } }, 0);
-                let args = res.data.args;
-                assert.strictEqual(args.a, "1");
-                assert.deepEqual(args.b, ["ab", "12"]);
-                assert.strictEqual(
-                    res.data.url,
-                    "https://httpbin.org/get?a=1&b=ab&b=12"
+                this.http.get("https://httpbin.org/get", [], { a: 1, b: 2, c: [1, 2, 3], d: "a/b" }, 0, function (err, res) {
+                    var args = res.data.args;
+                    assert.strictEqual(args.a, "1");
+                    assert.strictEqual(args.b, "2");
+                    assert.deepEqual(args.c, ["1", "2", "3"]);
+                    assert.strictEqual(args.d, "a/b");
+                    assert.strictEqual(res.data.url, "https://httpbin.org/get?a=1&b=2&c=1&c=2&c=3&d=a%2Fb");
+                    done();
+                });
+            });
+
+            it("Callback#args with objects", function (done) {
+                this.timeout(40000);
+                this.http.get(
+                    "https://httpbin.org/get", [],
+                    { a: 1, b: { c: "ab", d: 12 } }, 0,
+                    function (err, res) {
+                        var args = res.data.args;
+                        assert.strictEqual(args.a, "1");
+                        assert.deepEqual(args.b, ["ab", "12"]);
+                        assert.strictEqual(
+                            res.data.url,
+                            "https://httpbin.org/get?a=1&b=ab&b=12"
+                        );
+                        done();
+                    }
                 );
             });
 
-            it("With headers", async function () {
-                let headers = { "X-Test1": 1, "X-Test2": "a/b/c" };
-                let res = await this.http.get("https://httpbin.org/get", { "X-Test1": 1, "X-Test2": "a/b/c" }, {}, 0);
-                let returnedHeaders = res.data.headers;
-                for (let headerName in headers) {
-                    // We have to make the header values into strings
-                    assert.strictEqual(headers[headerName] + "", returnedHeaders[headerName]);
-                }
+            it("Callback#headers", function (done) {
+                var headers = { "X-Test1": 1, "X-Test2": "a/b/c" };
 
-                assert.strictEqual(res.data.url, "https://httpbin.org/get");
+                this.http.get("https://httpbin.org/get", { "X-Test1": 1, "X-Test2": "a/b/c" }, {}, 0, function (err, res) {
+                    var returnedHeaders = res.data.headers;
+                    for (var headerName in headers) {
+                        if (headers.hasOwnProperty(headerName)) {
+                            // We have to make the header values into strings
+                            assert.strictEqual(headers[headerName] + "", returnedHeaders[headerName]);
+                        }
+                    }
+
+                    assert.strictEqual(res.data.url, "https://httpbin.org/get");
+                    done();
+                });
             });
 
-            it("All", async function () {
-                let headers = { "X-Test1": 1, "X-Test2": "a/b/c" };
+            it("Callback#all", function (done) {
+                var headers = { "X-Test1": 1, "X-Test2": "a/b/c" };
 
-                let res = await this.http.get("https://httpbin.org/get", { "X-Test1": 1, "X-Test2": "a/b/c" }, { a: 1, b: 2, c: [1, 2, 3], d: "a/b" }, 0);
-                let returnedHeaders = res.data.headers;
-                for (let headerName in headers) {
-                    // We have to make the header values into strings
-                    assert.strictEqual(headers[headerName] + "", returnedHeaders[headerName]);
-                }
+                this.http.get("https://httpbin.org/get", { "X-Test1": 1, "X-Test2": "a/b/c" }, { a: 1, b: 2, c: [1, 2, 3], d: "a/b" }, 0, function (err, res) {
+                    var returnedHeaders = res.data.headers;
+                    for (var headerName in headers) {
+                        if (headers.hasOwnProperty(headerName)) {
+                            // We have to make the header values into strings
+                            assert.strictEqual(headers[headerName] + "", returnedHeaders[headerName]);
+                        }
+                    }
 
-                let args = res.data.args;
-                assert.strictEqual(args.a, "1");
-                assert.strictEqual(args.b, "2");
-                assert.deepEqual(args.c, ["1", "2", "3"]);
-                assert.strictEqual(args.d, "a/b");
-                assert.strictEqual(res.data.url, "https://httpbin.org/get?a=1&b=2&c=1&c=2&c=3&d=a%2Fb");
+                    var args = res.data.args;
+                    assert.strictEqual(args.a, "1");
+                    assert.strictEqual(args.b, "2");
+                    assert.deepEqual(args.c, ["1", "2", "3"]);
+                    assert.strictEqual(args.d, "a/b");
+                    assert.strictEqual(res.data.url, "https://httpbin.org/get?a=1&b=2&c=1&c=2&c=3&d=a%2Fb");
+                    done();
+                });
             });
         }),
 
-        describe("HTTP POST Tests", () => {
-            before(function () {
+        describe("HTTP POST Tests", function (done) {
+            before(function (done) {
                 this.http = http;
+                done();
             });
 
-            it("No args", async function () {
-                let res = await this.http.post("https://httpbin.org/post", {}, {}, 0);
-                assert.strictEqual(res.data.url, "https://httpbin.org/post");
-            });
-
-            it("Success and error", async function () {
-                try {
-                    let res = await this.http.post("https://httpbin.org/post", {}, {}, 0);
+            it("Callback#no args", function (done) {
+                this.http.post("https://httpbin.org/post", {}, {}, 0, function (err, res) {
                     assert.strictEqual(res.data.url, "https://httpbin.org/post");
-                } catch (error) {
-                    assert.ok(!error);
-                }
+                    done();
+                });
             });
 
-            it("Error all", async function () {
-                try {
-                    let res = await this.http.post("https://httpbin.org/status/405", {}, {}, 0);
-                    assert.ok(!res);
-                } catch (error) {
-                    assert.strictEqual(error.status, 405);
-                }
+            it("Callback#success success+error", function (done) {
+                this.http.post("https://httpbin.org/post", {}, {}, 0, function (err, res) {
+                    assert.ok(!err);
+                    assert.strictEqual(res.data.url, "https://httpbin.org/post");
+                    done();
+                });
             });
 
-            it("With args", async function () {
-                let res = await this.http.post("https://httpbin.org/post", {}, { a: 1, b: 2, c: [1, 2, 3], d: "a/b" }, 0);
-                let args = res.data.form;
-                assert.strictEqual(args.a, "1");
-                assert.strictEqual(args.b, "2");
-                assert.deepStrictEqual(args.c, ["1", "2", "3"]);
-                assert.strictEqual(args.d, "a/b");
-                assert.strictEqual(res.data.url, "https://httpbin.org/post");
+            it("Callback#error all", function (done) {
+                this.http.post("https://httpbin.org/status/405", {}, {}, 0, function (err, res) {
+                    assert.strictEqual(err.status, 405);
+                    done();
+                });
             });
 
-            it("Headers", async function () {
-                let headers = { "X-Test1": 1, "X-Test2": "a/b/c" };
-
-                let res = await this.http.post("https://httpbin.org/post", { "X-Test1": 1, "X-Test2": "a/b/c" }, {}, 0);
-                let returnedHeaders = res.data.headers;
-                for (let headerName in headers) {
-                    // We have to make the header values into strings
-                    assert.strictEqual(headers[headerName] + "", returnedHeaders[headerName]);
-                }
-                assert.strictEqual(res.data.url, "https://httpbin.org/post");
+            it("Callback#args", function (done) {
+                this.http.post("https://httpbin.org/post", {}, { a: 1, b: 2, c: [1, 2, 3], d: "a/b" }, 0, function (err, res) {
+                    var args = res.data.form;
+                    assert.strictEqual(args.a, "1");
+                    assert.strictEqual(args.b, "2");
+                    assert.deepStrictEqual(args.c, ["1", "2", "3"]);
+                    assert.strictEqual(args.d, "a/b");
+                    assert.strictEqual(res.data.url, "https://httpbin.org/post");
+                    done();
+                });
             });
 
-            it("All", async function () {
-                let headers = { "X-Test1": 1, "X-Test2": "a/b/c" };
+            it("Callback#headers", function (done) {
+                var headers = { "X-Test1": 1, "X-Test2": "a/b/c" };
 
-                let res = await this.http.post("https://httpbin.org/post", { "X-Test1": 1, "X-Test2": "a/b/c" }, { a: 1, b: 2, c: [1, 2, 3], d: "a/b" }, 0);
-                let returnedHeaders = res.data.headers;
-                for (let headerName in headers) {
-                    // We have to make the header values into strings
-                        assert.strictEqual(headers[headerName] + "", returnedHeaders[headerName]);
-                }
+                this.http.post("https://httpbin.org/post", { "X-Test1": 1, "X-Test2": "a/b/c" }, {}, 0, function (err, res) {
+                    var returnedHeaders = res.data.headers;
+                    for (var headerName in headers) {
+                        if (headers.hasOwnProperty(headerName)) {
+                            // We have to make the header values into strings
+                            assert.strictEqual(headers[headerName] + "", returnedHeaders[headerName]);
+                        }
+                    }
+                    assert.strictEqual(res.data.url, "https://httpbin.org/post");
+                    done();
+                });
+            });
 
-                let args = res.data.form;
-                assert.strictEqual(args.a, "1");
-                assert.strictEqual(args.b, "2");
-                assert.deepStrictEqual(args.c, ["1", "2", "3"]);
-                assert.strictEqual(args.d, "a/b");
-                assert.strictEqual(res.data.url, "https://httpbin.org/post");
+            it("Callback#all", function (done) {
+                var headers = { "X-Test1": 1, "X-Test2": "a/b/c" };
+
+                this.http.post("https://httpbin.org/post", { "X-Test1": 1, "X-Test2": "a/b/c" }, { a: 1, b: 2, c: [1, 2, 3], d: "a/b" }, 0, function (err, res) {
+                    var returnedHeaders = res.data.headers;
+                    for (var headerName in headers) {
+                        if (headers.hasOwnProperty(headerName)) {
+                            // We have to make the header values into strings
+                            assert.strictEqual(headers[headerName] + "", returnedHeaders[headerName]);
+                        }
+                    }
+
+                    var args = res.data.form;
+                    assert.strictEqual(args.a, "1");
+                    assert.strictEqual(args.b, "2");
+                    assert.deepStrictEqual(args.c, ["1", "2", "3"]);
+                    assert.strictEqual(args.d, "a/b");
+                    assert.strictEqual(res.data.url, "https://httpbin.org/post");
+                    done();
+                });
             })
         }),
 
-        describe("HTTP DELETE Tests", () => {
-            before(function () {
+        describe("HTTP DELETE Tests", function (done) {
+            before(function (done) {
                 this.http = http;
+                done();
             });
 
-            it("No args", async function () {
-                let res = await this.http.del("https://httpbin.org/delete", [], {}, 0);
-                assert.strictEqual(res.data.url, "https://httpbin.org/delete");
-            });
-
-            it("Success and error", async function () {
-                try {
-                    let res = await this.http.del("https://httpbin.org/delete", [], {}, 0);
+            it("Callback#no args", function (done) {
+                this.http.del("https://httpbin.org/delete", [], {}, 0, function (err, res) {
                     assert.strictEqual(res.data.url, "https://httpbin.org/delete");
-                } catch (error) {
-                    assert.ok(!error);
-                }
+                    done();
+                });
             });
 
-            it("Error all", async function () {
-                try {
-                    let res = await this.http.del("https://httpbin.org/status/405", [], {}, 0);
-                    assert.ok(!res);
-                } catch (error) {
-                    assert.strictEqual(error.status, 405);
-                }
+            it("Callback#success success+error", function (done) {
+                this.http.del("https://httpbin.org/delete", [], {}, 0, function (err, res) {
+                    assert.ok(!err);
+                    assert.strictEqual(res.data.url, "https://httpbin.org/delete");
+                    done();
+                });
             });
 
-            it("Args", async function () {
-                let res = await this.http.del("https://httpbin.org/delete", [], { a: 1, b: 2, c: [1, 2, 3], d: "a/b" }, 0);
-                assert.strictEqual(res.data.url, "https://httpbin.org/delete?a=1&b=2&c=1&c=2&c=3&d=a%2Fb");
+            it("Callback#error all", function (done) {
+                this.http.del("https://httpbin.org/status/405", [], {}, 0, function (err, res) {
+                    assert.strictEqual(err.status, 405);
+                    done();
+                });
             });
 
-            it("Headers", async function () {
-                let headers = { "X-Test1": 1, "X-Test2": "a/b/c" };
+            it("Callback#args", function (done) {
+                this.http.del("https://httpbin.org/delete", [], { a: 1, b: 2, c: [1, 2, 3], d: "a/b" }, 0, function (err, res) {
+                    assert.strictEqual(res.data.url, "https://httpbin.org/delete?a=1&b=2&c=1&c=2&c=3&d=a%2Fb");
+                    done();
+                });
+            });
 
-                let res = await this.http.del("https://httpbin.org/delete", { "X-Test1": 1, "X-Test2": "a/b/c" }, {}, 0);
-                let returnedHeaders = res.data.headers;
-                for (let headerName in headers) {
-                    if (headers.hasOwnProperty(headerName)) {
-                        // We have to make the header values into strings
-                        assert.strictEqual(headers[headerName] + "", returnedHeaders[headerName]);
+            it("Callback#headers", function (done) {
+                var headers = { "X-Test1": 1, "X-Test2": "a/b/c" };
+
+                this.http.del("https://httpbin.org/delete", { "X-Test1": 1, "X-Test2": "a/b/c" }, {}, 0, function (err, res) {
+                    var returnedHeaders = res.data.headers;
+                    for (var headerName in headers) {
+                        if (headers.hasOwnProperty(headerName)) {
+                            // We have to make the header values into strings
+                            assert.strictEqual(headers[headerName] + "", returnedHeaders[headerName]);
+                        }
                     }
-                }
-                assert.strictEqual(res.data.url, "https://httpbin.org/delete");
+                    assert.strictEqual(res.data.url, "https://httpbin.org/delete");
+                    done();
+                });
             });
 
-            it("All", async function () {
-                let headers = { "X-Test1": 1, "X-Test2": "a/b/c" };
+            it("Callback#all", function (done) {
+                var headers = { "X-Test1": 1, "X-Test2": "a/b/c" };
 
-                let res = await this.http.del("https://httpbin.org/delete", { "X-Test1": 1, "X-Test2": "a/b/c" }, { a: 1, b: 2, c: [1, 2, 3], d: "a/b" }, 0);
-                let returnedHeaders = res.data.headers;
-                for (let headerName in headers) {
-                    if (headers.hasOwnProperty(headerName)) {
-                        // We have to make the header values into strings
-                        assert.strictEqual(headers[headerName] + "", returnedHeaders[headerName]);
+                this.http.del("https://httpbin.org/delete", { "X-Test1": 1, "X-Test2": "a/b/c" }, { a: 1, b: 2, c: [1, 2, 3], d: "a/b" }, 0, function (err, res) {
+                    var returnedHeaders = res.data.headers;
+                    for (var headerName in headers) {
+                        if (headers.hasOwnProperty(headerName)) {
+                            // We have to make the header values into strings
+                            assert.strictEqual(headers[headerName] + "", returnedHeaders[headerName]);
+                        }
                     }
-                }
-                assert.strictEqual(res.data.url, "https://httpbin.org/delete?a=1&b=2&c=1&c=2&c=3&d=a%2Fb");
+                    assert.strictEqual(res.data.url, "https://httpbin.org/delete?a=1&b=2&c=1&c=2&c=3&d=a%2Fb");
+                    done();
+                });
             });
 
             it("Default arguments to Http work", function (done) {
@@ -74715,7 +77861,7 @@ if (module.id === __filename && module.parent.id.includes('mocha')) {
 }
 
 }).call(this)}).call(this,"/tests/test_http.js")
-},{"../index":2,"chai":72}],318:[function(require,module,exports){
+},{"../index":2,"chai":73}],320:[function(require,module,exports){
 (function (process,__filename){(function (){
 
 // Copyright 2011 Splunk, Inc.
@@ -74762,7 +77908,7 @@ if (module.id === __filename && module.parent.id.includes('mocha')) {
     var splunkjs = require('../index');
     var options = require('./cmdline');
 
-    let cmdline = options.create().parse(process.argv);
+    var cmdline = options.create().parse(process.argv);
 
     // If there is no command line, we should return
     if (!cmdline) {
@@ -74773,7 +77919,7 @@ if (module.id === __filename && module.parent.id.includes('mocha')) {
         throw new Error("$PATH variable SPLUNK_HOME is not set. Please export SPLUNK_HOME to the splunk instance.");
     }
 
-    let svc = new splunkjs.Service({
+    var svc = new splunkjs.Service({
         scheme: cmdline.opts.scheme,
         host: cmdline.opts.host,
         port: cmdline.opts.port,
@@ -74782,7 +77928,7 @@ if (module.id === __filename && module.parent.id.includes('mocha')) {
         version: cmdline.opts.version
     });
 
-    let loggedOutSvc = new splunkjs.Service({
+    var loggedOutSvc = new splunkjs.Service({
         scheme: cmdline.opts.scheme,
         host: cmdline.opts.host,
         port: cmdline.opts.port,
@@ -74792,18 +77938,18 @@ if (module.id === __filename && module.parent.id.includes('mocha')) {
     });
 
     // Exports tests on a successful login
-    module.exports = new Promise(async (resolve, reject) => {
-        try {
-            await svc.login();
-            return resolve(exports.setup(svc, loggedOutSvc))
-        } catch (error) {
-            throw new Error("Login failed - not running tests", error || "");
-        }
+    module.exports = new Promise((resolve, reject) => {
+        svc.login(function (err, success) {
+            if (err || !success) {
+                throw new Error("Login failed - not running tests", err || "");
+            }
+            return resolve(exports.setup(svc, loggedOutSvc));
+        });
     });
 }
 
 }).call(this)}).call(this,require('_process'),"/tests/test_service.js")
-},{"../index":2,"./cmdline":296,"./service_tests/app":297,"./service_tests/collection":298,"./service_tests/configuration":299,"./service_tests/datamodels":300,"./service_tests/endpoint":301,"./service_tests/entity":302,"./service_tests/firedalerts":303,"./service_tests/indexes":304,"./service_tests/job":305,"./service_tests/namespace":306,"./service_tests/parser":307,"./service_tests/pivot":308,"./service_tests/properties":309,"./service_tests/savedsearch":310,"./service_tests/serverinfo":311,"./service_tests/storagepasswords":312,"./service_tests/typeahead":313,"./service_tests/user":314,"./service_tests/view":315,"_process":239}],319:[function(require,module,exports){
+},{"../index":2,"./cmdline":297,"./service_tests/app":298,"./service_tests/collection":299,"./service_tests/configuration":300,"./service_tests/datamodels":301,"./service_tests/endpoint":302,"./service_tests/entity":303,"./service_tests/firedalerts":304,"./service_tests/indexes":305,"./service_tests/job":306,"./service_tests/namespace":307,"./service_tests/parser":308,"./service_tests/pivot":309,"./service_tests/properties":310,"./service_tests/savedsearch":311,"./service_tests/serverinfo":312,"./service_tests/storagepasswords":313,"./service_tests/typeahead":314,"./service_tests/user":315,"./service_tests/view":316,"_process":240}],321:[function(require,module,exports){
 (function (__filename){(function (){
 
 // Copyright 2011 Splunk, Inc.
@@ -74822,15 +77968,14 @@ if (module.id === __filename && module.parent.id.includes('mocha')) {
 
 exports.setup = function () {
     var splunkjs = require('../index');
-    var utils = splunkjs.Utils;
     var assert = require('chai').assert;
-    var isBrowser = typeof "window" !== "undefined";
+
     splunkjs.Logger.setLevel("ALL");
 
     return (
-        describe('Utils tests', () => {
+        describe('Utils tests', function (done) {
             it("Callback#callback to object success", function (done) {
-                let successfulFunction = function (callback) {
+                var successfulFunction = function (callback) {
                     callback(null, "one", "two");
                 };
 
@@ -74842,7 +77987,7 @@ exports.setup = function () {
             });
 
             it("Callback#callback to object error - single argument", function (done) {
-                let successfulFunction = function (callback) {
+                var successfulFunction = function (callback) {
                     callback("one");
                 };
 
@@ -74855,7 +78000,7 @@ exports.setup = function () {
             });
 
             it("Callback#callback to object error - multi argument", function (done) {
-                let successfulFunction = function (callback) {
+                var successfulFunction = function (callback) {
                     callback(["one", "two"]);
                 };
 
@@ -74875,14 +78020,14 @@ exports.setup = function () {
             });
 
             it("bind", function (done) {
-                let f;
+                var f;
                 (function () {
                     f = function (a) {
                         this.a = a;
                     };
                 })();
-                let q = {};
-                let g = splunkjs.Utils.bind(q, f);
+                var q = {};
+                var g = splunkjs.Utils.bind(q, f);
                 g(12);
                 assert.strictEqual(q.a, 12);
                 done();
@@ -74891,7 +78036,7 @@ exports.setup = function () {
             it("trim", function (done) {
                 assert.strictEqual(splunkjs.Utils.trim("  test of something  \n\r  \t"), "test of something");
 
-                let realTrim = String.prototype.trim;
+                var realTrim = String.prototype.trim;
                 String.prototype.trim = null;
                 assert.strictEqual(splunkjs.Utils.trim("  test of something  \n\r  \t"), "test of something");
                 String.prototype.trim = realTrim;
@@ -74927,9 +78072,9 @@ exports.setup = function () {
 
             it("toArray", function (done) {
                 (function () {
-                    let found = splunkjs.Utils.toArray(arguments);
-                    let expected = [1, 2, 3, 4, 5];
-                    for (let i = 0; i < found.length; i++) {
+                    var found = splunkjs.Utils.toArray(arguments);
+                    var expected = [1, 2, 3, 4, 5];
+                    for (var i = 0; i < found.length; i++) {
                         assert.strictEqual(found[i], expected[i]);
                     }
                 })(1, 2, 3, 4, 5);
@@ -74937,7 +78082,7 @@ exports.setup = function () {
             });
 
             it("isArray", function (done) {
-                let a = [1, 2, 3, 4, 5];
+                var a = [1, 2, 3, 4, 5];
                 assert.ok(splunkjs.Utils.isArray(a));
                 done();
             });
@@ -74976,14 +78121,14 @@ exports.setup = function () {
             });
 
             it("forEach", function (done) {
-                let a = [1, 2, 3, 4, 5];
+                var a = [1, 2, 3, 4, 5];
                 splunkjs.Utils.forEach(
                     a,
                     function (elem, index, list) {
                         assert.strictEqual(a[index], elem);
                     }
                 );
-                let b = { 1: 2, 2: 4, 3: 6 };
+                var b = { 1: 2, 2: 4, 3: 6 };
                 splunkjs.Utils.forEach(
                     b,
                     function (elem, key, obj) {
@@ -74991,7 +78136,7 @@ exports.setup = function () {
                     }
                 );
                 splunkjs.Utils.forEach(null, function (elem, key, obj) { });
-                let c = { length: 5, 1: 12, 2: 15, 3: 8 };
+                var c = { length: 5, 1: 12, 2: 15, 3: 8 };
                 splunkjs.Utils.forEach(
                     c,
                     function (elem, key, obj) {
@@ -75002,9 +78147,9 @@ exports.setup = function () {
             });
 
             it("extend", function (done) {
-                let found = splunkjs.Utils.extend({}, { a: 1, b: 2 }, { c: 3, b: 4 });
-                let expected = { a: 1, b: 4, c: 3 };
-                for (let k in found) {
+                var found = splunkjs.Utils.extend({}, { a: 1, b: 2 }, { c: 3, b: 4 });
+                var expected = { a: 1, b: 4, c: 3 };
+                for (var k in found) {
                     if (found.hasOwnProperty(k)) {
                         assert.strictEqual(found[k], expected[k]);
                     }
@@ -75013,8 +78158,8 @@ exports.setup = function () {
             });
 
             it("clone", function (done) {
-                let a = { a: 1, b: 2, c: { p: 5, q: 6 } };
-                let b = splunkjs.Utils.clone(a);
+                var a = { a: 1, b: 2, c: { p: 5, q: 6 } };
+                var b = splunkjs.Utils.clone(a);
                 splunkjs.Utils.forEach(a, function (val, key, obj) { assert.strictEqual(val, b[key]); });
                 a.a = 5;
                 assert.strictEqual(b.a, 1);
@@ -75023,8 +78168,8 @@ exports.setup = function () {
                 done();
                 assert.strictEqual(splunkjs.Utils.clone(3), 3);
                 assert.strictEqual(splunkjs.Utils.clone("asdf"), "asdf");
-                let p = [1, 2, [3, 4], 3];
-                let q = splunkjs.Utils.clone(p);
+                var p = [1, 2, [3, 4], 3];
+                var q = splunkjs.Utils.clone(p);
                 splunkjs.Utils.forEach(p, function (val, index, arr) { assert.strictEqual(p[index], q[index]); });
                 p[0] = 3;
                 assert.strictEqual(q[0], 1);
@@ -75033,7 +78178,7 @@ exports.setup = function () {
             });
 
             it("namespaceFromProperties", function (done) {
-                let a = splunkjs.Utils.namespaceFromProperties(
+                var a = splunkjs.Utils.namespaceFromProperties(
                     {
                         acl: {
                             owner: "boris",
@@ -75055,354 +78200,17 @@ exports.setup = function () {
             });
 
             it("namespaceFromProperties - bad data", function (done) {
-                let undefinedProps;
-                let a = splunkjs.Utils.namespaceFromProperties(undefinedProps);
+                var undefinedProps;
+                var a = splunkjs.Utils.namespaceFromProperties(undefinedProps);
                 assert.strictEqual(a.owner, '');
                 assert.strictEqual(a.app, '');
                 assert.strictEqual(a.sharing, '');
 
-                let b = splunkjs.Utils.namespaceFromProperties(undefinedProps);
+                var b = splunkjs.Utils.namespaceFromProperties(undefinedProps);
                 assert.strictEqual(b.owner, '');
                 assert.strictEqual(b.app, '');
                 assert.strictEqual(b.sharing, '');
                 done();
-            });
-
-            it("While success", async function () {
-                let i = 0;
-                try {
-                    await utils.whilst(
-                        function () { return i++ < 3; },
-                        async function () {
-                            await utils.sleep(0);
-                        }
-                    );
-                } catch (error) {
-                    assert.ok(!error);
-                }
-            });
-
-            it("While success deep", async function () {
-                let i = 0;
-                try {
-                    await utils.whilst(
-                        function () { return i++ < (isBrowser ? 100 : 10000); },
-                        async function () {
-                            await utils.sleep(0);
-                        }
-                    );
-                } catch (error) {
-                    assert.ok(!error);
-                }
-            });
-
-            it("While error", async function () {
-                let i = 0;
-                try {
-                    let res = await utils.whilst(
-                        function () { return i++ < (isBrowser ? 100 : 10000); },
-                        async function () {
-                            await utils.sleep(0);
-                            return i === (isBrowser ? 50 : 10000) ? 1 : null;
-                        }
-                    );
-                    assert.ok(res);
-                } catch (error) {
-                    assert.ok(error);
-                    assert.strictEqual(error, 1);
-                }
-
-            });
-
-            it("Whilst sans condition is never", async function () {
-                let i = false;
-                try {
-                    await utils.whilst(
-                        undefined,
-                        function () {
-                            i = true;
-                        }
-                    );
-                    assert.strictEqual(i, false);
-                } catch (error) {
-                    assert.ok(!error);
-                }
-
-
-            });
-
-            it("Whilst with empty body does nothing", async function () {
-                let i = true;
-                try {
-                    let res = await utils.whilst(
-                        function () {
-                            if (i) {
-                                i = false;
-                                return true;
-                            }
-                            else {
-                                return i;
-                            }
-                        },
-                        undefined
-                    );
-                    assert.ok(!res);
-                } catch (error) {
-                    assert.ok(!error);
-                }
-            });
-
-            it("Parallel success", async function () {
-                let [err, one, two] = await utils.parallel([
-                    function () {
-                        return [null, 1];
-                    },
-                    function () {
-                        return [null, 2, 3];
-                    }]
-                );
-                assert.ok(!err);
-                assert.strictEqual(one, 1);
-                assert.strictEqual(two[0], 2);
-                assert.strictEqual(two[1], 3);
-            });
-
-            it("Parallel success - outside of arrays", async function () {
-                let [err, one, two] = await utils.parallel(
-                    function () { return [null, 1]; },
-                    function () { return [null, 2, 3]; },
-                );
-                assert.ok(!err);
-                assert.strictEqual(one, 1);
-                assert.strictEqual(two[0], 2);
-                assert.strictEqual(two[1], 3);
-            });
-
-            it("Parallel success - no reordering", async function () {
-                let [err, one, two] = await utils.parallel([
-                    async function () {
-                        await utils.sleep(1);
-                        return [null, 1];
-                    },
-                    function () {
-                        return [null, 2, 3];
-                    }]
-                );
-                assert.ok(!err);
-                assert.strictEqual(one, 1);
-                assert.strictEqual(two[0], 2);
-                assert.strictEqual(two[1], 3);
-            });
-
-            it("Parallel error", async function () {
-                let [err, one, two] = await utils.parallel([
-                    function () {
-                        return [null, 1];
-                    },
-                    function () {
-                        return [null, 2, 3];
-                    },
-                    async function () {
-                        await utils.sleep(0);
-                        return ["ERROR"];
-                    }]
-                );
-                assert.ok(err === "ERROR");
-                assert.ok(!one);
-                assert.ok(!two);
-            });
-
-            it("Parallel no tasks", async function () {
-                let [err, result] = await utils.parallel(
-                    []
-                );
-                assert.ok(!err);
-            });
-
-            it("Series success", async function () {
-                let [err, one, two] = await utils.series([
-                    function () {
-                        return [null, 1];
-                    },
-                    function () {
-                        return [null, 2, 3];
-                    }]
-                );
-                assert.ok(!err);
-                assert.strictEqual(one, 1);
-                assert.strictEqual(two[0], 2);
-                assert.strictEqual(two[1], 3);
-            });
-
-            it("Series success - outside of array", async function () {
-                let [err, one, two] = await utils.series(
-                    function () {
-                        return [null, 1];
-                    },
-                    function () {
-                        return [null, 2, 3];
-                    }
-                );
-                assert.ok(!err);
-                assert.strictEqual(one, 1);
-                assert.strictEqual(two[0], 2);
-                assert.strictEqual(two[1], 3);
-            });
-
-            it("Series reordering success", async function () {
-                let keeper = 0;
-                let [err, one, two] = await utils.series([
-                    async function () {
-                        await utils.sleep(10);
-                        assert.strictEqual(keeper++, 0);
-                        return [null, 1];
-                    },
-                    function () {
-                        assert.strictEqual(keeper++, 1);
-                        return [null, 2, 3];
-                    }]
-                );
-                assert.ok(!err);
-                assert.strictEqual(keeper, 2);
-                assert.strictEqual(one, 1);
-                assert.strictEqual(two[0], 2);
-                assert.strictEqual(two[1], 3);
-            });
-
-            it("Series error", async function () {
-                let [err, one, two] = await utils.series([
-                    function () {
-                        return [null, 1];
-                    },
-                    function () {
-                        return ["ERROR", 2, 3];
-                    }]
-                );
-                assert.strictEqual(err, "ERROR");
-                assert.ok(!one);
-                assert.ok(!two);
-            });
-
-            it("Series no tasks", async function () {
-                let [err, result] = await utils.series(
-                    []
-                );
-                assert.ok(!err);
-            });
-
-            it("Parallel map success", async function () {
-                let [err, vals] = await utils.parallelMap(
-                    [1, 2, 3],
-                    function (val, idx) {
-                        return [null, val + 1];
-                    }
-                );
-                assert.ok(!err);
-                assert.strictEqual(vals[0], 2);
-                assert.strictEqual(vals[1], 3);
-                assert.strictEqual(vals[2], 4);
-            });
-
-            it("Parallel map reorder success", async function () {
-                let [err, vals] = await utils.parallelMap(
-                    [1, 2, 3],
-                    async function (val, idx) {
-                        if (val === 2) {
-                            await utils.sleep(100);
-                            return [null, val + 1];
-                        }
-                        else {
-                            return [null, val + 1];
-                        }
-                    }
-                );
-                assert.strictEqual(vals[0], 2);
-                assert.strictEqual(vals[1], 3);
-                assert.strictEqual(vals[2], 4);
-            });
-
-            it("Parallel map error", async function () {
-                let [err, vals] = await utils.parallelMap(
-                    [1, 2, 3],
-                    function (val, idx) {
-                        if (val === 2) {
-                            return [5];
-                        }
-                        else {
-                            return [null, val + 1];
-                        }
-                    }
-                );
-                assert.ok(err);
-                assert.ok(!vals);
-                assert.strictEqual(err, 5);
-            });
-
-            it("Series map success", async function () {
-                let keeper = 1;
-                let [err, vals] = await utils.seriesMap(
-                    [1, 2, 3],
-                    function (val, idx) {
-                        assert.strictEqual(keeper++, val);
-                        return [null, val + 1];
-                    }
-                );
-                assert.ok(!err);
-                assert.strictEqual(vals[0], 2);
-                assert.strictEqual(vals[1], 3);
-                assert.strictEqual(vals[2], 4);
-                assert.strictEqual(vals[2], keeper);
-            });
-
-            it("Series map error", async function () {
-                let [err, vals] = await utils.seriesMap(
-                    [1, 2, 3],
-                    function (val, idx) {
-                        if (val === 2) {
-                            return [5];
-                        }
-                        else {
-                            return [null, val + 1];
-                        }
-                    }
-                );
-                assert.ok(err);
-                assert.ok(!vals);
-                assert.strictEqual(err, 5);
-            });
-
-            it("Parallel each reorder success", async function () {
-                let total = 0;
-                let err = await utils.parallelEach(
-                    [1, 2, 3],
-                    async function (val, idx) {
-                        let go = function () {
-                            total += val;
-                        };
-                        if (idx === 1) {
-                            await utils.sleep(100);
-                            go();
-                        } else {
-                            go();
-                        }
-                    }
-                );
-                assert.ok(!err);
-                assert.strictEqual(total, 6);
-            });
-
-            it("Series each success", async function () {
-                let results = [1, 3, 6];
-                let total = 0;
-                let err = await utils.seriesEach(
-                    [1, 2, 3],
-                    function (val, idx) {
-                        total += val;
-                        assert.strictEqual(total, results[idx]);
-                    }
-                );
-                assert.ok(!err);
-                assert.strictEqual(total, 6);
             });
         })
     );
@@ -75413,7 +78221,7 @@ if (module.id === __filename && module.parent.id.includes('mocha')) {
 }
 
 }).call(this)}).call(this,"/tests/test_utils.js")
-},{"../index":2,"chai":72}],320:[function(require,module,exports){
+},{"../index":2,"chai":73}],322:[function(require,module,exports){
 // Copyright 2011 Splunk, Inc.
 //
 // Licensed under the Apache License, Version 2.0 (the "License"): you may
@@ -75428,28 +78236,28 @@ if (module.id === __filename && module.parent.id.includes('mocha')) {
 // License for the specific language governing permissions and limitations
 // under the License.
 
-const { utils } = require('mocha');
-
 (function () {
     "use strict";
-    var utils = require('../lib/utils');
+    var Async = require('../lib/async');
+    var assert = require('chai').assert;
 
     var root = exports || this;
 
-    root.pollUntil = async function (obj, condition, iterations) {
+    root.pollUntil = function (obj, condition, iterations, callback) {
+        callback = callback || function () { };
 
-        let i = 0;
-        try {
-            await utils.whilst(
-                function () { return !condition(obj) && (i++ < iterations); },
-                async function () {
-                    await utils.sleep(500);
-                    await obj.fetch();
-                }
-            );
-        } catch (error) {
-            throw error;
-        }
+        var i = 0;
+        Async.whilst(
+            function () { return !condition(obj) && (i++ < iterations); },
+            function (done) {
+                Async.sleep(500, function () {
+                    obj.fetch(done);
+                });
+            },
+            function (err) {
+                callback(err, obj);
+            }
+        );
     };
 
     // Minimal Http implementation that is designed to pass the tests
@@ -75468,7 +78276,7 @@ const { utils } = require('mocha');
 
 })();
 
-},{"../lib/utils":11,"mocha":66}]},{},[4]);
+},{"../lib/async":3,"chai":73}]},{},[5]);
 
 
 })();
