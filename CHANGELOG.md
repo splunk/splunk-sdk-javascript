@@ -1,5 +1,12 @@
 # Splunk Enterprise SDK for JavaScript Changelog
 
+## Promise changes
+
+### New features and APIs
+* Callbacks have been removed and instead we are returning Promises which enables users to use Async/Await features of JS.
+* Added 'response_timeout' parameter which enables user to specify the timeout for a particular API call.
+* Removed Async.js file and the required methods have been migrated to Utils.js following the Promise structure.
+
 ## v1.12.0
 
 ### New features and APIs

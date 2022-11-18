@@ -127,14 +127,14 @@
                         res.end();
                     }).catch((err)=>{
                         res.write(JSON.stringify(err));
-                        writeError();
+                        res.end();
                 });
 
                 }
                 catch (ex) {
                     writeError();
                 }
-
+                
             });
         }
         catch (ex) {

@@ -1436,7 +1436,7 @@ var __exportName = 'splunkjs';
                 type: message.method,
                 headers: message.headers,
                 data: message.body || "",
-                timeout: message.timeout || 0,
+                timeout: Math.max(message.timeout, message.response_timeout) || 0,
                 dataType: "json",
                 success: utils.bind(this, function(data, error, res) {
                     var response = {
@@ -1448,6 +1448,12 @@ var __exportName = 'splunkjs';
                     return Promise.resolve(complete_response)
                 }),
                 error: function(res, data, error) {
+                    // Format abort response
+                    if(data === "timeout"){
+                        let response = { headers: {}, statusCode: "abort", body: {}};
+                        complete_response = that._buildResponse("abort",response,{});
+                        return Promise.reject(complete_response);
+                    }
                     var response = {
                         statusCode: res.status,
                         headers: getHeaders(res.getAllResponseHeaders())
@@ -1466,7 +1472,9 @@ var __exportName = 'splunkjs';
             
             return $.ajax(params).then((xhr)=>{
                 return complete_response;
-            })
+            }).catch((err)=>{
+                return complete_response;
+            });
         },
 
         parseJson: function(json) {
@@ -1572,7 +1580,6 @@ var __exportName = 'splunkjs';
             
             // Now, we prepend the prefix
             url = this.prefix + url;
-            
             var that = this;
             var complete_response;
             var params = {
@@ -1580,7 +1587,7 @@ var __exportName = 'splunkjs';
                 type: message.method,
                 headers: message.headers,
                 data: message.body || "",
-                timeout: message.timeout || 0,
+                timeout: Math.max(message.timeout, message.response_timeout) || 0,
                 dataType: "text",
                 success: function(data, error, res) {
                     var response = {
@@ -1592,7 +1599,12 @@ var __exportName = 'splunkjs';
                     return Promise.resolve(complete_response);
                 },
                 error: function(res, data, error) {
-                    
+                    // Format abort response
+                    if(data === "timeout"){
+                        let response = { headers: {}, statusCode: "abort", body: {}};
+                        complete_response = that._buildResponse("abort",response,{});
+                        return Promise.reject(complete_response);
+                    }
                     var response = {
                         statusCode: res.status,
                         headers: getHeaders(res.getAllResponseHeaders())
@@ -1612,7 +1624,9 @@ var __exportName = 'splunkjs';
             
             return $.ajax(params).then((xhr)=>{
                 return complete_response;
-            })
+            }).catch((err)=>{
+                return complete_response;
+            });
         },
 
         makeRequestAsync: function(url, message) {
@@ -1621,7 +1635,7 @@ var __exportName = 'splunkjs';
             // use this.
             message.headers["X-ProxyDestination"] = url;
             message.headers["Splunk-Client"] = "splunk-sdk-javascript/" + SDK_VERSION;
-            
+
             // Need to remove the hostname from the URL
             var parsed = parseUri(url);
             var prefixToRemove = "" + (parsed.protocol ? parsed.protocol : "") + "://" + parsed.authority;
@@ -1637,7 +1651,7 @@ var __exportName = 'splunkjs';
                 type: message.method,
                 headers: message.headers,
                 data: message.body || "",
-                timeout: message.timeout || 0,
+                timeout: Math.max(message.timeout,message.response_timeout) || 0,
                 dataType: "text",
                 success: function(data, error, res) {
                     var response = {
@@ -1649,6 +1663,12 @@ var __exportName = 'splunkjs';
                     return Promise.resolve(complete_response);
                 },
                 error: function(res, data, error) {
+                    // Format abort response
+                    if(data === "timeout"){
+                        let response = { headers: {}, statusCode: "abort", body: {}};
+                        complete_response = that._buildResponse("abort",response,{});
+                        return Promise.reject(complete_response);
+                    }
                     var response = {
                         statusCode: res.status,
                         headers: getHeaders(res.getAllResponseHeaders()),
@@ -1667,7 +1687,9 @@ var __exportName = 'splunkjs';
             
             return $.ajax(params).then((xhr)=>{
                 return complete_response;
-            })
+            }).catch((err)=>{
+                return complete_response;
+            });
         },
 
         parseJson: function(json) {
@@ -1953,7 +1975,7 @@ var __exportName = 'splunkjs';
          *
          *      // List all properties in the 'props.conf' file
          *      let files = svc.configurations();
-         *      let propsFile = await files.item();
+         *      let propsFile = await files.item("props");
          *      let props = await propsFile.fetch();
          *      console.log(props.properties());
          * 
@@ -3763,6 +3785,12 @@ var __exportName = 'splunkjs';
          */     
         init: function(service, namespace) {
             this._super(service, this.path(), namespace);
+        },
+        create: function(params, response_timeout){
+            if(this.service.app == '-' || this.service.owner == '-'){
+                throw new Error("While creating StoragePasswords, namespace cannot have wildcards.");
+            }
+            return this._super(params,response_timeout);
         }
     });
 

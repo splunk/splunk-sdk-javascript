@@ -2665,7 +2665,7 @@ window.SplunkTest = {
          *
          *      // List all properties in the 'props.conf' file
          *      let files = svc.configurations();
-         *      let propsFile = await files.item();
+         *      let propsFile = await files.item("props");
          *      let props = await propsFile.fetch();
          *      console.log(props.properties());
          * 
@@ -4475,6 +4475,12 @@ window.SplunkTest = {
          */     
         init: function(service, namespace) {
             this._super(service, this.path(), namespace);
+        },
+        create: function(params, response_timeout){
+            if(this.service.app == '-' || this.service.owner == '-'){
+                throw new Error("While creating StoragePasswords, namespace cannot have wildcards.");
+            }
+            return this._super(params,response_timeout);
         }
     });
 
@@ -72611,6 +72617,28 @@ exports.setup = function (svc) {
                 }
                 done();
             })
+            
+            it("V2 Search APIs Enable/Disabled", function (done) {
+                let service = this.service;
+                let flag = service.disableV2SearchApi();
+                if(service.instanceType == "cloud"){
+                    service.versionCompare("9.0.2209") < 0  ? assert.isTrue(flag) : assert.isFalse(flag);
+                }else{
+                    service.versionCompare("9.0.2") < 0 ? assert.isTrue(flag) : assert.isFalse(flag);
+                }
+                done();
+            })
+
+            it("V2 Search APIs Enable/Disabled", function (done) {
+                let service = this.service;
+                let flag = service.disableV2SearchApi();
+                if(service.instanceType == "cloud"){
+                    service.versionCompare("9.0.2209") < 0  ? assert.isTrue(flag) : assert.isFalse(flag);
+                }else{
+                    service.versionCompare("9.0.2") < 0 ? assert.isTrue(flag) : assert.isFalse(flag);
+                }
+                done();
+            })
         })
     );
 };
@@ -72652,6 +72680,9 @@ if (module.id === __filename && module.parent.id.includes('mocha')) {
 exports.setup = function (svc) {
     var assert = require('chai').assert;
     var splunkjs = require('../../index');
+    var options = require('../cmdline');
+    var parser = new options.create();
+    var cmdline = parser.parse(process.argv);
     var idCounter = 0;
     var getNextId = function () {
         return "id" + (idCounter++) + "_" + ((new Date()).valueOf());
@@ -72768,6 +72799,23 @@ exports.setup = function (svc) {
                 } catch (error) {
                     assert.ok(error);
                 }
+            })
+
+            it("Create should fail if app or owner have wildcard", async function () {
+                var service = new splunkjs.Service({
+                    scheme: cmdline.opts.scheme,
+                    host: cmdline.opts.host,
+                    port: cmdline.opts.port,
+                    username: cmdline.opts.username,
+                    password: cmdline.opts.password,
+                    version: cmdline.opts.version,
+                    app:'-',
+                    owner:'-'
+                });
+                var storagePasswords = service.storagePasswords();
+                assert.throws(function (){
+                    storagePasswords.create({ name: "delete-me-" + getNextId(), password: 'changed!' })
+                });
             })
 
             it("Create with colons", async function () {

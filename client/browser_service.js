@@ -41,6 +41,7 @@ describe("Service Tests ", function(){
             let user2 = users.create({ name: userName2, password: "abcdefg!", roles: ["user"] });
             that.user2 = user2;
             that.userName2 = userName2;
+            await utils.sleep(2000);
         });
 
         it("Namespace protection", async function () {
@@ -980,7 +981,7 @@ describe("Service Tests ", function(){
             if (this.skip) {
                 return;
             }
-            var that = this;
+            let that = this;
             let dataModels = await that.dataModels.fetch();
             let dm = dataModels.item("internal_audit_logs");
             // Check for the 3 objects we expect
@@ -998,15 +999,15 @@ describe("Service Tests ", function(){
             }
             let args;
             try {
-                args = JSON.parse(utils.readFile(__filename, "../../data/empty_data_model.json"));
+                let response = await fetch("./data/empty_data_model.json");
+                args = await response.json();
             }
             catch (err) {
                 // Fail if we can't read the file, likely to occur in the browser
                 assert.ok(!err);
             }
             let name = "delete-me-" + getNextId();
-
-            var that = this;
+            let that = this;
             let dataModels = await that.dataModels.fetch();
             let initialSize = dataModels.list().length;
             let dataModel = await dataModels.create(name, args);
@@ -1025,15 +1026,15 @@ describe("Service Tests ", function(){
             }
             let args;
             try {
-                args = JSON.parse(utils.readFile(__filename, "../../data/empty_data_model.json"));
+                let response = await fetch("./data/empty_data_model.json");
+                args = await response.json();
             }
             catch (err) {
                 // Fail if we can't read the file, likely to occur in the browser
                 assert.ok(!err);
             }
             let name = "delete-me- " + getNextId();
-
-            var that = this;
+            let that = this;
             let dataModel = await that.dataModels.create(name, args);
             assert.strictEqual(name.replace(" ", "_"), dataModel.name);
         });
@@ -1044,14 +1045,15 @@ describe("Service Tests ", function(){
             }
             let args;
             try {
-                args = JSON.parse(utils.readFile(__filename, "../../data/empty_data_model.json"));
+                let response = await fetch("./data/empty_data_model.json");
+                args = await response.json();
             }
             catch (err) {
                 // Fail if we can't read the file, likely to occur in the browser
                 assert.ok(!err);
             }
             let name = "delete-me-" + getNextId();
-            var that = this;
+            let that = this;
             let dataModel = await that.dataModels.create(name, args);
             // Check for 0 objects before fetch
             assert.strictEqual(0, dataModel.objects.length);
@@ -1067,15 +1069,15 @@ describe("Service Tests ", function(){
 
             let args;
             try {
-                args = JSON.parse(utils.readFile(__filename, "../../data/object_with_one_search.json"));
+                let response = await fetch("./data/object_with_one_search.json");
+                args = await response.json();
             }
             catch (err) {
                 // Fail if we can't read the file, likely to occur in the browser
                 assert.ok(!err);
             }
             let name = "delete-me-" + getNextId();
-
-            var that = this;
+            let that = this;
             let dataModel = await that.dataModels.create(name, args);
             // Check for 1 object before fetch
             assert.strictEqual(1, dataModel.objects.length);
@@ -1090,15 +1092,15 @@ describe("Service Tests ", function(){
             }
             let args;
             try {
-                args = JSON.parse(utils.readFile(__filename, "../../data/object_with_two_searches.json"));
+                let response = await fetch("./data/object_with_two_searches.json");
+                args = await response.json();
             }
             catch (err) {
                 // Fail if we can't read the file, likely to occur in the browser
                 assert.ok(!err);
             }
             let name = "delete-me-" + getNextId();
-
-            var that = this;
+            let that = this;
             let dataModel = await that.dataModels.create(name, args);
             // Check for 2 objects before fetch
             assert.strictEqual(2, dataModel.objects.length);
@@ -1113,26 +1115,26 @@ describe("Service Tests ", function(){
             }
             let args;
             try {
-                args = JSON.parse(utils.readFile(__filename, "../../data/object_with_two_searches.json"));
+                let response = await fetch("./data/object_with_two_searches.json");
+                args = await response.json();
             }
             catch (err) {
                 // Fail if we can't read the file, likely to occur in the browser
                 assert.ok(!err);
             }
             let name = "delete-me-" + getNextId();
-
-            var that = this;
+            let that = this;
             let dataModel = await that.dataModels.create(name, args);
             assert.ok(dataModel.hasObject("search1"));
             assert.ok(dataModel.hasObject("search2"));
-
+            
             let search1 = dataModel.objectByName("search1");
             assert.ok(search1);
-            assert.strictEqual("‡Øµ‡Ø±‡Ø∞‡ØØ - search 1", search1.displayName);
-
+            assert.strictEqual(decodeURI("%E2%80%A1%C3%98%C2%B5%E2%80%A1%C3%98%C2%B1%E2%80%A1%C3%98%E2%88%9E%E2%80%A1%C3%98%C3%98%20-%20search%201"), search1.displayName);
+            
             let search2 = dataModel.objectByName("search2");
             assert.ok(search2);
-            assert.strictEqual("‡Øµ‡Ø±‡Ø∞‡ØØ - search 2", search2.displayName);
+            assert.strictEqual(decodeURI("%E2%80%A1%C3%98%C2%B5%E2%80%A1%C3%98%C2%B1%E2%80%A1%C3%98%E2%88%9E%E2%80%A1%C3%98%C3%98%20-%20search%202"), search2.displayName);
         });
 
         it("DataModels - data model handles unicode characters", async function () {
@@ -1141,19 +1143,19 @@ describe("Service Tests ", function(){
             }
             let args;
             try {
-                args = JSON.parse(utils.readFile(__filename, "../../data/model_with_unicode_headers.json"));
+                let response = await fetch("./data/model_with_unicode_headers.json");
+                args = await response.json();
             }
             catch (err) {
                 // Fail if we can't read the file, likely to occur in the browser
                 assert.ok(!err);
             }
             let name = "delete-me-" + getNextId();
-
-            var that = this;
+            let that = this;
             let dataModel = await that.dataModels.create(name, args);
             assert.strictEqual(name, dataModel.name);
-            assert.strictEqual("·Ä©·öô‡Øµ", dataModel.displayName);
-            assert.strictEqual("‡Øµ‡Ø±‡Ø∞‡ØØ", dataModel.description);
+            assert.strictEqual(decodeURI("%C2%B7%C3%84%C2%A9%C2%B7%C3%B6%C3%B4%E2%80%A1%C3%98%C2%B5"), dataModel.displayName);
+            assert.strictEqual(decodeURI("%E2%80%A1%C3%98%C2%B5%E2%80%A1%C3%98%C2%B1%E2%80%A1%C3%98%E2%88%9E%E2%80%A1%C3%98%C3%98"), dataModel.description);
         });
 
         it("DataModels - create data model with empty headers", async function () {
@@ -1162,20 +1164,20 @@ describe("Service Tests ", function(){
             }
             let args;
             try {
-                args = JSON.parse(utils.readFile(__filename, "../../data/model_with_empty_headers.json"));
+                let response = await fetch("./data/model_with_empty_headers.json");
+                args = await response.json();
             }
             catch (err) {
                 // Fail if we can't read the file, likely to occur in the browser
                 assert.ok(!err);
             }
             let name = "delete-me-" + getNextId();
-
-            var that = this;
+            let that = this;
             let dataModel = await that.dataModels.create(name, args);
             assert.strictEqual(name, dataModel.name);
             assert.strictEqual("", dataModel.displayName);
             assert.strictEqual("", dataModel.description);
-
+            
             // Make sure we're not getting a summary of the data model
             assert.strictEqual("0", dataModel.concise);
         });
@@ -1186,29 +1188,29 @@ describe("Service Tests ", function(){
             }
             let args;
             try {
-                args = JSON.parse(utils.readFile(__filename, "../../data/data_model_with_test_objects.json"));
+                let response = await fetch("./data/data_model_with_test_objects.json");
+                args = await response.json();
             }
             catch (err) {
                 // Fail if we can't read the file, likely to occur in the browser
                 assert.ok(!err);
             }
             let name = "delete-me-" + getNextId();
-
-            var that = this;
+            let that = this;
             let dataModel = await that.dataModels.create(name, args);
             dataModel.acceleration.enabled = true;
             dataModel.acceleration.earliestTime = "-2mon";
             dataModel.acceleration.cronSchedule = "5/* * * * *";
-
+            
             assert.strictEqual(true, dataModel.isAccelerated());
             assert.strictEqual(true, dataModel.acceleration.enabled);
             assert.strictEqual("-2mon", dataModel.acceleration.earliestTime);
             assert.strictEqual("5/* * * * *", dataModel.acceleration.cronSchedule);
-
+            
             dataModel.acceleration.enabled = false;
             dataModel.acceleration.earliestTime = "-1mon";
             dataModel.acceleration.cronSchedule = "* * * * *";
-
+            
             assert.strictEqual(false, dataModel.isAccelerated());
             assert.strictEqual(false, dataModel.acceleration.enabled);
             assert.strictEqual("-1mon", dataModel.acceleration.earliestTime);
@@ -1221,20 +1223,20 @@ describe("Service Tests ", function(){
             }
             let args;
             try {
-                args = JSON.parse(utils.readFile(__filename, "../../data/data_model_with_test_objects.json"));
+                let response = await fetch("./data/data_model_with_test_objects.json");
+                args = await response.json();
             }
             catch (err) {
                 // Fail if we can't read the file, likely to occur in the browser
                 assert.ok(!err);
             }
             let name = "delete-me-" + getNextId();
-
-            var that = this;
+            let that = this;
             let dataModel = await that.dataModels.create(name, args);
             let obj = dataModel.objectByName("event1");
             assert.ok(obj);
-
-            assert.strictEqual("event1 ·Ä©·öô", obj.displayName);
+            
+            assert.strictEqual(decodeURI("event1%20%C2%B7%C3%84%C2%A9%C2%B7%C3%B6%C3%B4"), obj.displayName);
             assert.strictEqual("event1", obj.name);
             assert.deepEqual(dataModel, obj.dataModel);
         });
@@ -1245,15 +1247,15 @@ describe("Service Tests ", function(){
             }
             let args;
             try {
-                args = JSON.parse(utils.readFile(__filename, "../../data/data_model_with_test_objects.json"));
+                let response = await fetch("./data/data_model_with_test_objects.json");
+                args = await response.json();
             }
             catch (err) {
                 // Fail if we can't read the file, likely to occur in the browser
                 assert.ok(!err);
             }
             let name = "delete-me-" + getNextId();
-
-            var that = this;
+            let that = this;
             let dataModel = await that.dataModels.create(name, args);
             let obj = dataModel.objectByName("event1");
             assert.ok(obj);
@@ -1266,34 +1268,34 @@ describe("Service Tests ", function(){
             }
             let args;
             try {
-                args = JSON.parse(utils.readFile(__filename, "../../data/inheritance_test_data.json"));
+                let response = await fetch("./data/inheritance_test_data.json");
+                args = await response.json();
             }
             catch (err) {
                 // Fail if we can't read the file, likely to occur in the browser
                 assert.ok(!err);
             }
             let name = "delete-me-" + getNextId();
-
-            var that = this;
+            let that = this;
             let dataModel = await that.dataModels.create(name, args);
             let obj = dataModel.objectByName("level_0");
             assert.ok(obj);
             assert.strictEqual(1, obj.lineage.length);
             assert.strictEqual("level_0", obj.lineage[0]);
             assert.strictEqual("BaseEvent", obj.parentName);
-
+            
             obj = dataModel.objectByName("level_1");
             assert.ok(obj);
             assert.strictEqual(2, obj.lineage.length);
             assert.deepEqual(["level_0", "level_1"], obj.lineage);
             assert.strictEqual("level_0", obj.parentName);
-
+            
             obj = dataModel.objectByName("level_2");
             assert.ok(obj);
             assert.strictEqual(3, obj.lineage.length);
             assert.deepEqual(["level_0", "level_1", "level_2"], obj.lineage);
             assert.strictEqual("level_1", obj.parentName);
-
+            
             // Make sure there's no extra children
             assert.ok(!dataModel.objectByName("level_3"));
         });
@@ -1304,20 +1306,19 @@ describe("Service Tests ", function(){
             }
             let args;
             try {
-                args = JSON.parse(utils.readFile(__filename, "../../data/inheritance_test_data.json"));
+                let response = await fetch("./data/inheritance_test_data.json");
+                args = await response.json();
             }
             catch (err) {
                 // Fail if we can't read the file, likely to occur in the browser
                 assert.ok(!err);
             }
             let name = "delete-me-" + getNextId();
-
             let that = this;
-
             let dataModel = await that.dataModels.create(name, args);
             let obj = dataModel.objectByName("level_2");
             assert.ok(obj);
-
+            
             let timeField = obj.fieldByName("_time");
             assert.ok(timeField);
             assert.strictEqual("timestamp", timeField.type);
@@ -1334,7 +1335,7 @@ describe("Service Tests ", function(){
             assert.strictEqual(false, timeField.hidden);
             assert.strictEqual(false, timeField.editable);
             assert.strictEqual(null, timeField.comment);
-
+            
             let lvl2 = obj.fieldByName("level_2");
             assert.strictEqual("level_2", lvl2.owner);
             assert.deepEqual(["level_0", "level_1", "level_2"], lvl2.lineage);
@@ -1360,15 +1361,15 @@ describe("Service Tests ", function(){
             }
             let args;
             try {
-                args = JSON.parse(utils.readFile(__filename, "../../data/data_model_for_pivot.json"));
+                let response = await fetch("./data/data_model_for_pivot.json");
+                args = await response.json();
             }
             catch (err) {
                 // Fail if we can't read the file, likely to occur in the browser
                 assert.ok(!err);
             }
             let name = "delete-me-" + getNextId();
-
-            var that = this;
+            let that = this;
             let dataModel = await that.dataModels.create(name, args);
             let obj = dataModel.objectByName("test_data");
             assert.ok(obj);
@@ -1386,12 +1387,12 @@ describe("Service Tests ", function(){
             }
             let args;
             try {
-                args = JSON.parse(utils.readFile(__filename, "../../data/inheritance_test_data.json"));
+                let response = await fetch("./data/inheritance_test_data.json");
+                args = await response.json();
             }
             catch (err) {
                 // Fail if we can't read the file, likely to occur in the browser
                 assert.ok(!err);
-                done();
             }
             let name = "delete-me-" + getNextId();
             let obj;
@@ -1418,15 +1419,15 @@ describe("Service Tests ", function(){
             }
             let args;
             try {
-                args = JSON.parse(utils.readFile(__filename, "../../data/inheritance_test_data.json"));
+                let response = await fetch("./data/inheritance_test_data.json");
+                args = await response.json();
             }
             catch (err) {
                 // Fail if we can't read the file, likely to occur in the browser
                 assert.ok(!err);
             }
             let name = "delete-me-" + getNextId();
-
-            var that = this;
+            let that = this;
             let dataModel = await that.dataModels.create(name, args);
             let obj = dataModel.objectByName("level_2");
             assert.ok(obj);
@@ -1438,13 +1439,13 @@ describe("Service Tests ", function(){
                     return job.properties()["isDone"];
                 },
                 10
-            );
-            assert.strictEqual("| datamodel \"" + name + "\" level_2 search | tscollect", job.properties().request.search);
-
-            // Make sure the earliest time is 1 day behind
-            let yesterday = new Date(Date.now() - (1000 * 60 * 60 * 24));
-            let month = (yesterday.getMonth() + 1);
-            if (month <= 9) {
+                );
+                assert.strictEqual("| datamodel \"" + name + "\" level_2 search | tscollect", job.properties().request.search);
+                
+                // Make sure the earliest time is 1 day behind
+                let yesterday = new Date(Date.now() - (1000 * 60 * 60 * 24));
+                let month = (yesterday.getMonth() + 1);
+                if (month <= 9) {
                 month = "0" + month;
             }
             let date = yesterday.getDate();
@@ -1453,7 +1454,7 @@ describe("Service Tests ", function(){
             }
             let expectedDate = yesterday.getFullYear() + "-" + month + "-" + date;
             assert.ok(utils.startsWith(job._state.content.earliestTime, expectedDate));
-
+            
             await job.cancel();
         });
 
@@ -1463,15 +1464,15 @@ describe("Service Tests ", function(){
             }
             let args;
             try {
-                args = JSON.parse(utils.readFile(__filename, "../../data/data_model_with_test_objects.json"));
+                let response = await fetch("./data/data_model_with_test_objects.json");
+                args = await response.json();
             }
             catch (err) {
                 // Fail if we can't read the file, likely to occur in the browser
                 assert.ok(!err);
             }
             let name = "delete-me-" + getNextId();
-
-            var that = this;
+            let that = this;
             let dataModel = await that.dataModels.create(name, args);
             let obj = dataModel.objectByName("event1");
             assert.ok(obj);
@@ -1492,22 +1493,22 @@ describe("Service Tests ", function(){
             }
             let args;
             try {
-                args = JSON.parse(utils.readFile(__filename, "../../data/data_model_with_test_objects.json"));
+                let response = await fetch("./data/data_model_with_test_objects.json");
+                args = await response.json();
             }
             catch (err) {
                 // Fail if we can't read the file, likely to occur in the browser
                 assert.ok(!err);
             }
             let name = "delete-me-" + getNextId();
-
-            var that = this;
+            let that = this;
             let dataModel = await that.dataModels.create(name, args);
             let obj = dataModel.objectByName("event1");
             assert.ok(obj);
             let calculations = obj.calculations;
             assert.strictEqual(4, Object.keys(calculations).length);
             assert.strictEqual(4, obj.calculationIDs().length);
-
+            
             let evalCalculation = calculations["93fzsv03wa7"];
             assert.ok(evalCalculation);
             assert.strictEqual("event1", evalCalculation.owner);
@@ -1520,14 +1521,14 @@ describe("Service Tests ", function(){
             assert.strictEqual(null, evalCalculation.comment);
             assert.strictEqual(true, evalCalculation.isEditable());
             assert.strictEqual("if(cidrmatch(\"192.0.0.0/16\", clientip), \"local\", \"other\")", evalCalculation.expression);
-
+            
             assert.strictEqual(1, Object.keys(evalCalculation.outputFields).length);
             assert.strictEqual(1, evalCalculation.outputFieldNames().length);
-
+            
             let field = evalCalculation.outputFields["new_field"];
             assert.ok(field);
             assert.strictEqual("My New Field", field.displayName);
-
+            
             let lookupCalculation = calculations["sr3mc8o3mjr"];
             assert.ok(lookupCalculation);
             assert.strictEqual("event1", lookupCalculation.owner);
@@ -1544,7 +1545,7 @@ describe("Service Tests ", function(){
             assert.strictEqual("a_lookup_field", lookupCalculation.inputFieldMappings.lookupField);
             assert.strictEqual("host", lookupCalculation.inputFieldMappings.inputField);
             assert.strictEqual("dnslookup", lookupCalculation.lookupName);
-
+            
             let regexpCalculation = calculations["a5v1k82ymic"];
             assert.ok(regexpCalculation);
             assert.strictEqual("event1", regexpCalculation.owner);
@@ -1557,7 +1558,7 @@ describe("Service Tests ", function(){
             assert.strictEqual(2, regexpCalculation.outputFieldNames().length);
             assert.strictEqual("_raw", regexpCalculation.inputField);
             assert.strictEqual(" From: (?<from>.*) To: (?<to>.*) ", regexpCalculation.expression);
-
+            
             let geoIPCalculation = calculations["pbe9bd0rp4"];
             assert.ok(geoIPCalculation);
             assert.strictEqual("event1", geoIPCalculation.owner);
@@ -1567,7 +1568,7 @@ describe("Service Tests ", function(){
             assert.ok(!geoIPCalculation.isLookup());
             assert.ok(!geoIPCalculation.isEval());
             assert.ok(!geoIPCalculation.isRex());
-            assert.strictEqual("·Ä©·öô‡Øµ comment of pbe9bd0rp4", geoIPCalculation.comment);
+            assert.strictEqual(decodeURI("%C2%B7%C3%84%C2%A9%C2%B7%C3%B6%C3%B4%E2%80%A1%C3%98%C2%B5%20comment%20of%20pbe9bd0rp4"), geoIPCalculation.comment);
             assert.strictEqual(5, geoIPCalculation.outputFieldNames().length);
             assert.strictEqual("output_from_reverse_hostname", geoIPCalculation.inputField);
         });
@@ -1576,7 +1577,7 @@ describe("Service Tests ", function(){
             if (this.skip) {
                 return;
             }
-            var that = this;
+            let that = this;
             let dataModels = await that.dataModels.fetch();
             let dm = dataModels.item("internal_audit_logs");
             let obj = dm.objectByName("searches");
@@ -1607,14 +1608,15 @@ describe("Service Tests ", function(){
             }
             let args;
             try {
-                args = JSON.parse(utils.readFile(__filename, "../../data/model_with_multiple_types.json"));
+                let response = await fetch("./data/model_with_multiple_types.json");
+                args = await response.json();
             }
             catch (err) {
                 // Fail if we can't read the file, likely to occur in the browser
                 assert.ok(!err);
             }
             let name = "delete-me-" + getNextId();
-            var that = this;
+            let that = this;
             let dataModel = await that.dataModels.create(name, args);
             let obj = dataModel.objectByName("search1");
             assert.ok(obj);
@@ -1631,15 +1633,15 @@ describe("Service Tests ", function(){
             }
             let args;
             try {
-                args = JSON.parse(utils.readFile(__filename, "../../data/model_with_multiple_types.json"));
+                let response = await fetch("./data/model_with_multiple_types.json");
+                args = await response.json();
             }
             catch (err) {
                 // Fail if we can't read the file, likely to occur in the browser
                 assert.ok(!err);
             }
             let name = "delete-me-" + getNextId();
-
-            var that = this;
+            let that = this;
             let dataModel = await that.dataModels.create(name, args);
             let obj = dataModel.objectByName("transaction1");
             assert.ok(obj);
@@ -1674,13 +1676,14 @@ describe("Service Tests ", function(){
             let name = "delete-me-" + getNextId();
             let args;
             try {
-                args = JSON.parse(utils.readFile(__filename, "../../data/data_model_for_pivot.json"));
+                let response = await fetch("./data/data_model_for_pivot.json");
+                args = await response.json();
             }
             catch (err) {
                 // Fail if we can't read the file, likely to occur in the browser
                 assert.ok(!err);
             }
-            var that = this;
+            let that = this;
             let dataModel = await that.dataModels.create(name, args);
             assert.ok(dataModel.objectByName("test_data"));
         })
@@ -1692,13 +1695,14 @@ describe("Service Tests ", function(){
             let name = "delete-me-" + getNextId();
             let args;
             try {
-                args = JSON.parse(utils.readFile(__filename, "../../data/data_model_for_pivot.json"));
+                let response = await fetch("./data/data_model_for_pivot.json");
+                args = await response.json();
             }
             catch (err) {
                 // Fail if we can't read the file, likely to occur in the browser
                 assert.ok(!err);
             }
-            var that = this;
+            let that = this;
             let dataModel = await that.dataModels.create(name, args);
             dataModel.objectByName("test_data");
             assert.ok(dataModel);
@@ -1711,26 +1715,26 @@ describe("Service Tests ", function(){
             assert.strictEqual(true, !!dataModel.acceleration.enabled);
             assert.strictEqual("-2mon", dataModel.acceleration.earliest_time);
             assert.strictEqual("0 */12 * * *", dataModel.acceleration.cron_schedule);
-
+            
             let dataModelObject = dataModel.objectByName("test_data");
             let pivotSpecification = dataModelObject.createPivotSpecification();
             assert.strictEqual(dataModelObject.dataModel.name, pivotSpecification.accelerationNamespace);
-
+            
             let name1 = "delete-me-" + getNextId();
             pivotSpecification.setAccelerationJob(name1);
             assert.strictEqual("sid=" + name1, pivotSpecification.accelerationNamespace);
-
+            
             let namespaceTemp = "delete-me-" + getNextId();
             pivotSpecification.accelerationNamespace = namespaceTemp;
             assert.strictEqual(namespaceTemp, pivotSpecification.accelerationNamespace);
-
+            
             [job, pivot] = await pivotSpecification
-                .addCellValue("test_data", "Source Value", "count")
-                .run();
+            .addCellValue("test_data", "Source Value", "count")
+            .run();
             assert.ok(job);
             assert.ok(pivot);
             assert.notStrictEqual("FAILED", job.properties().dispatchState);
-
+            
             job = await job.track({}, function (job) {
                 assert.ok(pivot.tstatsSearch);
                 assert.strictEqual(0, job.properties().request.search.indexOf("| tstats"));
@@ -1738,7 +1742,6 @@ describe("Service Tests ", function(){
                 assert.strictEqual(1, job.properties().request.search.match("^\\| tstats").length);
                 assert.strictEqual(pivot.tstatsSearch, job.properties().request.search);
             });
-
         })
 
         it("Pivot - test illegal filtering (all types)", async function () {
@@ -1748,20 +1751,21 @@ describe("Service Tests ", function(){
             let name = "delete-me-" + getNextId();
             let args;
             try {
-                args = JSON.parse(utils.readFile(__filename, "../../data/data_model_for_pivot.json"));
+                let response = await fetch("./data/data_model_for_pivot.json");
+                args = await response.json();
             }
             catch (err) {
                 // Fail if we can't read the file, likely to occur in the browser
                 assert.ok(!err);
             }
-            var that = this;
+            let that = this;
             let dataModel = await that.dataModels.create(name, args);
-
+            
             let obj = dataModel.objectByName("test_data");
             assert.ok(obj);
-
+            
             let pivotSpecification = obj.createPivotSpecification();
-
+            
             // Boolean comparisons
             try {
                 pivotSpecification.addFilter(getNextId(), "boolean", "=", true);
@@ -1779,7 +1783,7 @@ describe("Service Tests ", function(){
                 assert.ok(e);
                 assert.strictEqual(e.message, "Cannot add boolean filter on _time because it is of type timestamp");
             }
-
+            
             // String comparisons
             try {
                 pivotSpecification.addFilter("has_boris", "string", "contains", "abc");
@@ -1797,7 +1801,7 @@ describe("Service Tests ", function(){
                 assert.ok(e);
                 assert.strictEqual(e.message, "Cannot add filter on a nonexistent field.");
             }
-
+            
             // IPv4 comparisons
             try {
                 pivotSpecification.addFilter("has_boris", "ipv4", "startsWith", "192.168");
@@ -1815,7 +1819,7 @@ describe("Service Tests ", function(){
                 assert.ok(e);
                 assert.strictEqual(e.message, "Cannot add filter on a nonexistent field.");
             }
-
+            
             // Number comparisons
             try {
                 pivotSpecification.addFilter("has_boris", "number", "atLeast", 2.3);
@@ -1833,7 +1837,7 @@ describe("Service Tests ", function(){
                 assert.ok(e);
                 assert.strictEqual(e.message, "Cannot add filter on a nonexistent field.");
             }
-
+            
             // Limit filter
             try {
                 pivotSpecification.addLimitFilter("has_boris", "host", "DEFAULT", 50, "count");
@@ -1879,7 +1883,7 @@ describe("Service Tests ", function(){
                     "Stats function for fields of type object count must be COUNT; found list");
             }
         })
-
+        
         it("Pivot - test boolean filtering", async function () {
             if (this.skip) {
                 return;
@@ -1887,30 +1891,31 @@ describe("Service Tests ", function(){
             let name = "delete-me-" + getNextId();
             let args;
             try {
-                args = JSON.parse(utils.readFile(__filename, "../../data/data_model_for_pivot.json"));
+                let response = await fetch("./data/data_model_for_pivot.json");
+                args = await response.json();
             }
             catch (err) {
                 // Fail if we can't read the file, likely to occur in the browser
                 assert.ok(!err);
             }
-            var that = this;
+            let that = this;
             let dataModel = await that.dataModels.create(name, args);
             let obj = dataModel.objectByName("test_data");
             assert.ok(obj);
-
+            
             let pivotSpecification = obj.createPivotSpecification();
             try {
                 pivotSpecification.addFilter("has_boris", "boolean", "=", true);
                 assert.strictEqual(1, pivotSpecification.filters.length);
-
+                
                 //Test the individual parts of the filter
                 let filter = pivotSpecification.filters[0];
-
+                
                 assert.ok(filter.hasOwnProperty("fieldName"));
                 assert.ok(filter.hasOwnProperty("type"));
                 assert.ok(filter.hasOwnProperty("rule"));
                 assert.ok(filter.hasOwnProperty("owner"));
-
+                
                 assert.strictEqual("has_boris", filter.fieldName);
                 assert.strictEqual("boolean", filter.type);
                 assert.strictEqual("=", filter.rule.comparator);
@@ -1929,30 +1934,32 @@ describe("Service Tests ", function(){
             let name = "delete-me-" + getNextId();
             let args;
             try {
-                args = JSON.parse(utils.readFile(__filename, "../../data/data_model_for_pivot.json"));
+                let response = await fetch("./data/data_model_for_pivot.json");
+                args = await response.json();
             }
             catch (err) {
                 // Fail if we can't read the file, likely to occur in the browser
                 assert.ok(!err);
             }
-            var that = this;
+
+            let that = this;
             let dataModel = await that.dataModels.create(name, args);
             let obj = dataModel.objectByName("test_data");
             assert.ok(obj);
-
+            
             var pivotSpecification = obj.createPivotSpecification();
             try {
                 pivotSpecification.addFilter("host", "string", "contains", "abc");
                 assert.strictEqual(1, pivotSpecification.filters.length);
-
+                
                 //Test the individual parts of the filter
                 let filter = pivotSpecification.filters[0];
-
+                
                 assert.ok(filter.hasOwnProperty("fieldName"));
                 assert.ok(filter.hasOwnProperty("type"));
                 assert.ok(filter.hasOwnProperty("rule"));
                 assert.ok(filter.hasOwnProperty("owner"));
-
+                
                 assert.strictEqual("host", filter.fieldName);
                 assert.strictEqual("string", filter.type);
                 assert.strictEqual("contains", filter.rule.comparator);
@@ -1971,31 +1978,32 @@ describe("Service Tests ", function(){
             let name = "delete-me-" + getNextId();
             let args;
             try {
-                args = JSON.parse(utils.readFile(__filename, "../../data/data_model_for_pivot.json"));
+                let response = await fetch("./data/data_model_for_pivot.json");
+                args = await response.json();
             }
             catch (err) {
                 // Fail if we can't read the file, likely to occur in the browser
                 assert.ok(!err);
-                //TODO done();
             }
-            var that = this;
+
+            let that = this;
             let dataModel = await that.dataModels.create(name, args);
             let obj = dataModel.objectByName("test_data");
             assert.ok(obj);
-
+            
             var pivotSpecification = obj.createPivotSpecification();
             try {
                 pivotSpecification.addFilter("hostip", "ipv4", "startsWith", "192.168");
                 assert.strictEqual(1, pivotSpecification.filters.length);
-
+                
                 //Test the individual parts of the filter
                 let filter = pivotSpecification.filters[0];
-
+                
                 assert.ok(filter.hasOwnProperty("fieldName"));
                 assert.ok(filter.hasOwnProperty("type"));
                 assert.ok(filter.hasOwnProperty("rule"));
                 assert.ok(filter.hasOwnProperty("owner"));
-
+                
                 assert.strictEqual("hostip", filter.fieldName);
                 assert.strictEqual("ipv4", filter.type);
                 assert.strictEqual("startsWith", filter.rule.comparator);
@@ -2014,30 +2022,32 @@ describe("Service Tests ", function(){
             let name = "delete-me-" + getNextId();
             let args;
             try {
-                args = JSON.parse(utils.readFile(__filename, "../../data/data_model_for_pivot.json"));
+                let response = await fetch("./data/data_model_for_pivot.json");
+                args = await response.json();
             }
             catch (err) {
                 // Fail if we can't read the file, likely to occur in the browser
                 assert.ok(!err);
             }
-            var that = this;
+
+            let that = this;
             let dataModel = await that.dataModels.create(name, args);
             let obj = dataModel.objectByName("test_data");
             assert.ok(obj);
-
+            
             var pivotSpecification = obj.createPivotSpecification();
             try {
                 pivotSpecification.addFilter("epsilon", "number", ">=", 2.3);
                 assert.strictEqual(1, pivotSpecification.filters.length);
-
+                
                 //Test the individual parts of the filter
                 var filter = pivotSpecification.filters[0];
-
+                
                 assert.ok(filter.hasOwnProperty("fieldName"));
                 assert.ok(filter.hasOwnProperty("type"));
                 assert.ok(filter.hasOwnProperty("rule"));
                 assert.ok(filter.hasOwnProperty("owner"));
-
+                
                 assert.strictEqual("epsilon", filter.fieldName);
                 assert.strictEqual("number", filter.type);
                 assert.strictEqual(">=", filter.rule.comparator);
@@ -2056,13 +2066,15 @@ describe("Service Tests ", function(){
             let name = "delete-me-" + getNextId();
             let args;
             try {
-                args = JSON.parse(utils.readFile(__filename, "../../data/data_model_for_pivot.json"));
+                let response = await fetch("./data/data_model_for_pivot.json");
+                args = await response.json();
             }
             catch (err) {
                 // Fail if we can't read the file, likely to occur in the browser
                 assert.ok(!err);
             }
-            var that = this;
+
+            let that = this;
             let dataModel = await that.dataModels.create(name, args);
             let obj = dataModel.objectByName("test_data");
             assert.ok(obj);
@@ -2071,10 +2083,10 @@ describe("Service Tests ", function(){
             try {
                 pivotSpecification.addLimitFilter("epsilon", "host", "ASCENDING", 500, "average");
                 assert.strictEqual(1, pivotSpecification.filters.length);
-
+                
                 //Test the individual parts of the filter
                 let filter = pivotSpecification.filters[0];
-
+                
                 assert.ok(filter.hasOwnProperty("fieldName"));
                 assert.ok(filter.hasOwnProperty("type"));
                 assert.ok(filter.hasOwnProperty("owner"));
@@ -2083,7 +2095,7 @@ describe("Service Tests ", function(){
                 assert.ok(filter.hasOwnProperty("limitType"));
                 assert.ok(filter.hasOwnProperty("limitAmount"));
                 assert.ok(filter.hasOwnProperty("statsFn"));
-
+                
                 assert.strictEqual("epsilon", filter.fieldName);
                 assert.strictEqual("number", filter.type);
                 assert.strictEqual("test_data", filter.owner);
@@ -2105,17 +2117,19 @@ describe("Service Tests ", function(){
             let name = "delete-me-" + getNextId();
             let args;
             try {
-                args = JSON.parse(utils.readFile(__filename, "../../data/data_model_for_pivot.json"));
+                let response = await fetch("./data/data_model_for_pivot.json");
+                args = await response.json();
             }
             catch (err) {
                 // Fail if we can't read the file, likely to occur in the browser
                 assert.ok(!err);
             }
-            var that = this;
+
+            let that = this;
             let dataModel = await that.dataModels.create(name, args);
             let obj = dataModel.objectByName("test_data");
             assert.ok(obj);
-
+            
             let pivotSpecification = obj.createPivotSpecification();
             // Test error handling for row split
             try {
@@ -2128,7 +2142,7 @@ describe("Service Tests ", function(){
             }
             var field = getNextId();
             try {
-
+                
                 pivotSpecification.addRowSplit(field, "Break Me!");
                 assert.ok(false);
             }
@@ -2136,18 +2150,18 @@ describe("Service Tests ", function(){
                 assert.ok(e);
                 assert.strictEqual(e.message, "Did not find field " + field);
             }
-
+            
             // Test row split, number
             pivotSpecification.addRowSplit("epsilon", "My Label");
             assert.strictEqual(1, pivotSpecification.rows.length);
-
+            
             var row = pivotSpecification.rows[0];
             assert.ok(row.hasOwnProperty("fieldName"));
             assert.ok(row.hasOwnProperty("owner"));
             assert.ok(row.hasOwnProperty("type"));
             assert.ok(row.hasOwnProperty("label"));
             assert.ok(row.hasOwnProperty("display"));
-
+            
             assert.strictEqual("epsilon", row.fieldName);
             assert.strictEqual("test_data", row.owner);
             assert.strictEqual("number", row.type);
@@ -2160,19 +2174,19 @@ describe("Service Tests ", function(){
                 label: "My Label",
                 display: "all"
             },
-                row);
-
+            row);
+            
             // Test row split, string
             pivotSpecification.addRowSplit("host", "My Label");
             assert.strictEqual(2, pivotSpecification.rows.length);
-
+            
             row = pivotSpecification.rows[pivotSpecification.rows.length - 1];
             assert.ok(row.hasOwnProperty("fieldName"));
             assert.ok(row.hasOwnProperty("owner"));
             assert.ok(row.hasOwnProperty("type"));
             assert.ok(row.hasOwnProperty("label"));
             assert.ok(!row.hasOwnProperty("display"));
-
+            
             assert.strictEqual("host", row.fieldName);
             assert.strictEqual("BaseEvent", row.owner);
             assert.strictEqual("string", row.type);
@@ -2183,8 +2197,8 @@ describe("Service Tests ", function(){
                 type: "string",
                 label: "My Label"
             },
-                row);
-
+            row);
+            
             // Test error handling on range row split
             try {
                 pivotSpecification.addRangeRowSplit("has_boris", "Wrong type here", { start: 0, end: 100, step: 20, limit: 5 });
@@ -2201,11 +2215,11 @@ describe("Service Tests ", function(){
                 assert.ok(e);
                 assert.strictEqual(e.message, "Did not find field " + field);
             }
-
+            
             // Test range row split
             pivotSpecification.addRangeRowSplit("epsilon", "My Label", { start: 0, end: 100, step: 20, limit: 5 });
             assert.strictEqual(3, pivotSpecification.rows.length);
-
+            
             row = pivotSpecification.rows[pivotSpecification.rows.length - 1];
             assert.ok(row.hasOwnProperty("fieldName"));
             assert.ok(row.hasOwnProperty("owner"));
@@ -2213,13 +2227,13 @@ describe("Service Tests ", function(){
             assert.ok(row.hasOwnProperty("label"));
             assert.ok(row.hasOwnProperty("display"));
             assert.ok(row.hasOwnProperty("ranges"));
-
+            
             assert.strictEqual("epsilon", row.fieldName);
             assert.strictEqual("test_data", row.owner);
             assert.strictEqual("number", row.type);
             assert.strictEqual("My Label", row.label);
             assert.strictEqual("ranges", row.display);
-
+            
             var ranges = {
                 start: 0,
                 end: 100,
@@ -2235,8 +2249,8 @@ describe("Service Tests ", function(){
                 display: "ranges",
                 ranges: ranges
             },
-                row);
-
+            row);
+            
             // Test error handling on boolean row split
             try {
                 pivotSpecification.addBooleanRowSplit("epsilon", "Wrong type here", "t", "f");
@@ -2253,11 +2267,11 @@ describe("Service Tests ", function(){
                 assert.ok(e);
                 assert.strictEqual(e.message, "Did not find field " + field);
             }
-
+            
             // Test boolean row split
             pivotSpecification.addBooleanRowSplit("has_boris", "My Label", "is_true", "is_false");
             assert.strictEqual(4, pivotSpecification.rows.length);
-
+            
             row = pivotSpecification.rows[pivotSpecification.rows.length - 1];
             assert.ok(row.hasOwnProperty("fieldName"));
             assert.ok(row.hasOwnProperty("owner"));
@@ -2265,7 +2279,7 @@ describe("Service Tests ", function(){
             assert.ok(row.hasOwnProperty("label"));
             assert.ok(row.hasOwnProperty("trueLabel"));
             assert.ok(row.hasOwnProperty("falseLabel"));
-
+            
             assert.strictEqual("has_boris", row.fieldName);
             assert.strictEqual("My Label", row.label);
             assert.strictEqual("test_data", row.owner);
@@ -2280,8 +2294,8 @@ describe("Service Tests ", function(){
                 trueLabel: "is_true",
                 falseLabel: "is_false"
             },
-                row);
-
+            row);
+            
             // Test error handling on timestamp row split
             try {
                 pivotSpecification.addTimestampRowSplit("epsilon", "Wrong type here", "some binning");
@@ -2306,11 +2320,11 @@ describe("Service Tests ", function(){
                 assert.ok(e);
                 assert.strictEqual(e.message, "Invalid binning Bogus binning value found. Valid values are: " + pivotSpecification._binning.join(", "));
             }
-
+            
             // Test timestamp row split
             pivotSpecification.addTimestampRowSplit("_time", "My Label", "day");
             assert.strictEqual(5, pivotSpecification.rows.length);
-
+            
             row = pivotSpecification.rows[pivotSpecification.rows.length - 1];
             assert.ok(row.hasOwnProperty("fieldName"));
             assert.ok(row.hasOwnProperty("owner"));
@@ -2330,7 +2344,7 @@ describe("Service Tests ", function(){
                 type: "timestamp",
                 period: "day"
             },
-                row);
+            row);
         })
 
         it("Pivot - test column split", async function () {
@@ -2340,13 +2354,15 @@ describe("Service Tests ", function(){
             let name = "delete-me-" + getNextId();
             let args;
             try {
-                args = JSON.parse(utils.readFile(__filename, "../../data/data_model_for_pivot.json"));
+                let response = await fetch("./data/data_model_for_pivot.json");
+                args = await response.json();
             }
             catch (err) {
                 // Fail if we can't read the file, likely to occur in the browser
                 assert.ok(!err);
             }
-            var that = this;
+
+            let that = this;
             let dataModel = await that.dataModels.create(name, args);
             let obj = dataModel.objectByName("test_data");
             assert.ok(obj);
@@ -2551,7 +2567,7 @@ describe("Service Tests ", function(){
                 type: "timestamp",
                 period: "day"
             },
-                col);
+            col);
         })
 
         it("Pivot - test cell value", async function () {
@@ -2561,13 +2577,15 @@ describe("Service Tests ", function(){
             let name = "delete-me-" + getNextId();
             let args;
             try {
-                args = JSON.parse(utils.readFile(__filename, "../../data/data_model_for_pivot.json"));
+                let response = await fetch("./data/data_model_for_pivot.json");
+                args = await response.json();
             }
             catch (err) {
                 // Fail if we can't read the file, likely to occur in the browser
                 assert.ok(!err);
             }
-            var that = this;
+
+            let that = this;
             let dataModel = await that.dataModels.create(name, args);
             let obj = dataModel.objectByName("test_data");
             assert.ok(obj);
@@ -2789,13 +2807,15 @@ describe("Service Tests ", function(){
             let name = "delete-me-" + getNextId();
             let args;
             try {
-                args = JSON.parse(utils.readFile(__filename, "../../data/data_model_for_pivot.json"));
+                let response = await fetch("./data/data_model_for_pivot.json");
+                args = await response.json();
             }
             catch (err) {
                 // Fail if we can't read the file, likely to occur in the browser
                 assert.ok(!err);
             }
-            var that = this;
+                
+            let that = this;
             try {
                 let dataModel = await that.dataModels.create(name, args);
                 let obj = dataModel.objectByName("test_data");
@@ -2805,7 +2825,7 @@ describe("Service Tests ", function(){
                 assert.ok(false);
             } catch (err) {
                 assert.ok(err);
-                var expectedErr = "In handler 'datamodelpivot': Error in 'PivotReport': Must have non-empty cells or non-empty rows.";
+                let expectedErr = "In handler 'datamodelpivot': Error in 'PivotReport': Must have non-empty cells or non-empty rows.";
                 assert.ok(utils.endsWith(err.message, expectedErr));
             }
         })
@@ -2817,13 +2837,14 @@ describe("Service Tests ", function(){
             let name = "delete-me-" + getNextId();
             let args;
             try {
-                args = JSON.parse(utils.readFile(__filename, "../../data/data_model_for_pivot.json"));
+                let response = await fetch("./data/data_model_for_pivot.json");
+                args = await response.json();
             }
             catch (err) {
                 // Fail if we can't read the file, likely to occur in the browser
                 assert.ok(!err);
             }
-            var that = this;
+            let that = this;
             let obj;
             let pivotSpecification;
             let adhocjob;
@@ -2868,9 +2889,8 @@ describe("Service Tests ", function(){
             // This test won't work with utils.startsWith due to the regex escaping
             assert.strictEqual("| tstats", job.properties().request.search.match("^\\| tstats")[0]);
             assert.strictEqual(1, job.properties().request.search.match("^\\| tstats").length);
-
+            
             await adhocjob.cancel();
-
         })
 
         it("Pivot - test pivot column range split", async function () {
@@ -2881,7 +2901,7 @@ describe("Service Tests ", function(){
             if (this.skip) {
                 return;
             }
-            var that = this;
+            let that = this;
             let search;
             let dataModels = await that.dataModels.fetch();
             let dm = dataModels.item("internal_audit_logs");
@@ -2912,7 +2932,7 @@ describe("Service Tests ", function(){
             if (this.skip) {
                 return;
             }
-            var that = this;
+            let that = this;
             let dataModels = await that.dataModels.fetch();
             let dm = dataModels.item("internal_audit_logs");
             let obj = dm.objectByName("searches");
@@ -3179,7 +3199,7 @@ describe("Service Tests ", function(){
             const name = "jssdk_savedsearch_" + getNextId();
             const originalSearch = "search index=_internal | head 1";
 
-            let searches = this.service.savedSearches({ owner: this.service.username, app: "sdk-app-collection" });
+            let searches = this.service.savedSearches({ owner: this.service.username, app: "sdkappcollection" });
             var search = await searches.create({ search: originalSearch, name: name });
             assert.ok(search);
             assert.strictEqual(search.name, name);
@@ -3780,7 +3800,7 @@ describe("Service Tests ", function(){
             let value = "barfoo_" + getNextId();
 
             let configs = svc.configurations(namespace);
-            configs = await configs.fetch(done);
+            configs = await configs.fetch();
             let file = await configs.create({ __conf: fileName });
             if (file.item("stanza")) {
                 file.item("stanza").remove();
@@ -4479,7 +4499,7 @@ describe("Service Tests ", function(){
             try {
                 await indexes.create({ name: "_internal" });
             } catch (error) {
-                assert.ok(JSON.parse(error.responseText).messages[0].text.match("name=_internal already exists"));
+                assert.ok(error.data.messages[0].text.match("name=_internal already exists"));
             }
         });
 
