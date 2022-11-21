@@ -39555,7 +39555,7 @@ module.exports={
   "_args": [
     [
       "elliptic@6.5.4",
-      "/Users/abhis/Documents/GitHub/splunk-sdk-javascript"
+      "/Users/abhis/Documents/JS/splunk-sdk-javascript"
     ]
   ],
   "_development": true,
@@ -39581,7 +39581,7 @@ module.exports={
   ],
   "_resolved": "https://registry.npmjs.org/elliptic/-/elliptic-6.5.4.tgz",
   "_spec": "6.5.4",
-  "_where": "/Users/abhis/Documents/GitHub/splunk-sdk-javascript",
+  "_where": "/Users/abhis/Documents/JS/splunk-sdk-javascript",
   "author": {
     "name": "Fedor Indutny",
     "email": "fedor@indutny.com"
@@ -50950,7 +50950,7 @@ module.exports={
   "_args": [
     [
       "needle@3.0.0",
-      "/Users/abhis/Documents/GitHub/splunk-sdk-javascript"
+      "/Users/abhis/Documents/JS/splunk-sdk-javascript"
     ]
   ],
   "_from": "needle@3.0.0",
@@ -50976,7 +50976,7 @@ module.exports={
   ],
   "_resolved": "https://registry.npmjs.org/needle/-/needle-3.0.0.tgz",
   "_spec": "3.0.0",
-  "_where": "/Users/abhis/Documents/GitHub/splunk-sdk-javascript",
+  "_where": "/Users/abhis/Documents/JS/splunk-sdk-javascript",
   "author": {
     "name": "Tomás Pollak",
     "email": "tomas@forkhq.com"
