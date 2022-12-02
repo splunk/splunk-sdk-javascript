@@ -3411,6 +3411,47 @@ describe("Service Tests ", function(){
                 assert.ok(err);
             }
         })
+
+        it("ACL update", async function() {
+            let name = "jssdk_savedsearch_test_acl1";
+            let originalSearch = "search * | head 1";
+
+            let searches = this.service.savedSearches({ owner: this.service.username, app: "sdkappcollection"});
+            let search = await searches.create({ search: originalSearch, name: name });
+            assert.ok(search);
+            let prop = search.acl();
+            assert.strictEqual(prop["sharing"], "user");
+            assert.strictEqual(prop["perms"], null);
+
+            search = await search.acl_update({sharing:"app",owner:"admin","perms.read":"admin"});
+            let updatedProp = search.acl();
+            assert.strictEqual(updatedProp["owner"], "admin");
+            assert.strictEqual(updatedProp["sharing"], "app");
+            assert.equal(updatedProp["perms"]["read"], "admin");
+            await search.remove();
+        })
+
+        it("ACL update fail without sharing", async function() {
+            let name = "jssdk_savedsearch_test_acl2";
+            let originalSearch = "search * | head 1";
+
+            let searches = this.service.savedSearches({ owner: this.service.username, app: "sdkappcollection"});
+            let search = await searches.create({ search: originalSearch, name: name });
+            assert.ok(search);
+            assert.throws(()=>{search.acl_update({owner:"admin"})}, "Required argument 'sharing' is missing.")
+            await search.remove();
+        })
+
+        it("ACL update fail without owner", async function() {
+            let name = "jssdk_savedsearch_test_acl3";
+            let originalSearch = "search * | head 1";
+
+            let searches = this.service.savedSearches({ owner: this.service.username, app: "sdkappcollection"});
+            let search = await searches.create({ search: originalSearch, name: name });
+            assert.ok(search);
+            assert.throws(()=>{search.acl_update({sharing:"app"})}, "Required argument 'owner' is missing.");
+            await search.remove();
+        })
     });
 
     describe("Fired alerts tests", () => {

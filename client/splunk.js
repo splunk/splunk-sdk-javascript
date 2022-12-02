@@ -2796,19 +2796,20 @@ var __exportName = 'splunkjs';
             this._super(service, path, namespace);
             
             // We perform the bindings so that every function works properly
-            this._load     = utils.bind(this, this._load);
-            this.fetch     = utils.bind(this, this.fetch);
-            this.remove    = utils.bind(this, this.remove);
-            this.update    = utils.bind(this, this.update);
-            this.fields    = utils.bind(this, this.fields);
-            this.links     = utils.bind(this, this.links);
-            this.acl       = utils.bind(this, this.acl);
-            this.author    = utils.bind(this, this.author);
-            this.updated   = utils.bind(this, this.updated);
-            this.published = utils.bind(this, this.published);
-            this.enable    = utils.bind(this, this.enable);
-            this.disable   = utils.bind(this, this.disable);
-            this.reload    = utils.bind(this, this.reload);
+            this._load      = utils.bind(this, this._load);
+            this.fetch      = utils.bind(this, this.fetch);
+            this.remove     = utils.bind(this, this.remove);
+            this.update     = utils.bind(this, this.update);
+            this.fields     = utils.bind(this, this.fields);
+            this.links      = utils.bind(this, this.links);
+            this.acl        = utils.bind(this, this.acl);
+            this.acl_update = utils.bind(this, this.acl_update);
+            this.author     = utils.bind(this, this.author);
+            this.updated    = utils.bind(this, this.updated);
+            this.published  = utils.bind(this, this.published);
+            this.enable     = utils.bind(this, this.enable);
+            this.disable    = utils.bind(this, this.disable);
+            this.reload     = utils.bind(this, this.reload);
             
             // Initial values
             this._properties = {};
@@ -2873,6 +2874,36 @@ var __exportName = 'splunkjs';
             return this._acl;
         },
         
+        /**
+         * Update the access control list (ACL) information for this entity,
+         * which contains the permissions for accessing the entity.
+         *
+         * @example
+         *
+         *      let savedSearches = svc.savedSearches({ owner: "owner-name", app: "app-name"});
+         *      let search = await searches.create({ search: "search * | head 1", name: "acl_test" });
+         *      search = await search.acl_update({sharing:"app",owner:"admin","perms.read":"admin"});
+         * 
+         * @param {Object} options Additional entity-specific arguments (required):
+         *    - `owner` (_string_): The Splunk username, such as "admin". A value of "nobody" means no specific user (required).
+         *    - `sharing` (_string_): A mode that indicates how the resource is shared. The sharing mode can be "user", "app", "global", or "system" (required).
+         * @param {Number} response_timeout A timeout period for aborting a request in milisecs (0 means no timeout).
+         *
+         * @method splunkjs.Service.Entity
+         */
+        acl_update: function(options, response_timeout) {
+            if(!options.hasOwnProperty("sharing")) {
+                throw new Error("Required argument 'sharing' is missing.");
+            }
+            if(!options.hasOwnProperty("owner")) {
+                throw new Error("Required argument 'owner' is missing.");
+            }
+            
+            return this.post("acl", options, response_timeout).then((res)=>{
+                return this.fetch({});
+            });
+        },
+
         /**
          * Retrieves the links information for this entity, which is the URI of
          * the entity relative to the management port of a Splunk instance.
@@ -28960,7 +28991,7 @@ module.exports={
   "_args": [
     [
       "elliptic@6.5.4",
-      "/Users/abhis/Documents/GitHub/splunk-sdk-javascript"
+      "/Users/abhis/Documents/JS/splunk-sdk-javascript"
     ]
   ],
   "_development": true,
@@ -28986,7 +29017,7 @@ module.exports={
   ],
   "_resolved": "https://registry.npmjs.org/elliptic/-/elliptic-6.5.4.tgz",
   "_spec": "6.5.4",
-  "_where": "/Users/abhis/Documents/GitHub/splunk-sdk-javascript",
+  "_where": "/Users/abhis/Documents/JS/splunk-sdk-javascript",
   "author": {
     "name": "Fedor Indutny",
     "email": "fedor@indutny.com"
@@ -39453,7 +39484,7 @@ module.exports={
   "_args": [
     [
       "needle@3.0.0",
-      "/Users/abhis/Documents/GitHub/splunk-sdk-javascript"
+      "/Users/abhis/Documents/JS/splunk-sdk-javascript"
     ]
   ],
   "_from": "needle@3.0.0",
@@ -39479,7 +39510,7 @@ module.exports={
   ],
   "_resolved": "https://registry.npmjs.org/needle/-/needle-3.0.0.tgz",
   "_spec": "3.0.0",
-  "_where": "/Users/abhis/Documents/GitHub/splunk-sdk-javascript",
+  "_where": "/Users/abhis/Documents/JS/splunk-sdk-javascript",
   "author": {
     "name": "Tomás Pollak",
     "email": "tomas@forkhq.com"
