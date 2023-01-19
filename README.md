@@ -58,7 +58,7 @@ Then, to include the Splunk Enterprise SDK for JavaScript, use the `require` fun
 
 The following examples show you how to list search jobs using client-side and server-side code.
 
-* SSL velidation is enabled by default in the Splunk SDK JavaScript.
+* SSL validation is enabled by default in the Splunk SDK JavaScript.
 * To connect with Splunk server set the SSL certificate as shown below,
 ```javascript
 let service = new splunkjs.Service(...);
