@@ -58,6 +58,20 @@ Then, to include the Splunk Enterprise SDK for JavaScript, use the `require` fun
 
 The following examples show you how to list search jobs using client-side and server-side code.
 
+* SSL velidation is enabled by default in the Splunk SDK JavaScript.
+* To connect with Splunk server set the SSL certificate as shown below,
+```javascript
+let service = new splunkjs.Service(...);
+let sslCert = fs.readFileSync('<cert-path>');
+service.setSSLCert(sslCert);
+```
+
+>**Note**: For local/Non-production/any other use cases SSL Certificate validation can be disabled as shown below
+```javascript
+let service = new splunkjs.Service(...);
+service.setValidateCertificates(false)
+```
+
 ### Client-side code example
 
 This HTML example uses the Splunk Enterprise SDK for JavaScript to list all jobs:
@@ -68,6 +82,9 @@ This HTML example uses the Splunk Enterprise SDK for JavaScript to list all jobs
     <script type="text/javascript" charset="utf-8">
         try {
             let service = new splunkjs.Service({username: "admin", password: "changed!"});
+            // read cert file and pass it as an argument in setSSLCert(<cert-file>) method
+            let ca = fs.readFileSync('<cert-path>');
+            service.setSSLCert(ca);
             await service.login();
             console.log("Login was successful");
             let jobs = await service.jobs().fetch();    
@@ -83,7 +100,7 @@ This HTML example uses the Splunk Enterprise SDK for JavaScript to list all jobs
 
 ### Node.js code example
 
-This example shows how to use the Splunk Enterprise SDK for JavaScript and Node.js to list all jobs:
+This example shows how to use the Splunk Enterprise SDK for JavaScript and Node.js to list all jobs:   
 
 ##### Login with username and password
 
@@ -91,6 +108,9 @@ This example shows how to use the Splunk Enterprise SDK for JavaScript and Node.
     let splunkjs = require('splunk-sdk');
 
     let service = new splunkjs.Service({username: "admin", password: "changed!"});
+    // read certificate and pass it as an argument in setSSLCert(<cert-file>) method
+    let ca = fs.readFileSync('<cert-path>');
+    service.setSSLCert(ca);
     try {
         await service.login();
         console.log("Login was successful: " + success);
@@ -120,6 +140,9 @@ let serviceWithSessionKey = new splunkjs.Service({
     sessionKey: SESSION_KEY, // Add your sessionKey here
     version: '9.0',
 });
+// read certificate and pass it as an argument in setSSLCert(<cert-file>) method
+let ca = fs.readFileSync('<cert-path>');
+serviceWithSessionKey.setSSLCert(ca);
 try {
     let jobs = await serviceWithSessionKey.jobs({ count: 1 });
     console.log("Login successful with sessionKey");
@@ -158,6 +181,9 @@ let serviceWithBearerToken = new splunkjs.Service({
     sessionKey: TOKEN, // Add your token here
     version: '8',
 });
+// read certificate and pass it as an argument in setSSLCert(<cert-file>) method
+let ca = fs.readFileSync('<cert-path>');
+serviceWithBearerToken.setSSLCert(ca);
 try {
     let res  = await serviceWithBearerToken.jobs({ count: 2 });
     console.log("Login successful with bearer token");

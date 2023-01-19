@@ -19,6 +19,7 @@ exports.setup = function (http) {
 
     splunkjs.Logger.setLevel("ALL");
 
+    var sslVerification = false;
     return (
         describe("HTTP GET Tests", () => {
             before(function () {
@@ -28,7 +29,7 @@ exports.setup = function (http) {
             it("Timeout simple", async function () {
                 try {
                     //Response timeout set to 1ms i.e service call will abort after 1ms
-                    let res = await this.http.get("https://httpbin.org/get", {}, {}, 0, response_timeout = 1);
+                    let res = await this.http.get("https://httpbin.org/get", {}, {}, 0, response_timeout = 1, sslVerification);
                     assert.ok(!res);
                 } catch (error) {
                     assert.ok(error);
@@ -38,7 +39,7 @@ exports.setup = function (http) {
 
             it("Timeout delay", async function () {
                 try {
-                    let req = await this.http.get("https://httpbin.org/delay/20", {}, {}, 0, response_timeout = 1000);
+                    let req = await this.http.get("https://httpbin.org/delay/20", {}, {}, 0, response_timeout = 1000, sslVerification);
                     assert.ok(!req);
                 } catch (error) {
                     assert.ok(error);
@@ -47,13 +48,13 @@ exports.setup = function (http) {
             });
 
             it("No args", async function () {
-                let res = await this.http.get("https://httpbin.org/get", [], {}, 0);
+                let res = await this.http.get("https://httpbin.org/get", [], {}, 0, 0, sslVerification);
                 assert.strictEqual(res.data.url, "https://httpbin.org/get");
             });
 
             it("Success and Error", async function () {
                 try {
-                    let res = await this.http.get("https://httpbin.org/get", [], {}, 0);
+                    let res = await this.http.get("https://httpbin.org/get", [], {}, 0, 0, sslVerification);
                     assert.strictEqual(res.data.url, "https://httpbin.org/get");
                 } catch (error) {
                     assert.ok(!error);
@@ -63,7 +64,7 @@ exports.setup = function (http) {
             it("Error all", async function () {
                 this.timeout(40000);
                 try {
-                    let res = await this.http.get("https://httpbin.org/status/404", [], {}, 0);
+                    let res = await this.http.get("https://httpbin.org/status/404", [], {}, 0, 0, sslVerification);
                     assert.ok(!res);
                 } catch (error) {
                     assert.strictEqual(error.status, 404);
@@ -72,7 +73,7 @@ exports.setup = function (http) {
 
             it("With args", async function () {
                 this.timeout(40000);
-                let res = await this.http.get("https://httpbin.org/get", [], { a: 1, b: 2, c: [1, 2, 3], d: "a/b" }, 0);
+                let res = await this.http.get("https://httpbin.org/get", [], { a: 1, b: 2, c: [1, 2, 3], d: "a/b" }, 0, 0, sslVerification);
                 let args = res.data.args;
                 assert.strictEqual(args.a, "1");
                 assert.strictEqual(args.b, "2");
@@ -83,7 +84,7 @@ exports.setup = function (http) {
 
             it("Args with objects", async function () {
                 this.timeout(40000);
-                let res = await this.http.get("https://httpbin.org/get", [], { a: 1, b: { c: "ab", d: 12 } }, 0);
+                let res = await this.http.get("https://httpbin.org/get", [], { a: 1, b: { c: "ab", d: 12 } }, 0, 0, sslVerification);
                 let args = res.data.args;
                 assert.strictEqual(args.a, "1");
                 assert.deepEqual(args.b, ["ab", "12"]);
@@ -95,7 +96,7 @@ exports.setup = function (http) {
 
             it("With headers", async function () {
                 let headers = { "X-Test1": 1, "X-Test2": "a/b/c" };
-                let res = await this.http.get("https://httpbin.org/get", { "X-Test1": 1, "X-Test2": "a/b/c" }, {}, 0);
+                let res = await this.http.get("https://httpbin.org/get", { "X-Test1": 1, "X-Test2": "a/b/c" }, {}, 0, 0, sslVerification);
                 let returnedHeaders = res.data.headers;
                 for (let headerName in headers) {
                     // We have to make the header values into strings
@@ -108,7 +109,7 @@ exports.setup = function (http) {
             it("All", async function () {
                 let headers = { "X-Test1": 1, "X-Test2": "a/b/c" };
 
-                let res = await this.http.get("https://httpbin.org/get", { "X-Test1": 1, "X-Test2": "a/b/c" }, { a: 1, b: 2, c: [1, 2, 3], d: "a/b" }, 0);
+                let res = await this.http.get("https://httpbin.org/get", { "X-Test1": 1, "X-Test2": "a/b/c" }, { a: 1, b: 2, c: [1, 2, 3], d: "a/b" }, 0, 0, sslVerification);
                 let returnedHeaders = res.data.headers;
                 for (let headerName in headers) {
                     // We have to make the header values into strings
@@ -130,13 +131,13 @@ exports.setup = function (http) {
             });
 
             it("No args", async function () {
-                let res = await this.http.post("https://httpbin.org/post", {}, {}, 0);
+                let res = await this.http.post("https://httpbin.org/post", {}, {}, 0, 0, sslVerification);
                 assert.strictEqual(res.data.url, "https://httpbin.org/post");
             });
 
             it("Success and error", async function () {
                 try {
-                    let res = await this.http.post("https://httpbin.org/post", {}, {}, 0);
+                    let res = await this.http.post("https://httpbin.org/post", {}, {}, 0, 0, sslVerification);
                     assert.strictEqual(res.data.url, "https://httpbin.org/post");
                 } catch (error) {
                     assert.ok(!error);
@@ -145,7 +146,7 @@ exports.setup = function (http) {
 
             it("Error all", async function () {
                 try {
-                    let res = await this.http.post("https://httpbin.org/status/405", {}, {}, 0);
+                    let res = await this.http.post("https://httpbin.org/status/405", {}, {}, 0, 0, sslVerification);
                     assert.ok(!res);
                 } catch (error) {
                     assert.strictEqual(error.status, 405);
@@ -153,7 +154,7 @@ exports.setup = function (http) {
             });
 
             it("With args", async function () {
-                let res = await this.http.post("https://httpbin.org/post", {}, { a: 1, b: 2, c: [1, 2, 3], d: "a/b" }, 0);
+                let res = await this.http.post("https://httpbin.org/post", {}, { a: 1, b: 2, c: [1, 2, 3], d: "a/b" }, 0, 0, sslVerification);
                 let args = res.data.form;
                 assert.strictEqual(args.a, "1");
                 assert.strictEqual(args.b, "2");
@@ -165,7 +166,7 @@ exports.setup = function (http) {
             it("Headers", async function () {
                 let headers = { "X-Test1": 1, "X-Test2": "a/b/c" };
 
-                let res = await this.http.post("https://httpbin.org/post", { "X-Test1": 1, "X-Test2": "a/b/c" }, {}, 0);
+                let res = await this.http.post("https://httpbin.org/post", { "X-Test1": 1, "X-Test2": "a/b/c" }, {}, 0, 0, sslVerification);
                 let returnedHeaders = res.data.headers;
                 for (let headerName in headers) {
                     // We have to make the header values into strings
@@ -177,7 +178,7 @@ exports.setup = function (http) {
             it("All", async function () {
                 let headers = { "X-Test1": 1, "X-Test2": "a/b/c" };
 
-                let res = await this.http.post("https://httpbin.org/post", { "X-Test1": 1, "X-Test2": "a/b/c" }, { a: 1, b: 2, c: [1, 2, 3], d: "a/b" }, 0);
+                let res = await this.http.post("https://httpbin.org/post", { "X-Test1": 1, "X-Test2": "a/b/c" }, { a: 1, b: 2, c: [1, 2, 3], d: "a/b" }, 0, 0, sslVerification);
                 let returnedHeaders = res.data.headers;
                 for (let headerName in headers) {
                     // We have to make the header values into strings
@@ -199,13 +200,13 @@ exports.setup = function (http) {
             });
 
             it("No args", async function () {
-                let res = await this.http.del("https://httpbin.org/delete", [], {}, 0);
+                let res = await this.http.del("https://httpbin.org/delete", [], {}, 0, 0, sslVerification);
                 assert.strictEqual(res.data.url, "https://httpbin.org/delete");
             });
 
             it("Success and error", async function () {
                 try {
-                    let res = await this.http.del("https://httpbin.org/delete", [], {}, 0);
+                    let res = await this.http.del("https://httpbin.org/delete", [], {}, 0, 0, sslVerification);
                     assert.strictEqual(res.data.url, "https://httpbin.org/delete");
                 } catch (error) {
                     assert.ok(!error);
@@ -214,7 +215,7 @@ exports.setup = function (http) {
 
             it("Error all", async function () {
                 try {
-                    let res = await this.http.del("https://httpbin.org/status/405", [], {}, 0);
+                    let res = await this.http.del("https://httpbin.org/status/405", [], {}, 0, 0, sslVerification);
                     assert.ok(!res);
                 } catch (error) {
                     assert.strictEqual(error.status, 405);
@@ -222,14 +223,14 @@ exports.setup = function (http) {
             });
 
             it("Args", async function () {
-                let res = await this.http.del("https://httpbin.org/delete", [], { a: 1, b: 2, c: [1, 2, 3], d: "a/b" }, 0);
+                let res = await this.http.del("https://httpbin.org/delete", [], { a: 1, b: 2, c: [1, 2, 3], d: "a/b" }, 0, 0, sslVerification);
                 assert.strictEqual(res.data.url, "https://httpbin.org/delete?a=1&b=2&c=1&c=2&c=3&d=a%2Fb");
             });
 
             it("Headers", async function () {
                 let headers = { "X-Test1": 1, "X-Test2": "a/b/c" };
 
-                let res = await this.http.del("https://httpbin.org/delete", { "X-Test1": 1, "X-Test2": "a/b/c" }, {}, 0);
+                let res = await this.http.del("https://httpbin.org/delete", { "X-Test1": 1, "X-Test2": "a/b/c" }, {}, 0, 0, sslVerification);
                 let returnedHeaders = res.data.headers;
                 for (let headerName in headers) {
                     if (headers.hasOwnProperty(headerName)) {
@@ -243,7 +244,7 @@ exports.setup = function (http) {
             it("All", async function () {
                 let headers = { "X-Test1": 1, "X-Test2": "a/b/c" };
 
-                let res = await this.http.del("https://httpbin.org/delete", { "X-Test1": 1, "X-Test2": "a/b/c" }, { a: 1, b: 2, c: [1, 2, 3], d: "a/b" }, 0);
+                let res = await this.http.del("https://httpbin.org/delete", { "X-Test1": 1, "X-Test2": "a/b/c" }, { a: 1, b: 2, c: [1, 2, 3], d: "a/b" }, 0, 0, sslVerification);
                 let returnedHeaders = res.data.headers;
                 for (let headerName in headers) {
                     if (headers.hasOwnProperty(headerName)) {

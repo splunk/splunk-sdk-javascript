@@ -64,6 +64,7 @@ describe("Server tests", function () {
 
     this.beforeAll(async function () {
         try {
+            svc.setValidateCertificates(false);
             await svc.login();
         } catch (error) {
             throw new Error("Login failed - not running tests", error || "");
