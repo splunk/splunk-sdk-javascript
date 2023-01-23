@@ -204,6 +204,22 @@ exports.setup = function (svc) {
                 assert.strictEqual(startcount, storagePasswords.list().length);
             })
 
+            it("Create Or Replace StoragePassword", async function () {
+                let startcount = -1;
+                let name = "delete-me-" + getNextId();
+                let realm = "delete-me-" + getNextId();
+                var that = this;
+                let storagePasswords = await that.service.storagePasswords().fetch();
+                startcount = storagePasswords.list().length;
+                let storagePasswordOld = await storagePasswords.createOrReplace({ name: name, realm: realm, password: "changed!" });
+                assert.strictEqual(name, storagePasswordOld.properties().username);
+                let storagePassword = await storagePasswords.createOrReplace({ name: name, realm: realm, password: "changed!" });
+                assert.strictEqual(name, storagePassword.properties().username);
+                assert.strictEqual(realm + ":" + name + ":", storagePassword.name);
+                assert.strictEqual("changed!", storagePassword.properties().clear_password);
+                assert.strictEqual(realm, storagePassword.properties().realm);
+            })
+
             it("Read", async function () {
                 let startcount = -1;
                 let name = "delete-me-" + getNextId();
