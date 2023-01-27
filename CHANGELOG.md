@@ -1,11 +1,17 @@
 # Splunk Enterprise SDK for JavaScript Changelog
 
-## Promise changes
+## v2.0.0
 
 ### New features and APIs
-* Callbacks have been removed and instead we are returning Promises which enables users to use Async/Await features of JS.
+* Callbacks have been removed and instead we are returning Promises which enables users to use Async/Await features of JS. ([PR#162](https://github.com/splunk/splunk-sdk-javascript/pull/162)) 
 * Added 'response_timeout' parameter which enables user to specify the timeout for a particular API call.
 * Removed Async.js file and the required methods have been migrated to Utils.js following the Promise structure.
+
+### Minor changes
+* Update doc generation logic in GitHub ci ([PR#167](https://github.com/splunk/splunk-sdk-javascript/pull/167))
+* Updated minimist library versions ([PR#166](https://github.com/splunk/splunk-sdk-javascript/pull/166))
+* Added feature that allows to update ACL properties of an entity ([PR#170](https://github.com/splunk/splunk-sdk-javascript/pull/170))
+* Support for updated SDK examples ([PR#171](https://github.com/splunk/splunk-sdk-javascript/pull/171))
 
 ## v1.12.1
 
