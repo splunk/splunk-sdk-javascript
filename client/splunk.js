@@ -51,10 +51,16 @@ var __exportName = 'splunkjs';
     
     if (typeof(window) === 'undefined') {
         root.NodeHttp = require('./lib/platform/node/node_http').NodeHttp;
+    } else {
+        let jqueryHttp    = require('./lib/platform/client/jquery_http').JQueryHttp; 
+        let proxyHttps    = require('./lib/platform/client/proxy_http');
+        root.ProxyHttp     = proxyHttps.ProxyHttp;
+        root.JQueryHttp    = jqueryHttp;
+        root.SplunkWebHttp = proxyHttps.SplunkWebHttp;
     }
 })();
 }).call(this)}).call(this,require('_process'))
-},{"./lib/context":3,"./lib/http":6,"./lib/jquery.class":7,"./lib/log":8,"./lib/paths":9,"./lib/platform/node/node_http":12,"./lib/service":13,"./lib/utils":14,"_process":205,"dotenv":94}],3:[function(require,module,exports){
+},{"./lib/context":3,"./lib/http":6,"./lib/jquery.class":7,"./lib/log":8,"./lib/paths":9,"./lib/platform/client/jquery_http":10,"./lib/platform/client/proxy_http":11,"./lib/platform/node/node_http":12,"./lib/service":13,"./lib/utils":14,"_process":205,"dotenv":94}],3:[function(require,module,exports){
 /*!*/
 // Copyright 2012 Splunk, Inc.
 //
@@ -3791,6 +3797,50 @@ var __exportName = 'splunkjs';
                 throw new Error("While creating StoragePasswords, namespace cannot have wildcards.");
             }
             return this._super(params,response_timeout);
+        },
+        createOrReplace: async function (params, response_timeout) {
+            let that = this;
+
+            const { name, realm } = params;
+
+            // Check if password exists
+            let passwordExists = this.does_storage_password_exist(realm, name);
+
+            // If password exists delete it
+            if (passwordExists) {
+                await this.del(realm + ":" + name + ":");
+            }
+
+            let response = await this.post("", params, response_timeout);
+            let props = response.data.entry;
+            if (utils.isArray(props)) {
+                props = props[0];
+            }
+
+            let entity = that.instantiateEntity(props);
+            entity._load(props);
+            if (that.fetchOnEntityCreation) {
+                await entity.fetch(response_timeout);
+            }
+            let passwordCreated = false;
+
+            while (!passwordCreated) {
+                await this.fetch(response_timeout);
+                passwordCreated = this.does_storage_password_exist(realm, name);
+            }
+
+            return entity;
+        },
+        does_storage_password_exist: function (realm, name) {
+            let storage_passwords = this.list();
+            const password_id = realm + ":" + name + ":";
+
+            for (let index = 0; index < storage_passwords.length; index++) {
+                if (storage_passwords[index].name === password_id) {
+                    return true;
+                }
+            }
+            return false;
         }
     });
 
@@ -28991,7 +29041,7 @@ module.exports={
   "_args": [
     [
       "elliptic@6.5.4",
-      "/Users/abhis/Documents/JS/splunk-sdk-javascript"
+      "/Users/abhis/Documents/GitHub/splunk-sdk-javascript"
     ]
   ],
   "_development": true,
@@ -29017,7 +29067,7 @@ module.exports={
   ],
   "_resolved": "https://registry.npmjs.org/elliptic/-/elliptic-6.5.4.tgz",
   "_spec": "6.5.4",
-  "_where": "/Users/abhis/Documents/JS/splunk-sdk-javascript",
+  "_where": "/Users/abhis/Documents/GitHub/splunk-sdk-javascript",
   "author": {
     "name": "Fedor Indutny",
     "email": "fedor@indutny.com"
@@ -39484,7 +39534,7 @@ module.exports={
   "_args": [
     [
       "needle@3.0.0",
-      "/Users/abhis/Documents/JS/splunk-sdk-javascript"
+      "/Users/abhis/Documents/GitHub/splunk-sdk-javascript"
     ]
   ],
   "_from": "needle@3.0.0",
@@ -39510,7 +39560,7 @@ module.exports={
   ],
   "_resolved": "https://registry.npmjs.org/needle/-/needle-3.0.0.tgz",
   "_spec": "3.0.0",
-  "_where": "/Users/abhis/Documents/JS/splunk-sdk-javascript",
+  "_where": "/Users/abhis/Documents/GitHub/splunk-sdk-javascript",
   "author": {
     "name": "Tomás Pollak",
     "email": "tomas@forkhq.com"
