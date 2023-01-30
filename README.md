@@ -58,6 +58,36 @@ Then, to include the Splunk Enterprise SDK for JavaScript, use the `require` fun
 
 The following examples show you how to list search jobs using client-side and server-side code.
 
+### Migrate from Callbacks(v1.x) to Promise/async-await(v2.x)
+
+Previous Callback Approach:
+```javascript
+let appName = "<app-name>";
+
+service.apps().fetch(function (err, apps) {
+    if (err) {
+        done(err);
+    }
+    let appList = apps.list();
+    // other code
+    done();
+});
+```
+
+Promise Approach:
+```javascript
+let appName = "<app-name>";  
+try {
+    let apps = await service.apps().fetch();
+    let appList = apps.list();
+    // other code
+} catch (err) {
+    console.log("There was an error retrieving the list of applications:", err);
+}
+```
+
+>**Note**: `abort()` method has been replaced with 'response_timeout' parameter which enables user to specify the timeout for a particular API call.
+
 ### Client-side code example
 
 This HTML example uses the Splunk Enterprise SDK for JavaScript to list all jobs:
