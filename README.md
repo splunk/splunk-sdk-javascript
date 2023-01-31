@@ -74,6 +74,8 @@ service.apps().fetch(function (err, apps) {
 });
 ```
 
+From v2.x, Splunk Enterprise SDK for JavaScript methods are updated to return Promises, which will enable users to utilize Async/await feature of JS.
+
 Promise Approach:
 ```javascript
 let appName = "<app-name>";  
