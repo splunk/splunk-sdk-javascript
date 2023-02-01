@@ -14,7 +14,6 @@
 
 (function () {
     var utils = require('../lib/utils');
-    var Async = require('../lib/async');
     var staticResource = require('../contrib/static-resource/index');
     var dox = require('../contrib/dox/dox');
     var doc_builder = require('../contrib/dox/doc_builder');
@@ -54,7 +53,8 @@
         "../../contrib/commander",
         "./platform/node/node_http",
         "./lib/platform/node/node_http",
-        "../lib/platform/node/node_http"
+        "../lib/platform/node/node_http",
+        "mocha"
     ];
 
     /**
@@ -118,25 +118,23 @@
                 };
 
                 try {
-                    needle.request(options.method, options.url, options.body, options, function (err, response, body) {
-                        try {
-                            var statusCode = (response ? response.statusCode : 500) || 500;
-                            var headers = (response ? response.headers : {}) || {};
-
-                            res.writeHead(statusCode, headers);
-                            res.write(body || JSON.stringify(err));
-                            res.end();
-                        }
-                        catch (ex) {
-                            writeError();
-                        }
-                    });
+                    needle(options.method, options.url, options.body, options)
+                    .then((response) => {
+                        var statusCode = (response ? response.statusCode : 500) || 500;
+                        var headers = (response ? response.headers : {}) || {};
+                        res.writeHead(statusCode, headers);
+                        res.write(response.body);
+                        res.end();
+                    }).catch((err)=>{
+                        res.write(JSON.stringify(err));
+                        res.end();
+                });
 
                 }
                 catch (ex) {
                     writeError();
                 }
-
+                
             });
         }
         catch (ex) {
@@ -362,7 +360,6 @@
                 }
             });
         },
-
         add: function (filename, callback) {
             var program = git.execute(["add", filename], callback);
 
@@ -473,6 +470,9 @@
         bundle.add(entry);
         bundle.ignore(IGNORED_MODULES);
         bundle.bundle(function (err,src){
+            if(err){
+                throw err;
+            }
             var code = [
                             "(function() {",
                             "",
@@ -482,9 +482,6 @@
                             "",
                             "})();"
                         ].join("\n");
-            if(err){
-                throw err;
-            }
             if (shouldUglify){
                 var UglifyJS = require("uglify-js");
                 code = UglifyJS.minify({"file1.js":code},{toplevel:true}).code;
@@ -618,7 +615,6 @@
             "lib/log.js",
             "lib/http.js",
             "lib/utils.js",
-            "lib/async.js",
             "lib/context.js",
             "lib/service.js",
         ];
@@ -711,11 +707,11 @@
         );
     };
 
-    var runTests = function (tests, cmdline) {
+    var runTests = async function (tests, cmdline) {
         cmdline = cmdline || { opts: {} };
-        var args = (tests || "").split(",").map(function (arg) { return arg.trim(); });
+        let args = (tests || "").split(",").map(function (arg) { return arg.trim(); });
 
-        var files = args
+        let files = args
             .map(arg => {
                 if (arg.indexOf('service_tests') >= 0) {
                     return path.join(TEST_DIRECTORY, 'service_tests', arg.split('/')[1] + ".js");
@@ -733,7 +729,7 @@
             files.push(path.join(TEST_DIRECTORY, ALL_TESTS));
         }
 
-        var cmdlineArgs = []
+        let cmdlineArgs = []
             .concat(cmdline.opts.username ? makeOption("username", cmdline.opts.username) : "")
             .concat(cmdline.opts.scheme ? makeOption("scheme", cmdline.opts.scheme) : "")
             .concat(cmdline.opts.host ? makeOption("host", cmdline.opts.host) : "")
@@ -748,13 +744,13 @@
             .concat(cmdline.opts.exit ? "--exit" : "--exit")
             .concat(cmdline.opts.quiet ? "--quiet" : "");
 
-        var testFunctions = files.map(function (file) {
+        let testFunctions = files.map(function (file) {
             return function (done) {
                 launch(file, cmdlineArgs, done);
             };
         });
 
-        Async.series(testFunctions);
+        await utils.series(testFunctions);
     };
 
     var hint = function () {

@@ -32,12 +32,17 @@
         Service         : require('./lib/service'),
         Http            : require('./lib/http'),
         Utils           : require('./lib/utils'),
-        Async           : require('./lib/async'),
         Paths           : require('./lib/paths').Paths,
         Class           : require('./lib/jquery.class').Class
     };
     
     if (typeof(window) === 'undefined') {
         root.NodeHttp = require('./lib/platform/node/node_http').NodeHttp;
+    } else {
+        let jqueryHttp    = require('./lib/platform/client/jquery_http').JQueryHttp; 
+        let proxyHttps    = require('./lib/platform/client/proxy_http');
+        root.ProxyHttp     = proxyHttps.ProxyHttp;
+        root.JQueryHttp    = jqueryHttp;
+        root.SplunkWebHttp = proxyHttps.SplunkWebHttp;
     }
 })();

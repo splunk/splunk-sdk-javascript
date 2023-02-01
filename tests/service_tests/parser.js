@@ -1,31 +1,27 @@
 exports.setup = function (svc) {
     var assert = require('chai').assert;
     return (
-        describe("Parsing Tests", function () {
-            beforeEach(function (done) {
+        describe("Parsing Tests", () => {
+            beforeEach(function () {
                 this.service = svc;
-                done();
             });
 
-            it("Callback#Basic parse", function (done) {
-                var service = this.service;
-
-                service.parse("search index=_internal | head 1", function (err, parse) {
-                    assert.ok(!err);
-                    assert.ok(parse);
-                    assert.ok(parse.commands.length > 0);
-                    done();
-                });
+            it("Basic parse", async function () {
+                let service = this.service;
+                let parse = await service.parse("search index=_internal | head 1");
+                assert.ok(parse);
+                assert.ok(parse.commands.length > 0);
             });
 
-            it("Callback#Parse error", function (done) {
-                var service = this.service;
-
-                service.parse("ABCXYZ", function (err, parse) {
+            it("Parse error", async function () {
+                let service = this.service;
+                try {
+                    await service.parse("ABCXYZ");
+                    assert.ok(false);
+                } catch (err) {
                     assert.ok(err);
                     assert.strictEqual(err.status, 400);
-                    done();
-                });
+                }
             });
         })
     );
@@ -35,14 +31,14 @@ if (module.id === __filename && module.parent.id.includes('mocha')) {
     var splunkjs = require('../../index');
     var options = require('../cmdline');
 
-    var cmdline = options.create().parse(process.argv);
+    let cmdline = options.create().parse(process.argv);
 
     // If there is no command line, we should return
     if (!cmdline) {
         throw new Error("Error in parsing command line parameters");
     }
 
-    var svc = new splunkjs.Service({
+    let svc = new splunkjs.Service({
         scheme: cmdline.opts.scheme,
         host: cmdline.opts.host,
         port: cmdline.opts.port,
@@ -52,12 +48,12 @@ if (module.id === __filename && module.parent.id.includes('mocha')) {
     });
 
     // Exports tests on a successful login
-    module.exports = new Promise((resolve, reject) => {
-        svc.login(function (err, success) {
-            if (err || !success) {
-                throw new Error("Login failed - not running tests", err || "");
-            }
-            return resolve(exports.setup(svc));
-        });
+    module.exports = new Promise(async (resolve, reject) => {
+        try {
+            await svc.login();
+            return resolve(exports.setup(svc))
+        } catch (error) {
+            throw new Error("Login failed - not running tests", error || "");
+        }
     });
 }

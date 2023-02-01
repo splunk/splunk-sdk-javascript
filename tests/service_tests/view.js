@@ -1,65 +1,44 @@
 
 exports.setup = function (svc) {
     var assert = require('chai').assert;
-    var splunkjs = require('../../index');
-    var Async = splunkjs.Async;
+
     return (
-        describe("Views ", function () {
+        describe("Views ", () => {
 
-            beforeEach(function (done) {
+            beforeEach(function () {
                 this.service = svc;
-                done();
             })
 
-            it("Callback#List views", function (done) {
+            it("List views", async function () {
                 var service = this.service;
+                let views = await service.views({ owner: "admin", app: "search" }).fetch();
+                assert.ok(views);
 
-                service.views({ owner: "admin", app: "search" }).fetch(function (err, views) {
-                    assert.ok(!err);
-                    assert.ok(views);
+                let viewsList = views.list();
+                assert.ok(viewsList);
+                assert.ok(viewsList.length > 0);
 
-                    var viewsList = views.list();
-                    assert.ok(viewsList);
-                    assert.ok(viewsList.length > 0);
-
-                    for (var i = 0; i < viewsList.length; i++) {
-                        assert.ok(viewsList[i]);
-                    }
-
-                    done();
-                });
+                for (let i = 0; i < viewsList.length; i++) {
+                    assert.ok(viewsList[i]);
+                }
             })
 
-            it("Callback#Create + update + delete view", function (done) {
+            it("Views - Create, update and delete view", async function () {
                 var service = this.service;
-                var name = "jssdk_testview";
-                var originalData = "<view/>";
-                var newData = "<view isVisible='false'></view>";
+                let name = "jssdk_testview";
+                let originalData = "<view/>";
+                let newData = "<view isVisible='false'></view>";
 
-                Async.chain([
-                    function (done) {
-                        service.views({ owner: "admin", app: "sdkappcollection" }).create({ name: name, "eai:data": originalData }, done);
-                    },
-                    function (view, done) {
-                        assert.ok(view);
+                let view = await service.views({ owner: "admin", app: "sdkappcollection" }).create({ name: name, "eai:data": originalData });
+                assert.ok(view);
+                assert.strictEqual(view.name, name);
+                assert.strictEqual(view.properties()["eai:data"], originalData);
 
-                        assert.strictEqual(view.name, name);
-                        assert.strictEqual(view.properties()["eai:data"], originalData);
+                let updatedView = await view.update({ "eai:data": newData });
+                assert.ok(updatedView);
+                assert.strictEqual(updatedView.properties()["eai:data"], newData);
 
-                        view.update({ "eai:data": newData }, done);
-                    },
-                    function (view, done) {
-                        assert.ok(view);
-                        assert.strictEqual(view.properties()["eai:data"], newData);
-
-                        view.remove(done);
-                    }
-                ],
-                    function (err) {
-                        assert.ok(!err);
-                        done();
-                    }
-                );
+                await updatedView.remove();
             })
         })
     );
@@ -69,14 +48,14 @@ if (module.id === __filename && module.parent.id.includes('mocha')) {
     var splunkjs = require('../../index');
     var options = require('../cmdline');
 
-    var cmdline = options.create().parse(process.argv);
+    let cmdline = options.create().parse(process.argv);
 
     // If there is no command line, we should return
     if (!cmdline) {
         throw new Error("Error in parsing command line parameters");
     }
 
-    var svc = new splunkjs.Service({
+    let svc = new splunkjs.Service({
         scheme: cmdline.opts.scheme,
         host: cmdline.opts.host,
         port: cmdline.opts.port,
@@ -86,12 +65,12 @@ if (module.id === __filename && module.parent.id.includes('mocha')) {
     });
 
     // Exports tests on a successful login
-    module.exports = new Promise((resolve, reject) => {
-        svc.login(function (err, success) {
-            if (err || !success) {
-                throw new Error("Login failed - not running tests", err || "");
-            }
-            return resolve(exports.setup(svc));
-        });
+    module.exports = new Promise(async (resolve, reject) => {
+        try {
+            await svc.login();
+            return resolve(exports.setup(svc))
+        } catch (error) {
+            throw new Error("Login failed - not running tests", error || "");
+        }
     });
 }

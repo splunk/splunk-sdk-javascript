@@ -1,8 +1,6 @@
 var assert = require('chai').assert;
 
 var splunkjs = require('../../index');
-
-var Async = splunkjs.Async;
 var utils = splunkjs.Utils;
 var idCounter = 0;
 
@@ -13,18 +11,15 @@ var getNextId = function () {
 exports.setup = function (svc, loggedOutSvc) {
     return (
         describe("Fired alerts tests", () => {
-            beforeEach(function (done) {
+            beforeEach(function () {
                 this.service = svc;
                 this.loggedOutService = loggedOutSvc;
-                var indexes = this.service.indexes();
-                done();
             });
 
-            it("Callback#create + verify emptiness + delete new alert group", function (done) {
-
-                var searches = this.service.savedSearches({ owner: this.service.username });
-                var name = "jssdk_savedsearch_alert_" + getNextId();
-                var searchConfig = {
+            it("create, verify emptiness and delete new alert group", async function () {
+                let searches = this.service.savedSearches({ owner: this.service.username });
+                let name = "jssdk_savedsearch_alert_" + getNextId();
+                let searchConfig = {
                     "name": name,
                     "search": "index=_internal | head 1",
                     "alert_type": "always",
@@ -36,34 +31,16 @@ exports.setup = function (svc, loggedOutSvc) {
                     "is_scheduled": "1",
                     "cron_schedule": "* * * * *"
                 };
-
-                Async.chain([
-                    function (done) {
-                        searches.create(searchConfig, done);
-                    },
-                    function (search, done) {
-                        assert.ok(search);
-                        assert.strictEqual(search.alertCount(), 0);
-                        search.history(done);
-                    },
-                    function (jobs, search, done) {
-                        assert.strictEqual(jobs.length, 0);
-                        assert.strictEqual(search.firedAlertGroup().count(), 0);
-                        searches.service.firedAlertGroups().fetch(Async.augment(done, search));
-                    },
-                    function (firedAlertGroups, originalSearch, done) {
-                        assert.strictEqual(firedAlertGroups.list().indexOf(originalSearch.name), -1);
-                        done(null, originalSearch);
-                    },
-                    function (originalSearch, done) {
-                        originalSearch.remove(done);
-                    }
-                ],
-                    function (err) {
-                        assert.ok(!err);
-                        done();
-                    }
-                );
+                let search = await searches.create(searchConfig);
+                assert.ok(search);
+                assert.strictEqual(search.alertCount(), 0);
+                [jobs, search] = await search.history();
+                assert.strictEqual(jobs.length, 0);
+                assert.strictEqual(search.firedAlertGroup().count(), 0);
+                let firedAlertGroups = await searches.service.firedAlertGroups().fetch();
+                let originalSearch = search;
+                assert.strictEqual(firedAlertGroups.list().indexOf(originalSearch.name), -1);
+                await originalSearch.remove();
             });
 
             // This test is not stable, commenting it out until we figure it out
@@ -245,25 +222,19 @@ exports.setup = function (svc, loggedOutSvc) {
             //     );
             // });
 
-            it("Callback#delete all alerts", function (done) {
-                var namePrefix = "jssdk_savedsearch_alert_";
-                var alertList = this.service.savedSearches().list();
-
-                Async.parallelEach(
+            it("Delete all alerts", async function () {
+                let namePrefix = "jssdk_savedsearch_alert_";
+                let alertList = this.service.savedSearches().list();
+                let err = await utils.parallelEach(
                     alertList,
-                    function (alert, idx, callback) {
+                    async function (alert, idx) {
                         if (utils.startsWith(alert.name, namePrefix)) {
                             splunkjs.Logger.log("ALERT ---", alert.name);
-                            alert.remove(callback);
+                            await alert.remove();
                         }
-                        else {
-                            callback();
-                        }
-                    }, function (err) {
-                        assert.ok(!err);
-                        done();
                     }
                 );
+                assert.ok(!err);
             })
         })
     )
@@ -273,14 +244,14 @@ if (module.id === __filename && module.parent.id.includes('mocha')) {
     var splunkjs = require('../../index');
     var options = require('../cmdline');
 
-    var cmdline = options.create().parse(process.argv);
+    let cmdline = options.create().parse(process.argv);
 
     // If there is no command line, we should return
     if (!cmdline) {
         throw new Error("Error in parsing command line parameters");
     }
 
-    var svc = new splunkjs.Service({
+    let svc = new splunkjs.Service({
         scheme: cmdline.opts.scheme,
         host: cmdline.opts.host,
         port: cmdline.opts.port,
@@ -289,7 +260,7 @@ if (module.id === __filename && module.parent.id.includes('mocha')) {
         version: cmdline.opts.version
     });
 
-    var loggedOutSvc = new splunkjs.Service({
+    let loggedOutSvc = new splunkjs.Service({
         scheme: cmdline.opts.scheme,
         host: cmdline.opts.host,
         port: cmdline.opts.port,
@@ -299,12 +270,12 @@ if (module.id === __filename && module.parent.id.includes('mocha')) {
     });
 
     // Exports tests on a successful login
-    module.exports = new Promise((resolve, reject) => {
-        svc.login(function (err, success) {
-            if (err || !success) {
-                throw new Error("Login failed - not running tests", err || "");
-            }
-            return resolve(exports.setup(svc, loggedOutSvc));
-        });
+    module.exports = new Promise(async (resolve, reject) => {
+        try {
+            await svc.login();
+            return resolve(exports.setup(svc, loggedOutSvc))
+        } catch (error) {
+            throw new Error("Login failed - not running tests", error || "");
+        }
     });
 }

@@ -22,12 +22,10 @@ jobs:
         id: pkgjson
 
       - name: Generate docs
-        run: |
-          node sdkdo docs
-          zip -r docs.zip docs-${{ steps.pkgjson.outputs.packageVersion }}
+        run: node sdkdo docs
 
       - name: Upload Artifact
         uses: actions/upload-artifact@v3
         with:
-          name: apidocs
-          path: docs.zip
+          name: js_sdk_docs
+          path: docs-${{ steps.pkgjson.outputs.packageVersion }}/

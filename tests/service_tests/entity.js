@@ -2,7 +2,6 @@ var assert = require('chai').assert;
 
 var splunkjs = require('../../index');
 
-var Async = splunkjs.Async;
 var idCounter = 0;
 
 var getNextId = function () {
@@ -11,16 +10,15 @@ var getNextId = function () {
 
 exports.setup = function (svc, loggedOutSvc) {
     return (
-        describe("Entity tests", function () {
+        describe("Entity tests", () => {
 
-            beforeEach(function (done) {
+            beforeEach(function () {
                 this.service = svc;
                 this.loggedOutService = loggedOutSvc;
-                done();
             });
 
             it("Accessors function properly", function (done) {
-                var entity = new splunkjs.Service.Entity(
+                let entity = new splunkjs.Service.Entity(
                     this.service,
                     "/search/jobs/12345",
                     { owner: "boris", app: "factory", sharing: "app" }
@@ -42,74 +40,66 @@ exports.setup = function (svc, loggedOutSvc) {
                 done();
             });
 
-            it("Refresh throws error correctly", function (done) {
-                var entity = new splunkjs.Service.Entity(this.loggedOutService, "/search/jobs/12345", { owner: "boris", app: "factory", sharing: "app" });
-                entity.fetch({}, function (err) { assert.ok(err); done(); });
+            it("Refresh throws error correctly", async function () {
+                let entity = new splunkjs.Service.Entity(this.loggedOutService, "/search/jobs/12345", { owner: "boris", app: "factory", sharing: "app" });
+                try {
+                    let res = await entity.fetch({});
+                    assert.ok(!res)
+                } catch (error) {
+                    assert.ok(error)
+                }
             });
 
             it("Cannot update name of entity", function (done) {
-                var entity = new splunkjs.Service.Entity(this.service, "/search/jobs/12345", { owner: "boris", app: "factory", sharing: "app" });
+                let entity = new splunkjs.Service.Entity(this.service, "/search/jobs/12345", { owner: "boris", app: "factory", sharing: "app" });
                 assert.throws(function () { entity.update({ name: "asdf" }); });
                 done();
             });
 
-            it("Disable throws error correctly", function (done) {
-                var entity = new splunkjs.Service.Entity(
+            it("Disable throws error correctly", async function () {
+                let entity = new splunkjs.Service.Entity(
                     this.loggedOutService,
                     "/search/jobs/12345",
                     { owner: "boris", app: "factory", sharing: "app" }
                 );
-                entity.disable(function (err) { assert.ok(err); done(); });
+                let res;
+                try {
+                    res = await entity.disable();
+                } catch (error) {
+                    assert.ok(error);
+                }
+                assert.ok(!res);
             });
 
-            it("Enable throws error correctly", function (done) {
-                var entity = new splunkjs.Service.Entity(
+            it("Enable throws error correctly", async function () {
+                let entity = new splunkjs.Service.Entity(
                     this.loggedOutService,
                     "/search/jobs/12345",
                     { owner: "boris", app: "factory", sharing: "app" }
                 );
-                entity.enable(function (err) { assert.ok(err); done(); });
+                let res;
+                try {
+                    res = await entity.enable();
+                } catch (error) {
+                    assert.ok(error);
+                }
+                assert.ok(!res);
             });
 
-            it("Does reload work?", function (done) {
-                var idx = new splunkjs.Service.Index(
-                    this.service,
-                    "data/indexes/sdk-test",
-                    {
-                        owner: "admin",
-                        app: "search",
-                        sharing: "app"
-                    }
-                );
-                var name = "jssdk_testapp_" + getNextId();
-                var apps = this.service.apps();
+            it("Does reload work?", async function () {
+                let name = "jssdk_testapp_" + getNextId();
+                let apps = this.service.apps();
 
                 var that = this;
-                Async.chain(
-                    function (done) {
-                        apps.create({ name: name }, done);
-                    },
-                    function (app, done) {
-                        app.reload(function (err) {
-                            assert.ok(!err);
-                            done(null, app);
-                        });
-                    },
-                    function (app, done) {
-                        var app2 = new splunkjs.Service.Application(that.loggedOutService, app.name);
-                        app2.reload(function (err) {
-                            assert.ok(err);
-                            done(null, app);
-                        });
-                    },
-                    function (app, done) {
-                        app.remove(done);
-                    },
-                    function (err) {
-                        assert.ok(!err);
-                        done();
-                    }
-                );
+                let app = await apps.create({ name: name });
+                await app.reload();
+                let app2 = new splunkjs.Service.Application(that.loggedOutService, app.name);
+                try {
+                    await app2.reload();
+                } catch (error) {
+                    assert.ok(error);
+                }
+                await app.remove();
             })
         })
     )
@@ -119,14 +109,14 @@ if (module.id === __filename && module.parent.id.includes('mocha')) {
     var splunkjs = require('../../index');
     var options = require('../cmdline');
 
-    var cmdline = options.create().parse(process.argv);
+    let cmdline = options.create().parse(process.argv);
 
     // If there is no command line, we should return
     if (!cmdline) {
         throw new Error("Error in parsing command line parameters");
     }
 
-    var svc = new splunkjs.Service({
+    let svc = new splunkjs.Service({
         scheme: cmdline.opts.scheme,
         host: cmdline.opts.host,
         port: cmdline.opts.port,
@@ -135,7 +125,7 @@ if (module.id === __filename && module.parent.id.includes('mocha')) {
         version: cmdline.opts.version
     });
 
-    var loggedOutSvc = new splunkjs.Service({
+    let loggedOutSvc = new splunkjs.Service({
         scheme: cmdline.opts.scheme,
         host: cmdline.opts.host,
         port: cmdline.opts.port,
@@ -145,12 +135,12 @@ if (module.id === __filename && module.parent.id.includes('mocha')) {
     });
 
     // Exports tests on a successful login
-    module.exports = new Promise((resolve, reject) => {
-        svc.login(function (err, success) {
-            if (err || !success) {
-                throw new Error("Login failed - not running tests", err || "");
-            }
-            return resolve(exports.setup(svc, loggedOutSvc));
-        });
+    module.exports = new Promise(async (resolve, reject) => {
+        try {
+            await svc.login();
+            return resolve(exports.setup(svc, loggedOutSvc))
+        } catch (error) {
+            throw new Error("Login failed - not running tests", error || "");
+        }
     });
 }

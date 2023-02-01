@@ -1,7 +1,7 @@
 [![Build Status](https://travis-ci.org/splunk/splunk-sdk-javascript.svg?branch=master)](https://travis-ci.org/splunk/splunk-sdk-javascript)
 # The Splunk Enterprise Software Development Kit for JavaScript
 
-#### Version 1.12.1
+#### Version 2.0.0
 
 The Splunk Enterprise Software Development Kit (SDK) for JavaScript contains library code and examples designed to enable developers to build applications using the Splunk platform and JavaScript. This SDK supports server-side and client-side JavaScript.
 
@@ -52,11 +52,43 @@ To use the Splunk Enterprise SDK for JavaScript with your Node.js programs, inst
 
 Then, to include the Splunk Enterprise SDK for JavaScript, use the `require` function in your code:
 
-    var splunkjs = require('splunk-sdk');
+    let splunkjs = require('splunk-sdk');
 
 ## Usage
 
 The following examples show you how to list search jobs using client-side and server-side code.
+
+### Migrate from Callbacks(v1.x) to Promise/async-await(v2.x)
+
+Previous Callback Approach:
+```javascript
+let appName = "<app-name>";
+
+service.apps().fetch(function (err, apps) {
+    if (err) {
+        done(err);
+    }
+    let appList = apps.list();
+    // other code
+    done();
+});
+```
+
+From v2.x, Splunk Enterprise SDK for JavaScript methods are updated to return Promises, which will enable users to utilize Async/await feature of JS.
+
+Promise Approach:
+```javascript
+let appName = "<app-name>";  
+try {
+    let apps = await service.apps().fetch();
+    let appList = apps.list();
+    // other code
+} catch (err) {
+    console.log("There was an error retrieving the list of applications:", err);
+}
+```
+
+>**Note**: `abort()` method has been replaced with 'response_timeout' parameter which enables user to specify the timeout for a particular API call.
 
 ### Client-side code example
 
@@ -66,22 +98,18 @@ This HTML example uses the Splunk Enterprise SDK for JavaScript to list all jobs
     <script type="text/javascript" src="jquery.min.js"></script>
 
     <script type="text/javascript" charset="utf-8">
-
-        var service = new splunkjs.Service({username: "admin", password: "changed!"});
-        service.login(function(err, success) {
-            if (err) {
-                throw err;
+        try {
+            let service = new splunkjs.Service({username: "admin", password: "changed!"});
+            await service.login();
+            console.log("Login was successful");
+            let jobs = await service.jobs().fetch();    
+            let jobList = jobs.list();
+            for(let i = 0; i < jobList.length; i++) {
+                console.log("Job " + i + ": " + jobList[i].sid);
             }
-
-            console.log("Login was successful: " + success);
-            service.jobs().fetch(function(err, jobs) {
-                var jobList = jobs.list();
-                for(var i = 0; i < jobList.length; i++) {
-                    console.log("Job " + i + ": " + jobList[i].sid);
-                }
-            });
-        });
-
+        } catch(err) {
+            console.log(err);
+        }
     </script>
 ```
 
@@ -92,22 +120,21 @@ This example shows how to use the Splunk Enterprise SDK for JavaScript and Node.
 ##### Login with username and password
 
 ```javascript
-    var splunkjs = require('splunk-sdk');
+    let splunkjs = require('splunk-sdk');
 
-    var service = new splunkjs.Service({username: "admin", password: "changed!"});
-    service.login(function(err, success) {
-        if (err) {
-            throw err;
-        }
-
+    let service = new splunkjs.Service({username: "admin", password: "changed!"});
+    try {
+        await service.login();
         console.log("Login was successful: " + success);
-        service.jobs().fetch(function(err, jobs) {
-            var jobList = jobs.list();
-            for(var i = 0; i < jobList.length; i++) {
-                console.log("Job " + i + ": " + jobList[i].sid);
-            }
-        });
-    });
+        let jobs = await jobs.fetch();
+        let jobList = jobs.list();
+        for(let i = 0; i < jobList.length; i++) {
+            console.log("Job " + i + ": " + jobList[i].sid);
+        }
+    } catch(err) {
+        console.log(err);
+    }  
+    
 ```
 ##### Login with sessionKey
 
@@ -117,24 +144,20 @@ curl -k -u <username>:<password>  <scheme>://<host>:<port>/services/auth/login -
 ```
 
 ```javascript
-var serviceWithSessionKey = new splunkjs.Service(
-    {
-        // Replace the host if you are accessing remote host
-        scheme: 'https',
-        host: 'localhost',
-        port: '8089',
-        sessionKey: SESSION_KEY, // Add your sessionKey here
-        version: '9.0',
-    });
-
-serviceWithSessionKey.get("search/jobs", { count: 1 }, function (err, res) {
-    if (err) {
-        console.log(err);
-    } else }
-        console.log("Login successful with sessionKey");
-    }
+let serviceWithSessionKey = new splunkjs.Service({
+    // Replace the host if you are accessing remote host
+    scheme: 'https',
+    host: 'localhost',
+    port: '8089',
+    sessionKey: SESSION_KEY, // Add your sessionKey here
+    version: '9.0',
 });
-```
+try {
+    let jobs = await serviceWithSessionKey.jobs({ count: 1 });
+    console.log("Login successful with sessionKey");
+} catch(err) {
+    console.log(err);
+}
 
 ##### Login with token
 
@@ -159,22 +182,21 @@ Go to settings > Tokens and click on 'Enable Token Authentication'
 ```
 
 ```javascript
-var serviceWithBearerToken = new splunkjs.Service(
-    {
-        // Replace the host if you are accessing remote host
-        scheme: 'https',
-        host: 'localhost',
-        port: '8089',
-        sessionKey: TOKEN, // Add your token here
-        version: '8',
-    });
-
-serviceWithBearerToken.get("search/jobs", { count: 2 }, function (err, res) {
-    if (err)
-        console.log(err);
-    else
-        console.log("Login successful with bearer token");
+let serviceWithBearerToken = new splunkjs.Service({
+    // Replace the host if you are accessing remote host
+    scheme: 'https',
+    host: 'localhost',
+    port: '8089',
+    sessionKey: TOKEN, // Add your token here
+    version: '8',
 });
+try {
+    let res  = await serviceWithBearerToken.jobs({ count: 2 });
+    console.log("Login successful with bearer token");
+} catch(err) {
+    console.log(err);
+}
+
 ```
 
 ### Modular inputs examples
@@ -224,29 +246,18 @@ Save the file as **.splunkrc** in the current user's home directory.
 
 ### Create/Update a .conf file
 ```javascript
+    let configs = svc.configurations(namespace);
+    configs = await configs.fetch();
+    // Create a key-value map to store under a stanza
+    const filename = "app.conf";
+    const stanzaName = "install";
+    let keyValueMap = {};
+    keyValueMap["state"] = "enabled";
+    keyValueMap["python.version"] = "python3";  
 
-Async.chain([
-    function (done) {
-        // Fetch configurations
-        var configs = svc.configurations(namespace);
-        configs.fetch(done);
-    },
-    async function (configs, done) {
-        // Create a key-value map to store under a stanza
-        const filename = "app.conf";
-        const stanzaName = "install";
-        var keyValueMap = {}
-        keyValueMap["state"] = "enabled";
-        keyValueMap["python.version"] = "python3";
-
-        // If file/stanza doesn't exist, it will be created 
-        // else it will be updated.
-        configs.createAsync(filename, stanzaName, keyValueMap, done);
-    }
-],
-function (err) {
-    done();
-});
+    // If file/stanza doesn't exist, it will be created 
+    // else it will be updated.
+    await configs.createAsync(filename, stanzaName, keyValueMap);
 ```
 
 ## Development
@@ -276,9 +287,9 @@ To run all tests, enter:
 
     node sdkdo tests
 
-To run the HTTP and the Async tests, enter:
+To run the HTTP and the utils tests, enter:
 
-    node sdkdo tests http,async
+    node sdkdo tests http,utils
 
 To run tests containing a particular string, enter:
 
