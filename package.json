@@ -32,7 +32,7 @@
         "browserify": "^17.0.0",
         "chai": "^4.3.6",
         "jshint": "2.13.4",
-        "mocha": "7.2.0",
+        "mocha": "10.2.0",
         "mochawesome": "7.1.0",
         "mustache": "4.2.0",
         "nyc": "^15.1.0",
