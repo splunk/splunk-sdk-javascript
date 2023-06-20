@@ -1,3 +1,11 @@
+# <u>[DEPRECATED]</u>
+
+This package is deprecated and no longer supported or actively developed by MITRE. Use is NOT RECOMMENDED.
+
+If you are using this package as a dependency of [Heimdall2](https://github.com/mitre/heimdall2) or the [SAF CLI](https://github.com/mitre/saf), please update to the latest version and clean out your `node_modules` directory. This package is no longer a required dependency.
+
+---
+
 [![Build Status](https://travis-ci.org/splunk/splunk-sdk-javascript.svg?branch=master)](https://travis-ci.org/splunk/splunk-sdk-javascript)
 # The Splunk Enterprise Software Development Kit for JavaScript
 
