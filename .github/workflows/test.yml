@@ -55,3 +55,6 @@ jobs:
         run: make test
         env:
           SPLUNK_HOME: /opt/splunk
+  fossa-scan:
+    uses: splunk/oss-scanning-public/.github/workflows/oss-scan.yml@main
+    secrets: inherit
