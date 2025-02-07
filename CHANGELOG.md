@@ -1,11 +1,5 @@
 # Splunk Enterprise SDK for JavaScript Changelog
 
-
-## v2.0.1
-
-### Minor changes
-* Upgrade 'cookie' npm package to 0.7.0 ([PR#161](https://github.com/splunk/splunk-sdk-javascript/pull/190))
-
 ## v2.0.0
 
 ### New features and APIs
