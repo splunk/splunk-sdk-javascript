@@ -19,3 +19,4 @@ cover_html
 test_logs/*
 docs/
 .nyc_output/*
+/node_modules/*
