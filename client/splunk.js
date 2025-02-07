@@ -23429,63 +23429,18 @@ exports.serialize = serialize;
  * @private
  */
 
-var __toString = Object.prototype.toString
+var decode = decodeURIComponent;
+var encode = encodeURIComponent;
 
 /**
- * RegExp to match cookie-name in RFC 6265 sec 4.1.1
- * This refers out to the obsoleted definition of token in RFC 2616 sec 2.2
- * which has been replaced by the token definition in RFC 7230 appendix B.
+ * RegExp to match field-content in RFC 7230 sec 3.2
  *
- * cookie-name       = token
- * token             = 1*tchar
- * tchar             = "!" / "#" / "$" / "%" / "&" / "'" /
- *                     "*" / "+" / "-" / "." / "^" / "_" /
- *                     "`" / "|" / "~" / DIGIT / ALPHA
+ * field-content = field-vchar [ 1*( SP / HTAB ) field-vchar ]
+ * field-vchar   = VCHAR / obs-text
+ * obs-text      = %x80-FF
  */
 
-var cookieNameRegExp = /^[!#$%&'*+\-.^_`|~0-9A-Za-z]+$/;
-
-/**
- * RegExp to match cookie-value in RFC 6265 sec 4.1.1
- *
- * cookie-value      = *cookie-octet / ( DQUOTE *cookie-octet DQUOTE )
- * cookie-octet      = %x21 / %x23-2B / %x2D-3A / %x3C-5B / %x5D-7E
- *                     ; US-ASCII characters excluding CTLs,
- *                     ; whitespace DQUOTE, comma, semicolon,
- *                     ; and backslash
- */
-
-var cookieValueRegExp = /^("?)[\u0021\u0023-\u002B\u002D-\u003A\u003C-\u005B\u005D-\u007E]*\1$/;
-
-/**
- * RegExp to match domain-value in RFC 6265 sec 4.1.1
- *
- * domain-value      = <subdomain>
- *                     ; defined in [RFC1034], Section 3.5, as
- *                     ; enhanced by [RFC1123], Section 2.1
- * <subdomain>       = <label> | <subdomain> "." <label>
- * <label>           = <let-dig> [ [ <ldh-str> ] <let-dig> ]
- *                     Labels must be 63 characters or less.
- *                     'let-dig' not 'letter' in the first char, per RFC1123
- * <ldh-str>         = <let-dig-hyp> | <let-dig-hyp> <ldh-str>
- * <let-dig-hyp>     = <let-dig> | "-"
- * <let-dig>         = <letter> | <digit>
- * <letter>          = any one of the 52 alphabetic characters A through Z in
- *                     upper case and a through z in lower case
- * <digit>           = any one of the ten digits 0 through 9
- */
-
-var domainValueRegExp = /^([a-z0-9]([a-z0-9-]{0,61}[a-z0-9])?)([.][a-z0-9]([a-z0-9-]{0,61}[a-z0-9])?)*$/i;
-
-/**
- * RegExp to match path-value in RFC 6265 sec 4.1.1
- *
- * path-value        = <any CHAR except CTLs or ";">
- * CHAR              = %x01-7F
- *                     ; defined in RFC 5234 appendix B.1
- */
-
-var pathValueRegExp = /^[\u0020-\u003A\u003D-\u007E]*$/;
+var fieldContentRegExp = /^[\u0009\u0020-\u007e\u0080-\u00ff]+$/;
 
 /**
  * Parse a cookie header.
@@ -23504,80 +23459,43 @@ function parse(str, options) {
     throw new TypeError('argument str must be a string');
   }
 
-  var obj = {};
-  var len = str.length;
-  // RFC 6265 sec 4.1.1, RFC 2616 2.2 defines a cookie name consists of one char minimum, plus '='.
-  var max = len - 2;
-  if (max < 0) return obj;
+  var obj = {}
+  var opt = options || {};
+  var pairs = str.split(';')
+  var dec = opt.decode || decode;
 
-  var dec = (options && options.decode) || decode;
-  var index = 0;
-  var eqIdx = 0;
-  var endIdx = 0;
+  for (var i = 0; i < pairs.length; i++) {
+    var pair = pairs[i];
+    var index = pair.indexOf('=')
 
-  do {
-    eqIdx = str.indexOf('=', index);
-
-    // no more cookie pairs
-    if (eqIdx === -1) {
-      break;
-    }
-
-    endIdx = str.indexOf(';', index);
-
-    if (endIdx === -1) {
-      endIdx = len;
-    } else if (eqIdx > endIdx) {
-      // backtrack on prior semicolon
-      index = str.lastIndexOf(';', eqIdx - 1) + 1;
+    // skip things that don't look like key=value
+    if (index < 0) {
       continue;
     }
 
-    var keyStartIdx = startIndex(str, index, eqIdx);
-    var keyEndIdx = endIndex(str, eqIdx, keyStartIdx);
-    var key = str.slice(keyStartIdx, keyEndIdx);
+    var key = pair.substring(0, index).trim()
 
     // only assign once
-    if (undefined === obj[key]) {
-      var valStartIdx = startIndex(str, eqIdx + 1, endIdx);
-      var valEndIdx = endIndex(str, endIdx, valStartIdx);
+    if (undefined == obj[key]) {
+      var val = pair.substring(index + 1, pair.length).trim()
 
-      if (str.charCodeAt(valStartIdx) === 0x22 /* " */ && str.charCodeAt(valEndIdx - 1) === 0x22 /* " */) {
-        valStartIdx++;
-        valEndIdx--;
+      // quoted values
+      if (val[0] === '"') {
+        val = val.slice(1, -1)
       }
 
-      var val = str.slice(valStartIdx, valEndIdx);
       obj[key] = tryDecode(val, dec);
     }
-
-    index = endIdx + 1
-  } while (index < max);
+  }
 
   return obj;
-}
-
-function startIndex(str, index, max) {
-  do {
-    var code = str.charCodeAt(index);
-    if (code !== 0x20 /*   */ && code !== 0x09 /* \t */) return index;
-  } while (++index < max);
-  return max;
-}
-
-function endIndex(str, index, min) {
-  while (index > min) {
-    var code = str.charCodeAt(--index);
-    if (code !== 0x20 /*   */ && code !== 0x09 /* \t */) return index + 1;
-  }
-  return min;
 }
 
 /**
  * Serialize data into a cookie header.
  *
- * Serialize a name value pair into a cookie string suitable for
- * http headers. An optional options object specifies cookie parameters.
+ * Serialize the a name value pair into a cookie string suitable for
+ * http headers. An optional options object specified cookie parameters.
  *
  * serialize('foo', 'bar', { httpOnly: true })
  *   => "foo=bar; httpOnly"
@@ -23597,13 +23515,13 @@ function serialize(name, val, options) {
     throw new TypeError('option encode is invalid');
   }
 
-  if (!cookieNameRegExp.test(name)) {
+  if (!fieldContentRegExp.test(name)) {
     throw new TypeError('argument name is invalid');
   }
 
   var value = enc(val);
 
-  if (value && !cookieValueRegExp.test(value)) {
+  if (value && !fieldContentRegExp.test(value)) {
     throw new TypeError('argument val is invalid');
   }
 
@@ -23612,7 +23530,7 @@ function serialize(name, val, options) {
   if (null != opt.maxAge) {
     var maxAge = opt.maxAge - 0;
 
-    if (!isFinite(maxAge)) {
+    if (isNaN(maxAge) || !isFinite(maxAge)) {
       throw new TypeError('option maxAge is invalid')
     }
 
@@ -23620,7 +23538,7 @@ function serialize(name, val, options) {
   }
 
   if (opt.domain) {
-    if (!domainValueRegExp.test(opt.domain)) {
+    if (!fieldContentRegExp.test(opt.domain)) {
       throw new TypeError('option domain is invalid');
     }
 
@@ -23628,7 +23546,7 @@ function serialize(name, val, options) {
   }
 
   if (opt.path) {
-    if (!pathValueRegExp.test(opt.path)) {
+    if (!fieldContentRegExp.test(opt.path)) {
       throw new TypeError('option path is invalid');
     }
 
@@ -23636,13 +23554,11 @@ function serialize(name, val, options) {
   }
 
   if (opt.expires) {
-    var expires = opt.expires
-
-    if (!isDate(expires) || isNaN(expires.valueOf())) {
+    if (typeof opt.expires.toUTCString !== 'function') {
       throw new TypeError('option expires is invalid');
     }
 
-    str += '; Expires=' + expires.toUTCString()
+    str += '; Expires=' + opt.expires.toUTCString();
   }
 
   if (opt.httpOnly) {
@@ -23651,30 +23567,6 @@ function serialize(name, val, options) {
 
   if (opt.secure) {
     str += '; Secure';
-  }
-
-  if (opt.partitioned) {
-    str += '; Partitioned'
-  }
-
-  if (opt.priority) {
-    var priority = typeof opt.priority === 'string'
-      ? opt.priority.toLowerCase()
-      : opt.priority
-
-    switch (priority) {
-      case 'low':
-        str += '; Priority=Low'
-        break
-      case 'medium':
-        str += '; Priority=Medium'
-        break
-      case 'high':
-        str += '; Priority=High'
-        break
-      default:
-        throw new TypeError('option priority is invalid')
-    }
   }
 
   if (opt.sameSite) {
@@ -23700,42 +23592,6 @@ function serialize(name, val, options) {
   }
 
   return str;
-}
-
-/**
- * URL-decode string value. Optimized to skip native call when no %.
- *
- * @param {string} str
- * @returns {string}
- */
-
-function decode (str) {
-  return str.indexOf('%') !== -1
-    ? decodeURIComponent(str)
-    : str
-}
-
-/**
- * URL-encode value.
- *
- * @param {string} val
- * @returns {string}
- */
-
-function encode (val) {
-  return encodeURIComponent(val)
-}
-
-/**
- * Determine if value is a Date.
- *
- * @param {*} val
- * @private
- */
-
-function isDate (val) {
-  return __toString.call(val) === '[object Date]' ||
-    val instanceof Date
 }
 
 /**
@@ -29185,7 +29041,7 @@ module.exports={
   "_args": [
     [
       "elliptic@6.5.4",
-      "/Users/sjaskowski/PycharmProjects/splunk-sdk-javascript"
+      "/Users/abhis/Documents/GitHub/splunk-sdk-javascript"
     ]
   ],
   "_development": true,
@@ -29211,7 +29067,7 @@ module.exports={
   ],
   "_resolved": "https://registry.npmjs.org/elliptic/-/elliptic-6.5.4.tgz",
   "_spec": "6.5.4",
-  "_where": "/Users/sjaskowski/PycharmProjects/splunk-sdk-javascript",
+  "_where": "/Users/abhis/Documents/GitHub/splunk-sdk-javascript",
   "author": {
     "name": "Fedor Indutny",
     "email": "fedor@indutny.com"
@@ -39678,7 +39534,7 @@ module.exports={
   "_args": [
     [
       "needle@3.0.0",
-      "/Users/sjaskowski/PycharmProjects/splunk-sdk-javascript"
+      "/Users/abhis/Documents/GitHub/splunk-sdk-javascript"
     ]
   ],
   "_from": "needle@3.0.0",
@@ -39704,13 +39560,13 @@ module.exports={
   ],
   "_resolved": "https://registry.npmjs.org/needle/-/needle-3.0.0.tgz",
   "_spec": "3.0.0",
-  "_where": "/Users/sjaskowski/PycharmProjects/splunk-sdk-javascript",
+  "_where": "/Users/abhis/Documents/GitHub/splunk-sdk-javascript",
   "author": {
     "name": "Tomás Pollak",
     "email": "tomas@forkhq.com"
   },
   "bin": {
-    "needle": "bin/needle"
+    "needle": "./bin/needle"
   },
   "bugs": {
     "url": "https://github.com/tomas/needle/issues"
@@ -55541,7 +55397,7 @@ module.exports={
         "test": "nyc mocha tests/tests.js -t 50000 --allow-uncaught --exit --reporter mochawesome"
     },
     "dependencies": {
-        "cookie": "0.7.0",
+        "cookie": "0.4.2",
         "dotenv": "16.0.0",
         "elementtree": "0.1.7",
         "needle": "3.0.0"
