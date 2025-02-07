@@ -23,7 +23,7 @@
         "test": "nyc mocha tests/tests.js -t 50000 --allow-uncaught --exit --reporter mochawesome"
     },
     "dependencies": {
-        "cookie": "0.4.2",
+        "cookie": "0.7.0",
         "dotenv": "16.0.0",
         "elementtree": "0.1.7",
         "needle": "3.0.0"
