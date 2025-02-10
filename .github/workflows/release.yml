@@ -8,8 +8,8 @@ jobs:
   publish-npm:
     runs-on: ubuntu-latest
     steps:
-      - uses: actions/checkout@v2
-      - uses: actions/setup-node@v2
+      - uses: actions/checkout@v4
+      - uses: actions/setup-node@v4
         with:
           node-version: 14
           registry-url: https://registry.npmjs.org/
@@ -25,7 +25,7 @@ jobs:
         run: node sdkdo docs
 
       - name: Upload Artifact
-        uses: actions/upload-artifact@v3
+        uses: actions/upload-artifact@v4
         with:
           name: js_sdk_docs
           path: docs-${{ steps.pkgjson.outputs.packageVersion }}/
