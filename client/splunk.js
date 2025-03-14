@@ -895,10 +895,6 @@ var __exportName = 'splunkjs';
 
             if (cookieString.length !== 0) {
                 message.headers["Cookie"] = cookieString;
-
-                // Remove Authorization header
-                // Splunk will use Authorization header and ignore Cookies if Authorization header is sent
-                delete message.headers["Authorization"];
             }
 
             let options = {
