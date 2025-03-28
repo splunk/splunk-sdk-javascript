@@ -1,5 +1,11 @@
 # Splunk Enterprise SDK for JavaScript Changelog
 
+
+## v2.0.2
+### Minor changes
+* Stop removing Authorisation header from requests ([PR#203](https://github.com/splunk/splunk-sdk-javascript/pull/203))
+
+
 ## v2.0.1
 ### Minor changes
 * Upgrade 'cookie' npm package to 0.7.0 ([PR#202](https://github.com/splunk/splunk-sdk-javascript/pull/202))
