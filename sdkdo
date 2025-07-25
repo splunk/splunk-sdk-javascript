@@ -14,15 +14,16 @@
 // License for the specific language governing permissions and limitations
 // under the License.
 
-(function() {
-    try {
-        require('./bin/cli');
+(function () {
+  try {
+    require("./bin/cli");
+  } catch (ex) {
+    if (ex.message.indexOf("Cannot find module") >= 0) {
+      console.error(
+        "NOTE: 'sdkdo' failed to run. Did you forget to run 'npm install'?"
+      );
     }
-    catch (ex) {
-        if (ex.message.indexOf("Cannot find module") >= 0) {
-            console.error("NOTE: 'sdkdo' failed to run. Did you forget to run 'npm install'?");
-        }
-        
-        throw ex;
-    }
+
+    throw ex;
+  }
 })();

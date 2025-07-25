@@ -1,4 +1,5 @@
 build/
+client/
 .git
 tests/html/*
 *.out
@@ -18,4 +19,6 @@ cover_html
 *.zip
 test_logs/*
 docs/
-.nyc_output/*
+.nyc_output/
+node_modules/
+.vscode/
