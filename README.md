@@ -1,7 +1,8 @@
-[![Build Status](https://travis-ci.org/splunk/splunk-sdk-javascript.svg?branch=master)](https://travis-ci.org/splunk/splunk-sdk-javascript)
 # The Splunk Enterprise Software Development Kit for JavaScript
 
-#### Version 2.0.0
+[![Build Status](https://travis-ci.org/splunk/splunk-sdk-javascript.svg?branch=master)](https://travis-ci.org/splunk/splunk-sdk-javascript)
+
+## Version 2.0.0
 
 The Splunk Enterprise Software Development Kit (SDK) for JavaScript contains library code and examples designed to enable developers to build applications using the Splunk platform and JavaScript. This SDK supports server-side and client-side JavaScript.
 
@@ -11,23 +12,21 @@ For more information, see [Splunk Enterprise SDK for JavaScript](https://dev.spl
 
 * Node.js v 8.17.0, or v14 or later
 
-    The Splunk Enterprise SDK for JavaScript was tested with Node.js v8.17.0, v14. 
+    The Splunk Enterprise SDK for JavaScript was tested with Node.js v8.17.0, v14.
 
 * Splunk Enterprise 9.0 or 8.2, or Splunk Cloud
 
-    The Splunk Enterprise SDK for JavaScript was tested with Splunk Enterprise 9.0 or 8.2, or Splunk Cloud. 
+    The Splunk Enterprise SDK for JavaScript was tested with Splunk Enterprise 9.0 or 8.2, or Splunk Cloud.
 
-*  Splunk Enterprise SDK for JavaScript
+* Splunk Enterprise SDK for JavaScript
 
     Download the SDK as a [ZIP file](https://github.com/splunk/splunk-sdk-javascript/zipball/master) or clone the repository:
 
         git clone https://github.com/splunk/splunk-sdk-javascript.git
 
-
 ## Installation
 
 This section describes the basic steps for installing the Splunk Enterprise SDK for JavaScript.
-
 
 ### Use the Splunk Enterprise SDK for JavaScript components on your web page
 
@@ -52,7 +51,7 @@ To use the Splunk Enterprise SDK for JavaScript with your Node.js programs, inst
 
 Then, to include the Splunk Enterprise SDK for JavaScript, use the `require` function in your code:
 
-    let splunkjs = require('splunk-sdk');
+    const splunkjs = require('splunk-sdk');
 
 ## Usage
 
@@ -61,65 +60,68 @@ The following examples show you how to list search jobs using client-side and se
 ### Migrate from Callbacks(v1.x) to Promise/async-await(v2.x)
 
 Previous Callback Approach:
-```javascript
-let appName = "<app-name>";
 
-service.apps().fetch(function (err, apps) {
-    if (err) {
-        done(err);
-    }
-    let appList = apps.list();
-    // other code
-    done();
-});
-```
+    ```javascript
+    const appName = "<app-name>";
+
+    service.apps().fetch(function (err, apps) {
+        if (err) {
+            done(err);
+        }
+        const appList = apps.list();
+        // [...]
+        done();
+    });
+    ```
 
 From v2.x, Splunk Enterprise SDK for JavaScript methods are updated to return Promises, which will enable users to utilize Async/await feature of JS.
 
 Promise Approach:
-```javascript
-let appName = "<app-name>";  
-try {
-    let apps = await service.apps().fetch();
-    let appList = apps.list();
-    // other code
-} catch (err) {
-    console.log("There was an error retrieving the list of applications:", err);
-}
-```
+
+    ```javascript
+    const appName = "<app-name>";  
+    try {
+        const apps = await service.apps().fetch();
+        const appList = apps.list();
+        // other code
+    } catch (err) {
+        console.log("There was an error retrieving the list of applications:", err);
+    }
+    ```
 
 >**Note**: `abort()` method has been replaced with 'response_timeout' parameter which enables user to specify the timeout for a particular API call.
 
 ### Client-side code example
 
 This HTML example uses the Splunk Enterprise SDK for JavaScript to list all jobs:
-```javascript
+
+    ```javascript
     <script type="text/javascript" src="splunk.js"></script>
     <script type="text/javascript" src="jquery.min.js"></script>
 
     <script type="text/javascript" charset="utf-8">
         try {
-            let service = new splunkjs.Service({username: "admin", password: "changed!"});
+            const service = new splunkjs.Service({ username: "admin", password: "changed!" });
             await service.login();
             console.log("Login was successful");
-            let jobs = await service.jobs().fetch();    
-            let jobList = jobs.list();
-            for(let i = 0; i < jobList.length; i++) {
+            const jobs = await service.jobs().fetch();    
+            const jobList = jobs.list();
+            for (let i = 0; i < jobList.length; i++) {
                 console.log("Job " + i + ": " + jobList[i].sid);
             }
         } catch(err) {
             console.log(err);
         }
     </script>
-```
+    ```
 
 ### Node.js code example
 
 This example shows how to use the Splunk Enterprise SDK for JavaScript and Node.js to list all jobs:
 
-##### Login with username and password
+#### Login with username and password
 
-```javascript
+    ```javascript
     let splunkjs = require('splunk-sdk');
 
     let service = new splunkjs.Service({username: "admin", password: "changed!"});
@@ -134,72 +136,74 @@ This example shows how to use the Splunk Enterprise SDK for JavaScript and Node.
     } catch(err) {
         console.log(err);
     }  
-    
-```
+    ```
+
 ##### Login with sessionKey
 
-```shell
-# Create a sessionKey
-curl -k -u <username>:<password>  <scheme>://<host>:<port>/services/auth/login -d username=<username> -d password=<password>
-```
+    ```shell
+    # Create a sessionKey
+    curl -k -u <username>:<password>  <scheme>://<host>:<port>/services/auth/login -d username=<username> -d password=<password>
+    ```
 
-```javascript
-let serviceWithSessionKey = new splunkjs.Service({
-    // Replace the host if you are accessing remote host
-    scheme: 'https',
-    host: 'localhost',
-    port: '8089',
-    sessionKey: SESSION_KEY, // Add your sessionKey here
-    version: '9.0',
-});
-try {
-    let jobs = await serviceWithSessionKey.jobs({ count: 1 });
-    console.log("Login successful with sessionKey");
-} catch(err) {
-    console.log(err);
-}
+    ```javascript
+    const serviceWithSessionKey = new splunkjs.Service({
+        // Replace the host if you are accessing remote host
+        scheme: 'https',
+        host: 'localhost',
+        port: '8089',
+        sessionKey: SESSION_KEY, // Add your sessionKey here
+        version: '9.0',
+    });
+
+    try {
+        const jobs = await serviceWithSessionKey.jobs({ count: 1 });
+        console.log("Login successful with sessionKey");
+    } catch(err) {
+        console.log(err);
+    }   
+    ```
 
 ##### Login with token
 
-```shell
-#### From shell ####
-# Enable token authetication
-curl -k -u <username>:<password> -X POST <scheme>://<host>:<port>/services/admin/token-auth/tokens_auth -d disabled=false
+    ```shell
+    #### From shell ####
+    # Enable token authentication
+    curl -k -u <username>:<password> -X POST <scheme>://<host>:<port>/services/admin/token-auth/tokens_auth -d disabled=false
 
-# Create a token
-curl -k -u <username>:<password> -X POST <scheme>://<host>:<port>/services/authorization/tokens?output_mode=json --data name=<username> --data audience=Users --data-urlencode expires_on=+30d
-```
+    # Create a token
+    curl -k -u <username>:<password> -X POST <scheme>://<host>:<port>/services/authorization/tokens?output_mode=json --data name=<username> --data audience=Users --data-urlencode expires_on=+30d
+    ```
 
-```shell
-#### From web ####
-# Enable token authentication
-Go to settings > Tokens and click on 'Enable Token Authentication'
+    ```shell
+    #### From web ####
+    # Enable token authentication
+    Go to settings > Tokens and click on 'Enable Token Authentication'
 
-# Create a token
-1. Go to settings > Token and click on 'New Token'
-2. Enter the relevant information
-3. Copy the created token and save it somewhere safe.
-```
+    # Create a token
+    1. Go to settings > Token and click on 'New Token'
+    2. Enter the relevant information
+    3. Copy the created token and save it somewhere safe.
+    ```
 
-```javascript
-let serviceWithBearerToken = new splunkjs.Service({
-    // Replace the host if you are accessing remote host
-    scheme: 'https',
-    host: 'localhost',
-    port: '8089',
-    sessionKey: TOKEN, // Add your token here
-    version: '8',
-});
-try {
-    let res  = await serviceWithBearerToken.jobs({ count: 2 });
-    console.log("Login successful with bearer token");
-} catch(err) {
-    console.log(err);
-}
-
-```
+    ```javascript
+    const serviceWithBearerToken = new splunkjs.Service({
+        // Replace the host if you are accessing remote host
+        scheme: 'https',
+        host: 'localhost',
+        port: '8089',
+        sessionKey: TOKEN, // Add your token here
+        version: '8',
+    });
+    try {
+        const res = await serviceWithBearerToken.jobs({ count: 2 });
+        console.log("Login successful with bearer token");
+    } catch(err) {
+        console.log(err);
+    }
+    ```
 
 ### Modular inputs examples
+
 Support for modular inputs is removed from Splunk Enterprise SDK for JavaScript and we recommand to use [Splunk Enterprise SDK for Python](https://github.com/splunk/splunk-sdk-python) for the modular inputs. See the [Python SDK modular inputs example](https://github.com/splunk/splunk-app-examples/tree/master/modularinputs/python) and [PythonSDK modular inputs docs](https://dev.splunk.com/enterprise/docs/devtools/python/sdk-python/howtousesplunkpython/howtocreatemodpy) for reference.
 
 ## SDK examples
@@ -230,11 +234,11 @@ To use this convenience file, create a text file with the following format:
 
 Save the file as **.splunkrc** in the current user's home directory.
 
-*   For example on OS X, save the file as:
+* For example on OS X, save the file as:
 
         ~/.splunkrc
 
-*   On Windows, save the file as:
+* On Windows, save the file as:
 
         C:\Users\currentusername\.splunkrc
 
@@ -245,24 +249,26 @@ Save the file as **.splunkrc** in the current user's home directory.
     Click **Yes**, then continue creating the file.
 
 ### Create/Update a .conf file
-```javascript
-    let configs = svc.configurations(namespace);
+
+    ```javascript
+    const configs = svc.configurations(namespace);
     configs = await configs.fetch();
+
     // Create a key-value map to store under a stanza
     const filename = "app.conf";
     const stanzaName = "install";
-    let keyValueMap = {};
+    const keyValueMap = {};
     keyValueMap["state"] = "enabled";
     keyValueMap["python.version"] = "python3";  
 
     // If file/stanza doesn't exist, it will be created 
     // else it will be updated.
     await configs.createAsync(filename, stanzaName, keyValueMap);
-```
+    ```
 
 ## Development
 
-The Splunk Enterprise SDK for JavaScript infrastructure relies on Node.js to build files, run examples, run tests, and generate documentation. 
+The Splunk Enterprise SDK for JavaScript infrastructure relies on Node.js to build files, run examples, run tests, and generate documentation.
 
 All development activities are managed by a helper script called `sdkdo`. For a list of possible commands and options, open a command prompt in the **splunk-sdk-javascript** directory and enter:
 
@@ -281,7 +287,7 @@ The Splunk Enterprise SDK for JavaScript includes several unit tests for each co
 
 >**Note**: The [SDK App Collection](https://github.com/splunk/sdk-app-collection) app is required for running unit tests.
 
-To run the unit tests, open a command prompt in the **splunk-sdk-javascript** directory, then run the following commands. 
+To run the unit tests, open a command prompt in the **splunk-sdk-javascript** directory, then run the following commands.
 
 To run all tests, enter:
 
@@ -345,7 +351,6 @@ To learn about our branching model, see [Branching Model](https://github.com/spl
 | [GitHub Wiki](https://github.com/splunk/splunk-sdk-javascript/wiki/) | Documentation for this SDK's repository on GitHub |
 | [Splunk JavaScript SDK Examples](https://github.com/splunk/splunk-app-examples) | server- and client-based examples for the Splunk JavaScript SDK |
 
-
 ## Community
 
 Stay connected with other developers building on the Splunk platform.
@@ -359,24 +364,23 @@ Stay connected with other developers building on the Splunk platform.
 
 ### Contributions
 
-If you would like to contribute to the SDK, see [Contributing to Splunk](https://www.splunk.com/en_us/form/contributions.html). For additional guidelines, see [CONTRIBUTING](CONTRIBUTING.md). 
+If you would like to contribute to the SDK, see [Contributing to Splunk](https://www.splunk.com/en_us/form/contributions.html). For additional guidelines, see [CONTRIBUTING](CONTRIBUTING.md).
 
 ### Support
 
-*  You will be granted support if you or your company are already covered under an existing maintenance/support agreement. Submit a new case in the [Support Portal](https://www.splunk.com/en_us/support-and-services.html) and include "Splunk Enterprise SDK for JavaScript" in the subject line.
+* You will be granted support if you or your company are already covered under an existing maintenance/support agreement. Submit a new case in the [Support Portal](https://www.splunk.com/en_us/support-and-services.html) and include "Splunk Enterprise SDK for JavaScript" in the subject line.
 
    If you are not covered under an existing maintenance/support agreement, you can find help through the broader community at [Splunk Answers](https://community.splunk.com/t5/Splunk-Development/ct-p/developer-tools).
 
-*  Splunk will NOT provide support for SDKs if the core library (the code in the **/splunklib** directory) has been modified. If you modify an SDK and want support, you can find help through the broader community and [Splunk Answers](https://community.splunk.com/t5/Splunk-Development/ct-p/developer-tools). 
+* Splunk will NOT provide support for SDKs if the core library (the code in the **/splunklib** directory) has been modified. If you modify an SDK and want support, you can find help through the broader community and [Splunk Answers](https://community.splunk.com/t5/Splunk-Development/ct-p/developer-tools).
 
-   We would also like to know why you modified the core library, so please send feedback to _devinfo@splunk.com_.
+   We would also like to know why you modified the core library, so please send feedback to *<devinfo@splunk.com>*.
 
-*  File any issues on [GitHub](https://github.com/splunk/splunk-sdk-javascript/issues).
-
+* File any issues on [GitHub](https://github.com/splunk/splunk-sdk-javascript/issues).
 
 ### Contact us
 
-You can reach the Splunk Developer Platform team at _devinfo@splunk.com_.
+You can reach the Splunk Developer Platform team at *<devinfo@splunk.com>*.
 
 ## License
 
