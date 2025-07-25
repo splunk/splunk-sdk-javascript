@@ -1,20 +1,19 @@
-
 services:
-    splunk:
-        image: "splunk/splunk:latest"
-        container_name: splunk
-        # platform: linux/amd64 # Uncomment for Apple M-series processors
-        environment:
-            - SPLUNK_START_ARGS=--accept-license
-            - SPLUNK_HEC_TOKEN=11111111-1111-1111-1111-1111111111113
-            - SPLUNK_PASSWORD=changed!
-            - SPLUNK_APPS_URL=https://github.com/splunk/sdk-app-collection/releases/download/v1.1.0/sdkappcollection.tgz
-        ports:
-            - 8000:8000
-            - 8088:8088
-            - 8089:8089
-        healthcheck:
-            test: ['CMD', 'curl', '-f', 'http://localhost:8000']
-            interval: 5s
-            timeout: 5s
-            retries: 20
+  splunk:
+    image: "splunk/splunk:latest"
+    container_name: splunk
+    platform: linux/amd64 # Uncomment for Apple M-series processors
+    environment:
+      - SPLUNK_START_ARGS=--accept-license
+      - SPLUNK_HEC_TOKEN=11111111-1111-1111-1111-1111111111113
+      - SPLUNK_PASSWORD=changed!
+      - SPLUNK_APPS_URL=https://github.com/splunk/sdk-app-collection/releases/download/v1.1.0/sdkappcollection.tgz
+    ports:
+      - 8000:8000
+      - 8088:8088
+      - 8089:8089
+    healthcheck:
+      test: ["CMD", "curl", "-f", "http://localhost:8000"]
+      interval: 5s
+      timeout: 5s
+      retries: 20
