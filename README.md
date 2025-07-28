@@ -1,8 +1,8 @@
-# The Splunk Enterprise Software Development Kit for JavaScript
-
 [![Build Status](https://travis-ci.org/splunk/splunk-sdk-javascript.svg?branch=master)](https://travis-ci.org/splunk/splunk-sdk-javascript)
 
-## Version 2.0.0
+# The Splunk Enterprise Software Development Kit for JavaScript
+
+#### Version 2.0.2
 
 The Splunk Enterprise Software Development Kit (SDK) for JavaScript contains library code and examples designed to enable developers to build applications using the Splunk platform and JavaScript. This SDK supports server-side and client-side JavaScript.
 
