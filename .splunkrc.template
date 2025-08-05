@@ -10,4 +10,4 @@ password=changed!
 # Access scheme (default: https)
 scheme=https
 # Your version of Splunk Enterprise
-version=9.0
+version=10
