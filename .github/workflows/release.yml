@@ -5,24 +5,29 @@ on:
     types: [published]
 
 jobs:
-  publish-npm:
-    runs-on: ubuntu-latest
+  release:
+    runs-on: ${{ matrix.os }}
+    strategy:
+      matrix:
+        os: [ubuntu-latest]
+        node-version: [24.x]
+        splunk-version: ["latest"]
     steps:
       - uses: actions/checkout@11bd71901bbe5b1630ceea73d27597364c9af683
+      - name: Load current package version to env
+        run: echo "SDK_VERSION=$(jq -r .version package.json)" >> $GITHUB_ENV
       - uses: actions/setup-node@49933ea5288caeca8642d1e84afbd3f7d6820020
         with:
-          node-version: 14.21.3
+          node-version: ${{ matrix.node-version }}
           registry-url: https://registry.npmjs.org/
-      - run: npm publish
+      - name: Publish package to NPM
+        run: npm publish
         env:
           NODE_AUTH_TOKEN: ${{ secrets.NPM_TOKEN }}
-      - name: Generate docs
+      - name: Generate API reference
         run: node sdkdo docs
-      - name: Package JSON Info
-        run: echo "SPLUNK_SDK_VERSION=$(jq -r .version package.json)" >> $GITHUB_ENV
-      - run:
-      - name: Upload Artifact
+      - name: Upload API reference docs
         uses: actions/upload-artifact@ea165f8d65b6e75b540449e92b4886f43607fa02
         with:
           name: js_sdk_docs
-          path: docs-${{ env.SPLUNK_SDK_VERSION }}/
+          path: docs-${{ env.SDK_VERSION }}/
