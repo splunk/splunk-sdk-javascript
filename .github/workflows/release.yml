@@ -1,4 +1,4 @@
-name: Create Release
+name: Publish release to NPM
 
 on:
   release:
@@ -24,7 +24,7 @@ jobs:
         run: npm publish
         env:
           NODE_AUTH_TOKEN: ${{ secrets.NPM_TOKEN }}
-      - name: Generate API reference
+      - name: Generate API reference docs
         run: node sdkdo docs
       - name: Upload API reference docs
         uses: actions/upload-artifact@ea165f8d65b6e75b540449e92b4886f43607fa02
