@@ -16,16 +16,18 @@ jobs:
           - "latest"
     steps:
       - uses: actions/checkout@11bd71901bbe5b1630ceea73d27597364c9af683
+      - name: Set up environment variables
+        run: |
+          cp ./.splunkrc.test ./.splunkrc
+          cp ./.env.test ./.env
       - name: Launch Splunk ${{ matrix.splunk-version }}
         run: SPLUNK_VERSION=${{ matrix.splunk-version }} docker compose up -d
       - name: Use node ${{ matrix.node-version }}
         uses: actions/setup-node@49933ea5288caeca8642d1e84afbd3f7d6820020
         with:
           node-version: ${{ matrix.node-version }}
-      - name: Set up environment variables
-        run: cp ./.env.test ./.env
       - name: Install dependencies
-        run: npm install
+        run: npm install --lockfile-version 1
       - name: Run test suite
         run: node sdkdo tests
         env:
