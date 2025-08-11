@@ -6,7 +6,7 @@ jobs:
   build:
     runs-on: ${{ matrix.os }}
     strategy:
-      # fail-fast: false
+      fail-fast: false
       matrix:
         os: [ubuntu-latest]
         node-version:
@@ -28,9 +28,10 @@ jobs:
         with:
           node-version: ${{ matrix.node-version }}
       - name: Update npm?
+        if: ${{ matrix.node_version == 'latest' }}
         run: npm i -g npm
       - name: Install dependencies
-        run: npm ci
+        run: type -a npm && npm ci
       - name: Run test suite
         run: node sdkdo tests
         env:
