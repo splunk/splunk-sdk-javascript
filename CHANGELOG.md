@@ -1,24 +1,27 @@
 # Splunk Enterprise SDK for JavaScript Changelog
 
-
 ## v2.0.2
+
 ### Minor changes
+
 * Stop removing Authorisation header from requests ([PR#203](https://github.com/splunk/splunk-sdk-javascript/pull/203))
 
-
 ## v2.0.1
-### Minor changes
-* Upgrade 'cookie' npm package to 0.7.0 ([PR#202](https://github.com/splunk/splunk-sdk-javascript/pull/202))
 
+### Minor changes
+
+* Upgrade 'cookie' npm package to 0.7.0 ([PR#202](https://github.com/splunk/splunk-sdk-javascript/pull/202))
 
 ## v2.0.0
 
 ### New features and APIs
-* Callbacks have been removed and instead we are returning Promises which enables users to use Async/Await features of JS. ([PR#162](https://github.com/splunk/splunk-sdk-javascript/pull/162)) 
+
+* Callbacks have been removed and instead we are returning Promises which enables users to use Async/Await features of JS. ([PR#162](https://github.com/splunk/splunk-sdk-javascript/pull/162))
 * Added 'response_timeout' parameter which enables user to specify the timeout for a particular API call.
 * Removed Async.js file and the required methods have been migrated to Utils.js following the Promise structure.
 
 ### Minor changes
+
 * Update doc generation logic in GitHub ci ([PR#167](https://github.com/splunk/splunk-sdk-javascript/pull/167))
 * Updated minimist library versions ([PR#166](https://github.com/splunk/splunk-sdk-javascript/pull/166))
 * Added feature that allows to update ACL properties of an entity ([PR#170](https://github.com/splunk/splunk-sdk-javascript/pull/170))
@@ -27,6 +30,7 @@
 ## v1.12.1
 
 ### Minor changes
+
 * Special handling related to the semantic versioning of specific Search APIs functional in Splunk Enterprise 9.0.2 and (Splunk Cloud 9.0.2209). These SDK changes will enable seamless transition between the APIs based on the version of the Splunk Enterprise in use ([PR#163](https://github.com/splunk/splunk-sdk-javascript/pull/163))
 * added checks for wildcards in StoragePasswords ([PR#156](https://github.com/splunk/splunk-sdk-javascript/pull/156))
 * Update release docs path in release.yml ([PR#161](https://github.com/splunk/splunk-sdk-javascript/pull/161))
@@ -34,9 +38,11 @@
 ## v1.12.0
 
 ### New features and APIs
+
 * SDK Support for splunkd search API changes, for Splunk 9.0+. ([PR#157](https://github.com/splunk/splunk-sdk-javascript/pull/157))
 
 ### Minor changes
+
 * Added assets directory to be included while generating docs ([PR#154](https://github.com/splunk/splunk-sdk-javascript/pull/154))
 * Removed support for Modular Inputs from the SDK ([PR#153](https://github.com/splunk/splunk-sdk-javascript/pull/153))
 * Removed examples and it's references from sdk ([PR#152](https://github.com/splunk/splunk-sdk-javascript/pull/152))
@@ -47,9 +53,12 @@
 ## v1.11.0
 
 ### Major changes
+
 * DVPL-9708 apps/local support ([PR#135](https://github.com/splunk/splunk-sdk-javascript/pull/135))
 * .conf CRUD functionality added ([PR#141](https://github.com/splunk/splunk-sdk-javascript/pull/141))
+
 ### Minor changes
+
 * NodeUnit to Mocha Transition for Browser Test Cases ([PR#127](https://github.com/splunk/splunk-sdk-javascript/pull/127))
 * Login example and README.md change ([PR#138](https://github.com/splunk/splunk-sdk-javascript/pull/138))
 * Add pagination support to history calls ([PR#95](https://github.com/splunk/splunk-sdk-javascript/pull/95))
@@ -64,6 +73,7 @@
 ## v1.10.0
 
 ### Major changes
+
 * Dropped support for deprecated request http client.
 * Added support for [needle](https://www.npmjs.com/package/needle) http client library.
 
@@ -73,7 +83,7 @@
 * Added support for Node v14.
 * Dropped support for deprecated nodeunit testing library.
 * Added support for [mocha](https://www.npmjs.com/package/mocha) for testing and [chai](https://www.npmjs.com/package/chai) for assertions.
-* Updated `cookie` dependency version to `0.4.1` 
+* Updated `cookie` dependency version to `0.4.1`
 * Updated `elementtree` dependency version to `0.1.7`
 * Updated `browserify` dependency version to `17.0.0`
 * Updated `jshint` dependency version to `2.13.0`
@@ -99,6 +109,7 @@
 * Update dependencies to address security vulnerabilities.
 
 ### Breaking changes
+
 * Drop support for Node.js v0.10.
 
 ## v1.8.4
@@ -107,14 +118,13 @@
 
 * Upgrade Node.js Request Module to v2.74.x to fix a security vulnerability (see [GitHub pull request #63](https://github.com/splunk/splunk-sdk-javascript/pull/63)).
 
-
 ## v1.8.3
 
 ### Minor changes
 
 * Upgrade Node.js Request Module to v2.73.x (see [GitHub pull request #58](https://github.com/splunk/splunk-sdk-javascript/pull/58)).
 * Add support for Node.js v6.0
-* Remove support for Node.js v0.8 
+* Remove support for Node.js v0.8
 
 ## v1.8.2
 
@@ -447,22 +457,22 @@ called, the returned state from the server will be cached locally, and is
 accessible to you. For instances of `Entity` (e.g. `Job`, `SavedSearch`, etc),
 the following methods are available:
 
-  - `state()`: the entire state for this entity (everything contained below)
-  - `properties()`: the properties of this entity
-  - `fields()`: the fields (e.g. required, optional, etc) of this entity
-  - `acl()`: the Access Control List for this entity
-  - `links()`: the links for this entity
-  - `author`: the author field for this entity
-  - `updated`: the updated time for this entity
-  - `published`: the published time for this entity
+* `state()`: the entire state for this entity (everything contained below)
+* `properties()`: the properties of this entity
+* `fields()`: the fields (e.g. required, optional, etc) of this entity
+* `acl()`: the Access Control List for this entity
+* `links()`: the links for this entity
+* `author`: the author field for this entity
+* `updated`: the updated time for this entity
+* `published`: the published time for this entity
 
 And for instances of `Collection` (e.g. `Jobs`, `SavedSearches`):
 
-  - `state()`: the entire state for this collection (everything contained below)
-  - `list()`: the list of entities for this collection
-  - `paging()`: the paging values for this collection (e.g. total count, offset)
-  - `links()`: the links for this collection
-  - `updated`: the updated time for this collection
+* `state()`: the entire state for this collection (everything contained below)
+* `list()`: the list of entities for this collection
+* `paging()`: the paging values for this collection (e.g. total count, offset)
+* `links()`: the links for this collection
+* `updated`: the updated time for this collection
 
 #### Improvement to asynchronous state management functions
 
@@ -471,7 +481,7 @@ given resource (e.g. a `Job` entity) where asynchronous. Now, only three core
 functions are asynchronous: `fetch()`, `update()` and `create()`. Both `list()`
 and `item()` are now completely synchronous.
 
-#### Proper support for Splunk namespaces (i.e. `owner/app`).
+#### Proper support for Splunk namespaces (i.e. `owner/app`)
 
 In previous versons of the SDK, the only way to specify which namespace you
 wanted a particular resource fetched from was to create a new `Service`
@@ -481,7 +491,7 @@ fetched. For example:
     // Fetch from "user"/"awesome_app" namespace
     var jobs = service.jobs({owner: "user", app: "awesome_app"});
 
-#### Ability to paginate and filter collections.
+#### Ability to paginate and filter collections
 
 You can now paginate and filter collections. For example, to get only two
 saved searches starting from the 2nd offset:
@@ -494,7 +504,7 @@ saved searches starting from the 2nd offset:
 The full list of options is: `count`, `offset`, `search`, `sort_dir`,
 `sort_key`, `sort_mode`.
 
-#### You can now abort asynchronous HTTP requests.
+#### You can now abort asynchronous HTTP requests
 
 When you issue an asynchronous HTTP request (which is all requests), you can now
 abort this request at any time:
@@ -505,7 +515,7 @@ abort this request at any time:
 
 The callback will be invoked with the error value set to `"abort"`.
 
-#### Explicit login is not required if a username and password is provided.
+#### Explicit login is not required if a username and password is provided
 
 In previous versions of the SDK, you always had to either perform an explicit
 login or provide a session key. You can now simply pass in a username and
@@ -541,15 +551,15 @@ simply create a `StormService` rather than a `Service`:
         }
     );
 
-#### Several new entities and collections have been implemented:
+#### Several new entities and collections have been implemented
 
 We now have support for more of the Splunk REST API, specifically:
 
-  - `Users` and `User`, and the ability to get the current user.
-  - `Views` and `View`.
-  - `Service.parse()`.
-  - `Service.typeahead()`.
-  - `Service.serverInfo()`.
+* `Users` and `User`, and the ability to get the current user.
+* `Views` and `View`.
+* `Service.parse()`.
+* `Service.typeahead()`.
+* `Service.serverInfo()`.
 
 #### Streamlining of submitting events to Splunk
 
