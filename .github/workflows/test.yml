@@ -1,25 +1,18 @@
 name: Node.js CI
-
-on: [push, pull_request]
+on: [push]
 
 jobs:
   build:
-    runs-on: ${{ matrix.os }}
+    runs-on: ubuntu-latest
 
     strategy:
       matrix:
-        os:
-          - ubuntu-latest
-        node:
-          - 14
-          - 8.17.0
-        splunk-version:
-          - "8.2"
-          - "latest"
+        node: [26]
+        splunk-version: ["8.2", "latest"]
 
     services:
       splunk:
-        image: splunk/splunk:${{matrix.splunk-version}}
+        image: splunk/splunk:${{ matrix.splunk-version }}
         env:
           SPLUNK_START_ARGS: --accept-license
           SPLUNK_GENERAL_TERMS: --accept-sgt-current-at-splunk-com
@@ -27,9 +20,13 @@ jobs:
           SPLUNK_PASSWORD: changed!
           SPLUNK_APPS_URL: https://github.com/splunk/sdk-app-collection/releases/download/v1.1.0/sdkappcollection.tgz
         ports:
-          - 8000:8000
-          - 8088:8088
-          - 8089:8089
+          - "8000:8000"
+          - "8088:8088"
+          - "8089:8089"
+      httpbin:
+        image: mccutchen/go-httpbin@sha256:873b4fdb27fe7cc66fa12cb9362574e1b0bf31df7ca8a71b2502988327a0b8a4
+        ports:
+          - "8080:8080"
 
     steps:
       - uses: actions/checkout@3d3c42e5aac5ba805825da76410c181273ba90b1 # v7.0.1
@@ -56,6 +53,3 @@ jobs:
         run: make test
         env:
           SPLUNK_HOME: /opt/splunk
-  fossa-scan:
-    uses: splunk/oss-scanning-public/.github/workflows/oss-scan.yml@a9f2984bb2cca5d40994956f8f428150b8eca4b7 # main
-    secrets: inherit

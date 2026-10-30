@@ -18,3 +18,9 @@ services:
       interval: 5s
       timeout: 5s
       retries: 20
+
+  httpbin:
+    image: "mccutchen/go-httpbin@sha256:873b4fdb27fe7cc66fa12cb9362574e1b0bf31df7ca8a71b2502988327a0b8a4"
+    container_name: httpbin
+    ports:
+      - "8080:8080"
