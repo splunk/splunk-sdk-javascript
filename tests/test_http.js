@@ -242,7 +242,7 @@ exports.setup = function (http) {
                 assert.strictEqual(res.data.url, HTTPBIN_URL + "/delete?");
             });
 
-            test("All", async function () {
+            it("All", async function () {
                 let headers = { "X-Test1": 1, "X-Test2": "a/b/c" };
 
                 let res = await this.http.del(HTTPBIN_URL + "/delete", { "X-Test1": 1, "X-Test2": "a/b/c" }, { a: 1, b: 2, c: [1, 2, 3], d: "a/b" }, 0);
