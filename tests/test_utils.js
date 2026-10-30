@@ -168,30 +168,84 @@ exports.setup = function () {
                 done();
             });
 
-            it("forEach", function (done) {
-                let a = [1, 2, 3, 4, 5];
-                splunkjs.Utils.forEach(
-                    a,
-                    function (elem, index, list) {
-                        assert.strictEqual(a[index], elem);
-                    }
-                );
-                let b = { 1: 2, 2: 4, 3: 6 };
-                splunkjs.Utils.forEach(
-                    b,
-                    function (elem, key, obj) {
-                        assert.strictEqual(b[key], elem);
-                    }
-                );
-                splunkjs.Utils.forEach(null, function (elem, key, obj) { });
-                let c = { length: 5, 1: 12, 2: 15, 3: 8 };
-                splunkjs.Utils.forEach(
-                    c,
-                    function (elem, key, obj) {
-                        assert.strictEqual(c[key], elem);
-                    }
-                );
-                done();
+            describe("forEach", () => {
+                it("array visits elements in order", function () {
+                    let visited = [];
+                    splunkjs.Utils.forEach([10, 20, 30], function (elem, key) { visited.push([key, elem]); });
+                    assert.deepEqual(visited, [[0, 10], [1, 20], [2, 30]]);
+                });
+
+                it("array uses context as this", function () {
+                    let ctx = {};
+                    let isContext = [];
+                    splunkjs.Utils.forEach([10, 20, 30], function () { isContext.push(this === ctx); }, ctx);
+                    assert.deepEqual(isContext, [true, true, true]);
+                });
+
+                it("array does not stop early when iterator returns {}", function () {
+                    let count = 0;
+                    splunkjs.Utils.forEach([1, 2, 3], function () { count++; return {}; });
+                    assert.strictEqual(count, 3);
+                });
+
+                it("array-like skips missing indexes", function () {
+                    let visited = [];
+                    splunkjs.Utils.forEach({ length: 3, 0: "a", 2: "c" }, function (elem, key) { visited.push([key, elem]); });
+                    assert.deepEqual(visited, [[0, "a"], [2, "c"]]);
+                });
+
+                it("array-like uses context as this", function () {
+                    let ctx = {};
+                    let isContext = [];
+                    splunkjs.Utils.forEach({ length: 2, 0: "a", 1: "b" }, function () { isContext.push(this === ctx); }, ctx);
+                    assert.deepEqual(isContext, [true, true]);
+                });
+
+                it("array-like does not stop early when iterator returns {}", function () {
+                    let count = 0;
+                    splunkjs.Utils.forEach({ length: 3, 0: 1, 1: 2, 2: 3 }, function () { count++; return {}; });
+                    assert.strictEqual(count, 3);
+                });
+
+                it("array-like does not stop early when iterator returns true", function () {
+                    let count = 0;
+                    splunkjs.Utils.forEach({ length: 3, 0: 1, 1: 2, 2: 3 }, function () { count++; return true; });
+                    assert.strictEqual(count, 3);
+                });
+
+                it("object visits own keys only", function () {
+                    let obj = Object.create({ inherited: 1 });
+                    obj.x = 1;
+                    obj.y = 2;
+                    let visited = [];
+                    splunkjs.Utils.forEach(obj, function (elem, key) { visited.push([key, elem]); });
+                    assert.deepEqual(visited, [["x", 1], ["y", 2]]);
+                });
+
+                it("object uses context as this", function () {
+                    let ctx = {};
+                    let isContext = [];
+                    splunkjs.Utils.forEach({ a: 1, b: 2 }, function () { isContext.push(this === ctx); }, ctx);
+                    assert.deepEqual(isContext, [true, true]);
+                });
+
+                it("object does not stop early when iterator returns {}", function () {
+                    let count = 0;
+                    splunkjs.Utils.forEach({ a: 1, b: 2, c: 3 }, function () { count++; return {}; });
+                    assert.strictEqual(count, 3);
+                });
+
+                it("object does not stop early when iterator returns true", function () {
+                    let count = 0;
+                    splunkjs.Utils.forEach({ a: 1, b: 2, c: 3 }, function () { count++; return true; });
+                    assert.strictEqual(count, 3);
+                });
+
+                it("null never calls the iterator", function () {
+                    let called = false;
+                    splunkjs.Utils.forEach(null, function () { called = true; });
+                    assert.strictEqual(called, false);
+                });
             });
 
             it("extend", function (done) {
