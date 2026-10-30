@@ -7,7 +7,6 @@ jobs:
 
     strategy:
       matrix:
-        node: [26]
         splunk-version: ["8.2", "latest"]
 
     services:
@@ -31,11 +30,13 @@ jobs:
     steps:
       - uses: actions/checkout@3d3c42e5aac5ba805825da76410c181273ba90b1 # v7.0.1
 
-      - name: Use node ${{ matrix.node }}
+      - name: Setup node
         uses: actions/setup-node@949feb2413d6458794dcd2491c4babbbce0c15c1 # v7.1.0
         with:
-          node-version: ${{ matrix.node }}
+          node-version: latest
 
+      - name: Run npm install
+        run: npm ci
       - name: Create .splunkrc file
         run: |
           cd ~
@@ -46,8 +47,6 @@ jobs:
           echo scheme=https >> .splunkrc
           echo version=${{ matrix.splunk }} >> .splunkrc
 
-      - name: Run npm install
-        run: npm install
 
       - name: Run make test
         run: make test
