@@ -26,6 +26,17 @@ test:
 	@echo "$(ATTN_COLOR)==> test $(NO_COLOR)"
 	@node sdkdo tests ${arg}
 
+# https://docs.zizmor.sh/usage
+ZIZMOR_CMD := uvx zizmor@1.32.0 --persona=auditor --strict-collection
+
+.PHONY: lint
+lint: lint-gh-actions
+
+.PHONY: lint-gh-actions
+lint-gh-actions:
+	@echo "$(ATTN_COLOR)==> lint-gh-actions $(NO_COLOR)"
+	@$(ZIZMOR_CMD) ./.github
+
 .PHONY: test_specific
 test_specific:
 	@echo "$(ATTN_COLOR)==> test_specific $(NO_COLOR)"

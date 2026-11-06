@@ -1,17 +1,35 @@
-name: Node.js CI
-on: [push]
+name: JS SDK CI
+
+on:
+  push:
+    branches: [develop, master]
+  pull_request:
+  workflow_dispatch:
+  workflow_call:
+
+permissions:
+  contents: read
+
+concurrency:
+  group: ${{ github.workflow }}-${{ github.event.pull_request.number || github.ref }}
+  cancel-in-progress: true
 
 jobs:
-  build:
+  test:
+    name: Tests (node ${{ matrix.node }}, splunk ${{ matrix.splunk-version }})
     runs-on: ubuntu-latest
-
     strategy:
       matrix:
-        splunk-version: ["8.2", "latest"]
-
+        node: [14, 8.17.0]
+        splunk-version: ["8.2", "10.2"]
+        include:
+          - splunk-version: "8.2"
+            splunk-image: splunk/splunk:8.2@sha256:fb09bda7453a579faa4325d49655f89e8fe654fafac159d5d957e845d818abf5
+          - splunk-version: "10.2"
+            splunk-image: splunk/splunk:10.2@sha256:dced648eaaa403d8aee927d629f8e4708e5880d56753a41764094024d6ccd7e8
     services:
       splunk:
-        image: splunk/splunk:${{ matrix.splunk-version }}
+        image: ${{ matrix.splunk-image }}
         env:
           SPLUNK_START_ARGS: --accept-license
           SPLUNK_GENERAL_TERMS: --accept-sgt-current-at-splunk-com
@@ -19,25 +37,21 @@ jobs:
           SPLUNK_PASSWORD: changed!
           SPLUNK_APPS_URL: https://github.com/splunk/sdk-app-collection/releases/download/v1.1.0/sdkappcollection.tgz
         ports:
-          - "8000:8000"
-          - "8088:8088"
-          - "8089:8089"
-      httpbin:
-        image: mccutchen/go-httpbin@sha256:873b4fdb27fe7cc66fa12cb9362574e1b0bf31df7ca8a71b2502988327a0b8a4
-        ports:
-          - "8080:8080"
-
+          - 8000:8000
+          - 8088:8088
+          - 8089:8089
     steps:
       - uses: actions/checkout@3d3c42e5aac5ba805825da76410c181273ba90b1 # v7.0.1
-
-      - name: Setup node
+        with:
+          persist-credentials: false
+      - name: Use node ${{ matrix.node }}
         uses: actions/setup-node@949feb2413d6458794dcd2491c4babbbce0c15c1 # v7.1.0
         with:
-          node-version: latest
-
-      - name: Run npm install
-        run: npm ci
+          node-version: ${{ matrix.node }}
+          cache: npm
       - name: Create .splunkrc file
+        env:
+          SPLUNK_VERSION: ${{ matrix.splunk-version }}
         run: |
           cd ~
           echo host=localhost > .splunkrc
@@ -45,9 +59,9 @@ jobs:
           echo username=admin >> .splunkrc
           echo password=changed! >> .splunkrc
           echo scheme=https >> .splunkrc
-          echo version=${{ matrix.splunk }} >> .splunkrc
-
-
+          echo "version=${SPLUNK_VERSION}" >> .splunkrc
+      - name: Run npm install
+        run: npm install
       - name: Run make test
         run: make test
         env:
