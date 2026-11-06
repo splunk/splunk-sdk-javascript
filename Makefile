@@ -26,17 +26,6 @@ test:
 	@echo "$(ATTN_COLOR)==> test $(NO_COLOR)"
 	@node sdkdo tests ${arg}
 
-# https://docs.zizmor.sh/usage
-ZIZMOR_CMD := uvx zizmor@1.32.0 --persona=auditor --strict-collection
-
-.PHONY: lint
-lint: lint-gh-actions
-
-.PHONY: lint-gh-actions
-lint-gh-actions:
-	@echo "$(ATTN_COLOR)==> lint-gh-actions $(NO_COLOR)"
-	@$(ZIZMOR_CMD) ./.github
-
 .PHONY: test_specific
 test_specific:
 	@echo "$(ATTN_COLOR)==> test_specific $(NO_COLOR)"
@@ -45,17 +34,17 @@ test_specific:
 .PHONY: up
 up:
 	@echo "$(ATTN_COLOR)==> up $(NO_COLOR)"
-	@docker-compose up -d
+	@docker compose up -d
 
 .PHONY: wait_up
 wait_up:
 	@echo "$(ATTN_COLOR)==> wait_up $(NO_COLOR)"
-	@for i in `seq 0 180`; do if docker exec -it splunk /sbin/checkstate.sh &> /dev/null; then break; fi; printf "\rWaiting for Splunk for %s seconds..." $$i; sleep 1; done
+	@for i in `seq 1 120`; do docker exec splunk /sbin/checkstate.sh >/dev/null 2>&1 && exit 0; sleep 5; done; echo "Splunk did not start in 600 seconds"; exit 1
 
 .PHONY: down
 down:
 	@echo "$(ATTN_COLOR)==> down $(NO_COLOR)"
-	@docker-compose stop
+	@docker compose stop
 
 .PHONY: deps
 deps:
@@ -64,6 +53,21 @@ deps:
 	@source $(HOME)/.nvm/nvm.sh ; nvm install 14
 	@echo "$(ATTN_COLOR)==> npm install $(NO_COLOR)"
 	@npm install
+
+.PHONY: install
+install:
+	@echo "$(ATTN_COLOR)==> install $(NO_COLOR)"
+	@npm install
+
+.PHONY: docs
+docs:
+	@echo "$(ATTN_COLOR)==> docs $(NO_COLOR)"
+	@node sdkdo docs
+
+.PHONY: publish
+publish:
+	@echo "$(ATTN_COLOR)==> publish $(NO_COLOR)"
+	@npm publish
 
 .PHONY: clean
 clean:

@@ -21,25 +21,7 @@ jobs:
     strategy:
       matrix:
         node: [14, 8.17.0]
-        splunk-version: ["8.2", "10.2"]
-        include:
-          - splunk-version: "8.2"
-            splunk-image: splunk/splunk:8.2@sha256:fb09bda7453a579faa4325d49655f89e8fe654fafac159d5d957e845d818abf5
-          - splunk-version: "10.2"
-            splunk-image: splunk/splunk:10.2@sha256:dced648eaaa403d8aee927d629f8e4708e5880d56753a41764094024d6ccd7e8
-    services:
-      splunk:
-        image: ${{ matrix.splunk-image }}
-        env:
-          SPLUNK_START_ARGS: --accept-license
-          SPLUNK_GENERAL_TERMS: --accept-sgt-current-at-splunk-com
-          SPLUNK_HEC_TOKEN: 11111111-1111-1111-1111-1111111111113
-          SPLUNK_PASSWORD: changed!
-          SPLUNK_APPS_URL: https://github.com/splunk/sdk-app-collection/releases/download/v1.1.0/sdkappcollection.tgz
-        ports:
-          - 8000:8000
-          - 8088:8088
-          - 8089:8089
+        splunk-version: ["8.2", latest]
     steps:
       - uses: actions/checkout@3d3c42e5aac5ba805825da76410c181273ba90b1 # v7.0.1
         with:
@@ -60,9 +42,15 @@ jobs:
           echo password=changed! >> .splunkrc
           echo scheme=https >> .splunkrc
           echo "version=${SPLUNK_VERSION}" >> .splunkrc
-      - name: Run npm install
-        run: npm install
-      - name: Run make test
+      - name: Install dependencies
+        run: make install
+      - name: Launch Splunk Docker instance
+        env:
+          SPLUNK_IMAGE: splunk/splunk:${{ matrix.splunk-version }}
+        run: make up
+      - name: Wait for Splunk Docker instance
+        run: make wait_up
+      - name: Run tests
         run: make test
         env:
           SPLUNK_HOME: /opt/splunk
