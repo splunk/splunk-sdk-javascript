@@ -64,11 +64,6 @@ docs:
 	@echo "$(ATTN_COLOR)==> docs $(NO_COLOR)"
 	@node sdkdo docs
 
-.PHONY: publish
-publish:
-	@echo "$(ATTN_COLOR)==> publish $(NO_COLOR)"
-	@npm publish
-
 .PHONY: clean
 clean:
 	@echo "$(ATTN_COLOR)==> Cleaning client/ directory $(NO_COLOR)"
