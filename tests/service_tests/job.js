@@ -409,7 +409,9 @@ exports.setup = function (svc) {
                 await job.cancel();
             });
 
-            it("Search timeline", async function () {
+            it("(flaky) Search timeline", async function () {
+                // splunkd sometimes returns 2 timeline buckets for `head 1` over live _internal data.
+                this.retries(3);
                 let sid = getNextId();
                 var that = this;
                 let job = await that.service.jobs().search(
