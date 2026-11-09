@@ -54,10 +54,6 @@ deps:
 	@echo "$(ATTN_COLOR)==> npm install $(NO_COLOR)"
 	@npm install
 
-.PHONY: install
-install:
-	@echo "$(ATTN_COLOR)==> install $(NO_COLOR)"
-	@npm install
 
 .PHONY: docs
 docs:

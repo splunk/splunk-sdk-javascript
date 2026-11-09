@@ -16,21 +16,20 @@ concurrency:
 
 jobs:
   test:
-    name: Tests (node-${{ matrix.node }}, splunk-${{ matrix.splunk-version }})
+    name: Tests (splunk-${{ matrix.splunk-version }})
     runs-on: ubuntu-latest
     strategy:
       fail-fast: false
       matrix:
-        node: [14, 8.17.0]
         splunk-version: [8.2, 9.4]
     steps:
       - uses: actions/checkout@3d3c42e5aac5ba805825da76410c181273ba90b1 # v7.0.1
         with:
           persist-credentials: false
-      - name: Setup node-${{ matrix.node }}
+      - name: Setup node
         uses: actions/setup-node@949feb2413d6458794dcd2491c4babbbce0c15c1 # v7.1.0
         with:
-          node-version: ${{ matrix.node }}
+          node-version: latest
           cache: npm
       - name: Create .splunkrc file
         env:
@@ -44,12 +43,12 @@ jobs:
           echo scheme=https >> .splunkrc
           echo "version=${SPLUNK_VERSION}" >> .splunkrc
       - name: Install dependencies
-        run: make install
+        run: npm ci
       - name: Launch Splunk Docker instance
         env:
-          SPLUNK_IMAGE: splunk/splunk:${{ matrix.splunk-version }}
+          SPLUNK_VERSION: ${{ matrix.splunk-version }}
         run: make up
-      - name: Wait for Splunk Docker instance
+      - name: Wait for Splunk
         run: make wait_up
       - name: Run tests
         run: make test
